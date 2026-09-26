@@ -1,6 +1,47 @@
 # GTM — Trade On My Behalf
 
 > Frozen for D6. Final pass on D15. Form-mirror at `docs/gtm-and-submission.md`.
+>
+> Pricing decision evidence last refreshed D6 (commit `dcc6e91` — pending).
+> See `docs/research/copilot-bizmodel-{01..04}.json` for raw Copilot output.
+
+## Pricing model (evidence-led, D6)
+
+**v1 stance:** Performance-fee framing for the pitch. The user never
+pays out of pocket; we take 5% of realized PnL on approved trades.
+
+**Why performance-fee wins the evidence floor** (Copilot queries
+`docs/research/copilot-bizmodel-01..04`):
+
+- `agent-arc` (Breakout 2025-04, 3rd Place - AI, $15K) is the
+  strongest single precedent: a non-custodial AI trading terminal
+  that won a prize explicitly under the performance-fee frame.
+- `mcpay`, `corbits.dev`, `latinum-agentic-commerce` (1st/2nd in
+  Stablecoins/Infrastructure/AI 2025) operate on x402 take-rate
+  micropayments — same shape, per-trade rather than per-PnL.
+- `algoflow` (Radar 2024, copy-trading precedent) implicitly uses
+  profit-share framing.
+- No prior crypto-agent winner monetized via subscription.
+- Per-policy has no oneLiner precedent in the corpus.
+- Archive search returned only DEX-protocol-fee docs (Raydium,
+  Meteora, Marinade, Orca) — no a16z / Galaxy / Paradigm essays on
+  agent-pricing landed; thesis must lean on builder precedent.
+
+**v2 candidate pricing models** (deferred, ordered by preference):
+1. **Performance fee** — 5% of realized PnL on approved trades.
+   Mirrors `agent-arc`. Aligns incentives. The user never pays out
+   of pocket.
+2. **Subscription** — $29/mo for >3 policies, $99/mo for
+   white-label copy-trading. Predictable revenue. Misaligned when
+   user is not trading.
+3. **Per-policy one-time** — $49 to publish a policy to the
+   registry. Easy to anchor to judges.
+
+**Why-not-subscription for v1** (deferred from prior draft):
+`linkwave`, `blocksub`, `sol-subscribe-hub`, `tributary`,
+`bundl`, `debyth`, `aeon-protocol` (7+ projects!) all already
+monetize recurring-crypto as their thesis. Going subscription-first
+is the more crowded lane and explicitly NOT how `agent-arc` won.
 
 ## Customer
 

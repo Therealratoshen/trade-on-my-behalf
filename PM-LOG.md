@@ -49,6 +49,7 @@
 | 4 | 2026-09-26 | Re-frame `agent.sdk` as `withTrader(wallet, rules)`, drop LTC tie-in | The 5-line wrap is the user-product primitive. | SPEC §3 |
 | 5 | 2026-09-26 | Defer Copilot Deep Dive auth flap for ~hours, accept partial evidence | PAT went 200↔401 cycle then settled on accepting deep-data-flush from server. Live now. | `17e07b9e` verifier |
 | 6 | 2026-09-26 | Document-first build order (D6) ahead of code (D7+) | Of 6 judging criteria, 5 are reading-driven (business / novelty / UX / open-source / composability). Docs-read judges can score while code is being written. | Official rules §8 + Superteam Türkiye blog post |
+| 7 | 2026-09-26 | Pricing for v1 pitch: **performance-fee** (5% of realized PnL). Subscription / per-policy deferred to v2. | Copilot evidence in `docs/research/copilot-bizmodel-{01..04}.json` shows `agent-arc` (Breakout 3rd Place AI, $15K) already monetizes AI trading under performance-fee framing; subscription lane has 7+ precedent projects (linkwave, blocksub, sol-subscribe-hub, tributary, bundl, debyth, aeon-protocol). Performance-fee is *less* crowded, and aligns with founder-as-user pitch. | `agent-arc` slug, Breakout 2025-04, GTM.md §"Pricing model" |
 
 ## 4. Open questions
 
