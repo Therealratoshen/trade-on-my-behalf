@@ -34,7 +34,7 @@
 | **D4** | 2026-09-26 | Anchor `treasury` compiles | ✅ done | `00e9884` | none |
 | **D5** | 2026-09-26 | Perps Deep Dive verdict | ✅ done (PARTIAL) | `a4a4517` | none |
 | **D6** | 2026-09-26 | Docs-first scaffold (15 files) | ✅ done | `5467b5f` | none |
-| **D7** | next | UpdatePolicy instruction, add leverage cap to state, add first LiteSVM tests | ⏳ pending | — | need `~/.config/solana/id.json` for devnet deploy |
+| **D7** | 2026-09-26 | UpdatePolicy instruction, add leverage cap to state, add first LiteSVM tests | ✅ done | `cfa6b67` | none |
 | **D8-D10** | — | SDK + agent runtime + venue adapter + first devnet demo | ⏳ pending | — | see risks §5 |
 | **D11-D14** | — | Polish, tests, user tests, weekly update video #1 | ⏳ pending | — | — |
 | **D15-D17** | — | Pitch + demo videos, GTM, submit | ⏳ pending | — | depends on D7-D14 |
