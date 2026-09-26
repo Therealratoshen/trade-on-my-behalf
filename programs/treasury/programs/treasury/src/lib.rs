@@ -14,6 +14,7 @@ pub mod instructions;
 // crate root.
 pub use instructions::create_policy::*;
 pub use instructions::authorize_spend::*;
+pub use instructions::update_policy::*;
 pub use state::*;
 
 #[program]
@@ -27,6 +28,7 @@ pub mod treasury {
         per_tx_cap_usdc: u64,
         per_day_cap_usdc: u64,
         ttl_slots: u64,
+        max_leverage_bps: u16,
     ) -> Result<()> {
         instructions::create_policy::handler(
             ctx,
@@ -34,6 +36,7 @@ pub mod treasury {
             per_tx_cap_usdc,
             per_day_cap_usdc,
             ttl_slots,
+            max_leverage_bps,
         )
     }
 
@@ -43,7 +46,25 @@ pub mod treasury {
         vendor: Pubkey,
         amount_usdc: u64,
         nonce: u64,
+        leverage_bps: u16,
     ) -> Result<()> {
-        instructions::authorize_spend::handler(ctx, vendor, amount_usdc, nonce)
+        instructions::authorize_spend::handler(ctx, vendor, amount_usdc, nonce, leverage_bps)
+    }
+
+    /// Update mutable fields on an existing policy. Owner-only.
+    pub fn update_policy(
+        ctx: Context<UpdatePolicy>,
+        max_leverage_bps: Option<u16>,
+        per_tx_cap_usdc: Option<u64>,
+        per_day_cap_usdc: Option<u64>,
+        ttl_slots: Option<u64>,
+    ) -> Result<()> {
+        instructions::update_policy::handler(
+            ctx,
+            max_leverage_bps,
+            per_tx_cap_usdc,
+            per_day_cap_usdc,
+            ttl_slots,
+        )
     }
 }

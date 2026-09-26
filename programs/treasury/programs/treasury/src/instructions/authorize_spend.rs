@@ -13,6 +13,7 @@ pub fn handler(
     vendor: Pubkey,
     amount_usdc: u64,
     nonce: u64,
+    leverage_bps: u16,
 ) -> Result<()> {
     let p = &mut ctx.accounts.policy;
     let clock = Clock::get()?;
@@ -32,6 +33,21 @@ pub fn handler(
     } else if clock.slot.saturating_sub(p.created_at_slot) > p.ttl_slots {
         reason_code = REASON_EXPIRED;
         approved = false;
+    } else if p.max_leverage_bps != 0 && leverage_bps > p.max_leverage_bps {
+        // Per SPEC: leverage-cap deny returns Ok(()) but emits a denied
+        // AuditEvent so the runtime can surface a RiskFlag without a
+        // failed transaction.
+        emit!(AuditEvent {
+            policy: p.key(),
+            agent: p.agent,
+            vendor,
+            amount_usdc,
+            approved: false,
+            reason_code: REASON_LEVERAGE_CAP,
+            nonce,
+            at_slot: clock.slot,
+        });
+        return Ok(());
     }
 
     if approved {
