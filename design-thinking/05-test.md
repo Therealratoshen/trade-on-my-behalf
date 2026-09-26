@@ -50,7 +50,7 @@ yet. A +2 delta **with** a behavioral sign = real.
 |---|---|---|
 | **1 — Solana-native dev** | `venues: ['jupiter-perps'], maxLeverage: 3, maxPositionUsd: 200, maxDailyLossUsd: 60, killSwitchDrawdownPct: 15` | Approve path + a *deliberately* oversized trade that **denies**. Want the deny reason code visible in TG *and* on-chain `AuditEvent`. |
 | **2 — Cross-venue trader** | `venues: ['drift','jupiter-perps'], maxLeverage: 5, maxPositionUsd: 500, maxDailyLossUsd: 150, killSwitchDrawdownPct: 20` | Two venues; one trade on each; one trade denied via venue whitelist manipulation. Want the dashboard to show both venues' audit trail side-by-side. |
-| **3 — Kill-switch stress** | `venues: ['drift'], maxLeverage: 2, maxPositionUsd: 100, maxDailyLossUsd: 30, killSwitchDrawdownPct: 10` | Repeated small losses to trip kill-switch; verify `/kill` flips `policy.kill_switch: true`; verify subsequent trade returns `REASON_DRAWDOWN_TRIPPED (7)`. |
+| **3 — Kill-switch stress** | `venues: ['drift'], maxLeverage: 2, maxPositionUsd: 100, maxDailyLossUsd: 30, killSwitchDrawdownPct: 10` | Repeated small losses to trip kill-switch; verify `/kill` flips `policy.kill_switch: true`; verify subsequent trade returns `REASON_DRAWDOWN_KILLSWITCH (7)`. |
 
 ## Schedule
 

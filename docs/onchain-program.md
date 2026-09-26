@@ -167,9 +167,9 @@ requiring version negotiation at the wallet layer.
   moves money. This separation keeps the program small and reviewable.
 - No leverage cap field. `per_tx_cap_usdc` is in dollar terms, not
   leverage-bps terms. The D7 deliverable adds `max_leverage_bps: u16`
-  to `Policy` with a corresponding `REASON_LEVERAGE_EXCEEDED` (6).
+  to `Policy` with a corresponding `REASON_LEVERAGE_CAP` (6).
 - No drawdown kill-switch. The D8 deliverable adds a `drawdown_peak_usdc:
-  u64` field and an `REASON_DRAWDOWN_TRIPPED` (7).
+  u64` field and an `REASON_DRAWDOWN_KILLSWITCH` (7).
 - No automatic `day_spent_usdc` reset. The runtime triggers
   `last_reset_slot` updates via a separate `reset_day_window` instruction
   (D7) once per day.

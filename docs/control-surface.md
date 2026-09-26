@@ -116,7 +116,7 @@ a re-prompt for the same intent — timeouts and denies are terminal.
 `/kill` is the only command that mutates state. It calls a new
 `toggle_kill_switch` instruction on the Anchor program (D7) and
 flips `policy.kill_switch: bool`. While `kill_switch == true`, every
-`authorize_spend` returns `REASON_DRAWDOWN_TRIPPED` (7) regardless
+`authorize_spend` returns `REASON_DRAWDOWN_KILLSWITCH` (7) regardless
 of other rules.
 
 ## Open questions deferred to D8

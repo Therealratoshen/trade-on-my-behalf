@@ -84,7 +84,7 @@ Test cases:
 | `s02_deny_mirror` | Off-chain evaluator denies; `authorize_spend` not called | – | No transaction; runtime emits `AuditEventView` off-chain. |
 | `s03_drift_fallback` | Force Jupiter Perps quote to fail; reroute to Drift | `surfnet_setTime`, `surfnet_setPrice` | Drift tx confirms; AuditEvent vendor pubkey matches Drift config. |
 | `s04_daily_cap_on_chain` | Spam 3 spends totaling $250 against a $200 cap | – | First 2 approved; third denied with `REASON_DAILY_CAP`. |
-| `s05_kill_switch` | D7 stretch: set `kill_switch: true`, authorize | – | `REASON_DRAWDOWN_TRIPPED`. |
+| `s05_kill_switch` | D7 stretch: set `kill_switch: true`, authorize | – | `REASON_DRAWDOWN_KILLSWITCH`. |
 | `s06_simulate_before_send` | Force the venue tx to fail simulation | – | Runtime never signs; `AuditEvent` from the chain is `approved:true` but the venue tx is dropped; dashboard shows the mismatch. |
 | `s07_v1_tx_format` | Submit a v1 transaction with `authorize_spend` + Jupiter CPI | – | Confirms; sized under 4096 bytes. |
 | `s08_pieverse_receipt` | D14 stretch: fill a position; assert the per-fill receipt POSTs to a fake x402b receiver | – | Receipt shape matches docs/audit-and-receipts.md. |

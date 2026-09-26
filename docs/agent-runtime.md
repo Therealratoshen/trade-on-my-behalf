@@ -158,9 +158,9 @@ the chain would have said:
    `Fill.unrealizedPnlUsd` and confirmed by the `AuditEvent` stream.
 4. `Clock.slot - created_at_slot <= ttl_slots` → else `REASON_EXPIRED` (4).
 5. **D7**: `intent.leverage <= policy.max_leverage_bps` → else
-   `REASON_LEVERAGE_EXCEEDED` (6).
+   `REASON_LEVERAGE_CAP` (6).
 6. **D8**: `(peakEquity - nowEquity) / peakEquity * 100 <= killSwitchDrawdownPct`
-   → else `REASON_DRAWDOWN_TRIPPED` (7).
+   → else `REASON_DRAWDOWN_KILLSWITCH` (7).
 
 The runtime never trusts its own evaluation as final for an *approve*.
 It always sends `authorize_spend` and waits for the chain. For a
