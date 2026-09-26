@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "build": {
+      "source": "helius-labs/core-ai",
+      "sourceType": "github",
+      "skillPath": "helius-plugin/skills/build/SKILL.md",
+      "computedHash": "5f6e852ab858996cb7d1da23d4c5e280b525295250abe8dc41514c934c4758d8"
+    },
+    "colosseum-copilot": {
+      "source": "ColosseumOrg/colosseum-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/colosseum-copilot/SKILL.md",
+      "computedHash": "4038e366dd3bbcbc3065abc61c5cc9453b29655f2e5c390a8d3441181d6021b5"
+    },
+    "jupiter": {
+      "source": "helius-labs/core-ai",
+      "sourceType": "github",
+      "skillPath": "helius-plugin/skills/jupiter/SKILL.md",
+      "computedHash": "8e37fe53316579e3c575c9f73b77688a1e5393912a9cccc1af7caec9c4ed386b"
+    },
+    "phantom": {
+      "source": "helius-labs/core-ai",
+      "sourceType": "github",
+      "skillPath": "helius-plugin/skills/phantom/SKILL.md",
+      "computedHash": "4512e80f9565d59ea1e689026a61e4a09a14d9952ab109cf23329a94a1eeb8c4"
+    },
+    "solana-dev": {
+      "source": "solana-foundation/solana-dev-skill",
+      "sourceType": "github",
+      "skillPath": "skills/solana-dev/SKILL.md",
+      "computedHash": "eb859fe9380cd31f044e9e5f5470703cea14740c1e99d59057bf532e4c82bdb8"
+    },
+    "svm": {
+      "source": "helius-labs/core-ai",
+      "sourceType": "github",
+      "skillPath": "helius-plugin/skills/svm/SKILL.md",
+      "computedHash": "7c97fe9f0a71257b1958968f764231e1f9994b9c705d8724997b897672aaed5d"
+    }
+  }
+}

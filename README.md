@@ -1,30 +1,34 @@
-# Agent Treasury
+# Agent Treasury SDK
 
-> Programmable on-chain spending policies for AI agent wallets on Solana.
+> Drop-in on-chain spending policies for AI agent wallets on Solana.
+> Composes with MCPay, Latinum, and CORBITS.DEV.
 
-Agent Treasury is a developer SDK + Anchor program that lets AI agents spend USDC
-freely under rules enforced by a Solana program. Wallets get per-vendor limits,
-per-category caps, time-bounded budgets, and an on-chain audit trail. An opt-in
-Web2 bridge converts USDC to Litecoin for non-x402 endpoints.
+Agent Treasury is an open-source SDK + Anchor program that lets any agent
+wallet opt in to programmable, on-chain-enforced spending rules: vendor
+whitelists, per-tx caps, per-day budgets, time-bounded limits, and a public
+`RiskFlag` event stream. It also ships a USDC→wSOL→Litecoin bridge for
+non-x402 endpoints — the only Web2 bridge in cluster v1-c14.
 
 Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsfair)
 (Solana track).
 
-## Why
+## Why this and not another agent wallet
 
-Per [Colosseum Copilot](https://docs.colosseum.com/copilot)'s AI-agent-payments
-research, the base x402 payment layer is saturated (MCPay, Latinum, Corbits).
-The unsolved gap is **spend management**: who sets the agent's spending rules,
-who audits them, who extends credit. This project targets that gap, plus the
-Web2-bridge gap, by settling non-x402 endpoints through a Litecoin rail.
+Per [Colosseum Copilot Deep Dive](../docs/copilot-verdict.md):
+
+- The cluster is the densest in Solana (v1-c14, 325 projects).
+- MCPay, Latinum, CORBITS.DEV, and Mercantill already won prizes on adjacent
+  theses. We don't compete with them — we **compose with them**.
+- Our wedge: open-source SDK + on-chain anomaly events + the only USDC→LTC
+  Web2 bridge inside v1-c14.
 
 ## Status
 
-- [x] D1: scaffolding + skills installed (Colosseum Copilot, Solana dev, Helius, AgentBazaar)
-- [ ] D2: Copilot Deep Dive verdict (gating artifact: `docs/copilot-verdict.md`)
-- [ ] D3: SPEC.md frozen
-- [ ] D4-D7: Anchor program + Next.js dashboard + Helius webhook
-- [ ] D8-D9: USDC -> LTC bridge
+- [x] D1: scaffolding + skills installed (Colosseum Copilot v1.2.1, Solana dev, Helius {build,jupiter,phantom,svm})
+- [x] D2: **Copilot Deep Dive verdict written** — see [`docs/copilot-verdict.md`](docs/copilot-verdict.md). Verdict: PIVOT to SDK+composition wedge.
+- [x] D3: **SPEC frozen** — see [`SPEC.md`](SPEC.md).
+- [ ] D4-D7: Anchor program + Next.js audit viewer + Helius webhook + adapters for MCPay/Latinum/CORBITS
+- [ ] D8-D9: USDC -> wSOL -> LTC bridge
 - [ ] D10-D11: tests + 3 outside-dev user tests
 - [ ] D12-D14: videos
 - [ ] D15-D17: submit by Oct 12 11:59pm PT (target D16 EOD)
