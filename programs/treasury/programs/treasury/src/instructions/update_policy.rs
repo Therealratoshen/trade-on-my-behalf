@@ -19,6 +19,7 @@ pub fn handler(
     per_tx_cap_usdc: Option<u64>,
     per_day_cap_usdc: Option<u64>,
     ttl_slots: Option<u64>,
+    kill_switch_drawdown_pct: Option<u8>,
 ) -> Result<()> {
     let p = &mut ctx.accounts.policy;
     let clock = Clock::get()?;
@@ -45,6 +46,10 @@ pub fn handler(
     }
     if let Some(v) = ttl_slots {
         p.ttl_slots = v;
+    }
+    if let Some(v) = kill_switch_drawdown_pct {
+        require!(v <= 100, TreasuryError::DrawdownKillSwitchTripped);
+        p.kill_switch_drawdown_pct = v;
     }
 
     emit!(AuditEvent {

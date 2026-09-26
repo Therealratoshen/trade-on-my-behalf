@@ -13,12 +13,13 @@ pub struct Policy {
     pub last_reset_slot: u64,
     pub max_leverage_bps: u16, // 0 = no leverage cap; else 100..=10000 (1x..=100x in bps)
     pub peak_equity_usdc: u64, // 0 = uninitialized; used for drawdown calc
+    pub kill_switch_drawdown_pct: u8, // 0 = kill-switch disabled; else 1..=100 (percent)
     pub bump: u8,
 }
 
 impl Policy {
     pub fn space(max_vendors: usize) -> usize {
-        8 + 32 + 32 + (4 + max_vendors * 32) + 8 + 8 + 8 + 8 + 8 + 8 + 2 + 8 + 1
+        8 + 32 + 32 + (4 + max_vendors * 32) + 8 + 8 + 8 + 8 + 8 + 8 + 2 + 8 + 1 + 1
     }
 }
 

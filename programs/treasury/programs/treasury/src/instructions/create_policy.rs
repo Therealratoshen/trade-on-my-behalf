@@ -25,12 +25,18 @@ pub fn handler(
     per_day_cap_usdc: u64,
     ttl_slots: u64,
     max_leverage_bps: u16,
+    kill_switch_drawdown_pct: u8,
 ) -> Result<()> {
     require!(vendors.len() <= 16, TreasuryError::TooManyVendors);
     // 0 means "no leverage cap"; otherwise 100..=10000 bps (1x..=100x).
     require!(
         max_leverage_bps == 0 || (100..=10_000).contains(&max_leverage_bps),
         TreasuryError::LeverageCapExceeded
+    );
+    // kill_switch_drawdown_pct: 0 disables, else 1..=100 percent.
+    require!(
+        kill_switch_drawdown_pct <= 100,
+        TreasuryError::DrawdownKillSwitchTripped
     );
 
     let p = &mut ctx.accounts.policy;
@@ -46,6 +52,7 @@ pub fn handler(
     p.last_reset_slot = clock.slot;
     p.max_leverage_bps = max_leverage_bps;
     p.peak_equity_usdc = 0;
+    p.kill_switch_drawdown_pct = kill_switch_drawdown_pct;
     p.bump = ctx.bumps.policy;
 
     Ok(())
