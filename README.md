@@ -36,24 +36,32 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
 - [x] D5: Perps-agent Copilot Deep Dive verdict — see [SPEC.md](SPEC.md) §"Perps-agent deep dive (D5 — DONE)"
 - [x] D6: 13-doc documentation-first scaffold (see docs/)
 - [x] D7: leverage cap + UpdatePolicy + 3 LiteSVM tests; treasury.so → 209KB
-- [ ] D8: SDK `withTrader(wallet, rules)` + Jupiter Perps adapter (proprietary TG cut to D14)
+- [x] D8: on-chain drawdown kill-switch (`record_pnl` + drawdown check in `authorize_spend` + LiteSVM test)
+- [ ] D9: SDK `withTrader(wallet, rules)` + Jupiter Perps adapter (proprietary TG cut to D14)
 - [ ] D9: Drift adapter + TG bot integration (TG deferred per BRD review)
 - [ ] D10: Surfpool integration + dry run with 1 tester
 - [ ] D11: 3 outside-dev user tests (decision gate)
 - [ ] D12-D14: weekly 1-min update + pitch (2-3 min) + demo (<=3 min) + Telegram control surface
 - [ ] D15-D17: polish + submit by Oct 12 11:59pm PT (target D16 EOD)
 
-## Security claim — honest read (D7 BRD)
+## Security claim — honest read (D7 BRD → D8 ship)
 
-- **On-chain enforced today**: vendor whitelist, per-tx cap, per-day
-  cap, TTL, leverage cap (added D7).
-- **Off-chain (runtime) enforced**: drawdown kill-switch,
-  signal classification, TG bot 60s TTL.
+- **On-chain enforced today** (D7): vendor whitelist, per-tx cap,
+  per-day cap, TTL, leverage cap.
+- **On-chain enforced today** (D8): drawdown kill-switch via
+  `record_pnl` + drawdown check in `authorize_spend`.
+- **Best-effort runtime-supplied** (caveat): the implied-current-
+  equity number is reported by the runtime from off-chain venue
+  reconciliation. Peak is on-chain monotonic; the *delta* is
+  best-effort. A compromised runtime can lie about current
+  equity; the wedge defends the *envelope*, not the *truth*.
+- **Off-chain (runtime) enforced**: signal classification, TG bot
+  60s TTL, position sizing before CPI.
 
-The headline line "*I cannot break your rules*" is true for the
-first five. Drawdown is best-effort runtime and becomes fully
-on-chain if D8 ships it. See `SUBMISSION.md` §"Security claim"
-for the exact wording submitted to the form.
+The headline line "*I cannot break your rules*" is true for
+vendor / size / day / TTL / leverage / drawdown-envelope. See
+`SUBMISSION.md` §"Security claim" for the exact wording
+submitted to the form.
 
 ## Reading paths
 
