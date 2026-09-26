@@ -1,0 +1,23 @@
+{
+  "name": "agent-treasury",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent Treasury - on-chain spending policy engine for AI agent wallets on Solana (Solana World Fair 2026)",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev": "pnpm -r --parallel dev",
+    "lint": "pnpm -r lint",
+    "anchor:build": "anchor build",
+    "anchor:test": "anchor test",
+    "devnet:demo": "bash scripts/devnet-demo.sh"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
