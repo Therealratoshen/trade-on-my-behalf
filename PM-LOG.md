@@ -36,6 +36,7 @@
 | **D6** | 2026-09-26 | Docs-first scaffold (15 files) | ✅ done | `5467b5f` | none |
 | **D7** | 2026-09-26 | UpdatePolicy instruction, add leverage cap to state, add first LiteSVM tests | ✅ done | `cfa6b67` | none |
 | **D8** | 2026-09-26 | On-chain drawdown kill-switch + `record_pnl` instruction + drawdown-test for kill=25% peak=1000 implied=700 | ✅ done | `fd2b449` | none |
+| **D8.5** | 2026-09-26 | `pnpm install` + `anchor test --provider.cluster localnet`; fix pre-D7 test (REASON_PER_TX_CAP constant correction; state-fetch fallback added). 6/6 LiteSVM tests passing. | ✅ done | `e91fb26` | none |
 | **D8-D10** | — | SDK + agent runtime + venue adapter + first devnet demo | ⏳ pending | — | see risks §5 |
 | **D11-D14** | — | Polish, tests, user tests, weekly update video #1 | ⏳ pending | — | — |
 | **D15-D17** | — | Pitch + demo videos, GTM, submit | ⏳ pending | — | depends on D7-D14 |
