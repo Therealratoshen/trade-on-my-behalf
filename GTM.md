@@ -5,6 +5,20 @@
 > Pricing decision evidence last refreshed D6 (commit `dcc6e91` — pending).
 > See `docs/research/copilot-bizmodel-{01..04}.json` for raw Copilot output.
 
+## Path (c) — slow B2C, hybrid open-source (D6 founder call)
+
+Per the founder's call: ship as **path (c) — slow B2C with a
+hybrid open-source model**. See `docs/oss-precedent.md` for the
+evidence that this position is uncrowded.
+
+Layer | License | Why
+|---|---|---|
+| `programs/treasury/` Anchor kernel | **MIT** | The on-chain policy gate. Earns Open-source criterion. No MIT cross-license conflict (`smart-wallet` is the closest precedent but unlicensed).
+| `packages/sdk/` + `packages/agent/` + `packages/venues/` | **MIT** | The integration layer. Earns Composability criterion. `fridonai` is the strongest MIT candidate in adjacent space but ships no policy / perps / TG primitives.
+| `apps/dashboard/` audit viewer | **MIT** | Earns Business Plan and Open-source both.
+| Telegram control surface (`packages/agent/telegram/`) | **Proprietary** | Earns Business Plan. Contains Helius Sender heuristics, drawdown algorithm, signal-to-DM template — *not forkable*, *not copyable from public precedent*. This is the layered moat on top of the open kernel.
+| Hosted alert + PnL reporting | **Proprietary (hosted)** | Optional v2; aligns with performance-fee pricing.
+
 ## Pricing model (evidence-led, D6)
 
 **v1 stance:** Performance-fee framing for the pitch. The user never

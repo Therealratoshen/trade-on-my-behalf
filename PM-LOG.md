@@ -50,6 +50,7 @@
 | 5 | 2026-09-26 | Defer Copilot Deep Dive auth flap for ~hours, accept partial evidence | PAT went 200↔401 cycle then settled on accepting deep-data-flush from server. Live now. | `17e07b9e` verifier |
 | 6 | 2026-09-26 | Document-first build order (D6) ahead of code (D7+) | Of 6 judging criteria, 5 are reading-driven (business / novelty / UX / open-source / composability). Docs-read judges can score while code is being written. | Official rules §8 + Superteam Türkiye blog post |
 | 7 | 2026-09-26 | Pricing for v1 pitch: **performance-fee** (5% of realized PnL). Subscription / per-policy deferred to v2. | Copilot evidence in `docs/research/copilot-bizmodel-{01..04}.json` shows `agent-arc` (Breakout 3rd Place AI, $15K) already monetizes AI trading under performance-fee framing; subscription lane has 7+ precedent projects (linkwave, blocksub, sol-subscribe-hub, tributary, bundl, debyth, aeon-protocol). Performance-fee is *less* crowded, and aligns with founder-as-user pitch. | `agent-arc` slug, Breakout 2025-04, GTM.md §"Pricing model" |
+| 8 | 2026-09-26 | **Adopt path (c)**: open-source kernel + SDK + integration; proprietary TG + alert heuristics + PnL reporting. | Founder call: "for b2c and i do not plan to do a but for a part" ⇒ B2C + selective OSS. OSS evidence in `docs/oss-precedent.md` + `docs/research/copilot-oss-{01..04}.json` shows no MIT project covers (P + X + T) intersection; `fridonai` is the strongest MIT candidate overall but ships no policy/perps/TG. | founder chat 2026-09-26 16:55 PT, `docs/oss-precedent.md` |
 
 ## 4. Open questions
 

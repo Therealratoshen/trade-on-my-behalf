@@ -37,6 +37,19 @@ What I want is software that lets me say:
 3. **Influencer-signal followers** who want copy-trading with hard caps
    ("follow this trader up to $500/day, kill if drawdown > 20%").
 
+## Licensing posture (path c, D6 founder call)
+
+- `programs/treasury/` — **MIT** (the on-chain policy kernel)
+- `packages/sdk/`, `packages/agent/`, `packages/venues/`,
+  `apps/dashboard/` — **MIT** (the integration + UI layer)
+- `packages/agent/telegram/` — **Proprietary** (the Telegram
+  control surface; non-forkable by design)
+- Hosted alert + PnL reporting — **Proprietary** (v2)
+
+OSS-native precedent is empty on the (P + X + T) intersection;
+see `docs/oss-precedent.md` for evidence. `fridonai` is the
+strongest MIT candidate overall; it ships no policy / perps / TG.
+
 ## Top-5 user stories (frozen)
 
 1. As a user, I write my setup in plain English once
