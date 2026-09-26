@@ -32,12 +32,28 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
 - [x] D1: scaffolding + skills installed (Copilot v1.2.1, Solana dev, Helius {build,jupiter,phantom,svm})
 - [x] D2: Copilot Deep Dive verdict — see [docs/copilot-verdict.md](docs/copilot-verdict.md)
 - [x] D3': **Pivot** — see [SPEC.md](SPEC.md). Now "Trade On My Behalf" (perps agent with on-chain policy gates). Treasury program from D4 becomes the risk-gate kernel.
-- [x] D4: Anchor `treasury` program compiles (203KB .so, IDL generated). D4 logic stays; D5+ extends with leverage cap + drawdown kill.
-- [ ] D5: Rotate Copilot PAT, re-run Deep Dive on perps-agent wedge. **Pending your new PAT.**
-- [ ] D6-D9: SDK + agent runtime + venue adapters (Jupiter Perps primary, Drift secondary).
-- [ ] D10-D11: Surfpool integration + 3 outside-dev user tests.
-- [ ] D12-D14: weekly 1-min update + pitch (2-3 min) + demo (<=3 min).
-- [ ] D15-D17: polish + submit by Oct 12 11:59pm PT (target D16 EOD).
+- [x] D4: Anchor `treasury` program compiles (203KB .so, IDL generated). D5+ extends with leverage cap + drawdown kill.
+- [x] D5: Perps-agent Copilot Deep Dive verdict — see [SPEC.md](SPEC.md) §"Perps-agent deep dive (D5 — DONE)"
+- [x] D6: 13-doc documentation-first scaffold (see docs/)
+- [x] D7: leverage cap + UpdatePolicy + 3 LiteSVM tests; treasury.so → 209KB
+- [ ] D8: SDK `withTrader(wallet, rules)` + Jupiter Perps adapter (proprietary TG cut to D14)
+- [ ] D9: Drift adapter + TG bot integration (TG deferred per BRD review)
+- [ ] D10: Surfpool integration + dry run with 1 tester
+- [ ] D11: 3 outside-dev user tests (decision gate)
+- [ ] D12-D14: weekly 1-min update + pitch (2-3 min) + demo (<=3 min) + Telegram control surface
+- [ ] D15-D17: polish + submit by Oct 12 11:59pm PT (target D16 EOD)
+
+## Security claim — honest read (D7 BRD)
+
+- **On-chain enforced today**: vendor whitelist, per-tx cap, per-day
+  cap, TTL, leverage cap (added D7).
+- **Off-chain (runtime) enforced**: drawdown kill-switch,
+  signal classification, TG bot 60s TTL.
+
+The headline line "*I cannot break your rules*" is true for the
+first five. Drawdown is best-effort runtime and becomes fully
+on-chain if D8 ships it. See `SUBMISSION.md` §"Security claim"
+for the exact wording submitted to the form.
 
 ## Reading paths
 
@@ -76,14 +92,23 @@ evidence-backed gap classification.
 ## Layout
 
 ```
-programs/treasury/      Anchor program: spending policy engine
-packages/sdk/           npm package developers install
-packages/agent/         x402 + AgentBazaar client + Helius webhook handler
-packages/policy-engine/ off-chain policy evaluator (LiteSVM-tested)
-packages/bridge/        USDC -> wSOL -> LTC provider integration
-apps/dashboard/         Next.js 15 dashboard
-scripts/devnet-demo.sh  one-shot judges can run
-docs/                   architecture, copilot verdict, user tests
+programs/treasury/             Anchor program: per-agent policy engine
+packages/sdk/                  @trade-on-my-behalf/sdk: 5-line withTrader wrap
+packages/agent/                trader runtime (PROPRIETARY TG layer ships D12+)
+packages/policy-engine/        off-chain policy evaluator (LiteSVM-tested)
+packages/bridge/               USDC -> wSOL (LTC bridge dropped D3')
+apps/dashboard/                Next.js 15 audit + rules editor
+scripts/devnet-demo.sh         one-shot judges can run
+docs/                          architecture, onchain-program, sdk-api,
+                               agent-runtime, venues, control-surface,
+                               audit-and-receipts, testing-plan,
+                               security-model, user-tests,
+                               gtm-and-submission, onboarding, roadmap,
+                               mcp-setup, research/, dimension-map,
+                               oss-precedent
+design-thinking/               5-stage design-thinking pass (assumption mode)
+PM-LOG.md                      single-page PM dashboard
+SPEC.md / GTM.md / SUBMISSION.md
 ```
 
 ## License
