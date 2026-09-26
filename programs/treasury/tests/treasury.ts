@@ -26,6 +26,7 @@ describe("treasury", () => {
         new anchor.BN(10_000_000), // per-day cap: 10 USDC
         new anchor.BN(1_000_000),  // TTL slots
         0,                         // max_leverage_bps (no leverage cap)
+        0,                         // kill_switch_drawdown_pct (disabled)
       )
       .accounts({
         policy: policyPda,
@@ -37,14 +38,17 @@ describe("treasury", () => {
     const policy = await program.account.policy.fetch(policyPda);
     assert.ok(policy.owner.equals(owner.publicKey));
     assert.equal(policy.vendors.length, 1);
+    assert.equal(policy.killSwitchDrawdownPct, 0);
 
-    // Authorize a small spend below cap
+    // Authorize a small spend below cap. peak_equity_usdc=0 so drawdown
+    // check is a no-op; pass implied_current=0 to match.
     await program.methods
       .authorizeSpend(
         vendor.publicKey,
         new anchor.BN(500_000), // 0.5 USDC
         new anchor.BN(1),
         0,                       // leverage_bps
+        new anchor.BN(0),        // implied_current_equity_usdc
       )
       .accounts({
         policy: policyPda,
@@ -72,12 +76,12 @@ describe("treasury", () => {
         new anchor.BN(10_000_000),
         new anchor.BN(1_000_000),
         0,
+        0, // kill_switch_drawdown_pct disabled
       )
       .accounts({ policy: policyPda, agent: agent.publicKey, owner: owner.publicKey })
       .rpc();
 
     // Capture audit events for both calls
-    const listener = (await import("@coral-xyz/anchor")).Event;
     let approvedSeen = false;
     let deniedSeen = false;
 
@@ -87,12 +91,12 @@ describe("treasury", () => {
     });
 
     await program.methods
-      .authorizeSpend(vendor.publicKey, new anchor.BN(500_000), new anchor.BN(1), 0)
+      .authorizeSpend(vendor.publicKey, new anchor.BN(500_000), new anchor.BN(1), 0, new anchor.BN(0))
       .accounts({ policy: policyPda, owner: owner.publicKey })
       .rpc();
 
     await program.methods
-      .authorizeSpend(vendor.publicKey, new anchor.BN(1_500_000), new anchor.BN(2), 0)
+      .authorizeSpend(vendor.publicKey, new anchor.BN(1_500_000), new anchor.BN(2), 0, new anchor.BN(0))
       .accounts({ policy: policyPda, owner: owner.publicKey })
       .rpc();
 
@@ -122,6 +126,7 @@ describe("treasury", () => {
         new anchor.BN(10_000_000),
         new anchor.BN(1_000_000),
         3000, // max_leverage_bps = 3x cap
+        0,    // kill_switch_drawdown_pct disabled
       )
       .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey })
       .rpc();
@@ -136,7 +141,7 @@ describe("treasury", () => {
 
     // leverage_bps=5000 (5x) > cap=3000 (3x) → must emit a denied AuditEvent
     await program.methods
-      .authorizeSpend(vendor.publicKey, new anchor.BN(500_000), new anchor.BN(1), 5000)
+      .authorizeSpend(vendor.publicKey, new anchor.BN(500_000), new anchor.BN(1), 5000, new anchor.BN(0))
       .accounts({ policy: pda, owner: owner.publicKey })
       .rpc();
 
@@ -165,13 +170,14 @@ describe("treasury", () => {
         new anchor.BN(10_000_000),
         new anchor.BN(1_000_000),
         3000, // start at 3x cap
+        0,    // kill_switch_drawdown_pct disabled
       )
       .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey })
       .rpc();
 
     // Update max_leverage_bps to 10000 (100x cap).
     await program.methods
-      .updatePolicy(10000, null, null, null)
+      .updatePolicy(10000, null, null, null, null)
       .accounts({ policy: pda, owner: owner.publicKey })
       .rpc();
 
@@ -187,7 +193,7 @@ describe("treasury", () => {
 
     // leverage_bps=8000 (8x) ≤ new cap=10000 → must approve
     await program.methods
-      .authorizeSpend(vendor.publicKey, new anchor.BN(500_000), new anchor.BN(1), 8000)
+      .authorizeSpend(vendor.publicKey, new anchor.BN(500_000), new anchor.BN(1), 8000, new anchor.BN(0))
       .accounts({ policy: pda, owner: owner.publicKey })
       .rpc();
 
@@ -214,6 +220,7 @@ describe("treasury", () => {
         new anchor.BN(10_000_000),
         new anchor.BN(1_000_000),
         3000,
+        0, // kill_switch_drawdown_pct disabled
       )
       .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey })
       .rpc();
@@ -228,7 +235,7 @@ describe("treasury", () => {
     let threw = false;
     try {
       await program.methods
-        .updatePolicy(10000, null, null, null)
+        .updatePolicy(10000, null, null, null, null)
         .accounts({
           policy: pda,
           owner: nonOwner.publicKey,
@@ -243,6 +250,78 @@ describe("treasury", () => {
     // Confirm policy state did not change.
     const policyAfter = await program.account.policy.fetch(pda);
     assert.equal(policyAfter.maxLeverageBps, 3000);
+  });
+
+  // ---------- D8: drawdown kill-switch tests ----------
+
+  it("trips on-chain kill-switch when implied equity falls below threshold (REASON_DRAWDOWN_KILLSWITCH=7)", async () => {
+    const agent = anchor.web3.Keypair.generate();
+    const vendor = anchor.web3.Keypair.generate();
+
+    const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("policy"), agent.publicKey.toBuffer()],
+      program.programId,
+    );
+
+    // Create with kill_switch_drawdown_pct = 25%.
+    await program.methods
+      .createPolicy(
+        [vendor.publicKey],
+        new anchor.BN(1_000_000),
+        new anchor.BN(10_000_000),
+        new anchor.BN(1_000_000),
+        0,  // max_leverage_bps
+        25, // kill_switch_drawdown_pct = 25%
+      )
+      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey })
+      .rpc();
+
+    // record_pnl: peak_equity_usdc = 1000 (USDC microunits)
+    await program.methods
+      .recordPnl(new anchor.BN(1_000))
+      .accounts({ policy: pda, owner: owner.publicKey })
+      .rpc();
+
+    let killDeniedSeen = false;
+    const sub = program.addEventListener("auditEvent", (ev: any) => {
+      // REASON_DRAWDOWN_KILLSWITCH = 7
+      if (
+        !ev.approved &&
+        ev.reasonCode === 7 &&
+        ev.amountUsdc.toString() === "500000"
+      ) {
+        killDeniedSeen = true;
+      }
+    });
+
+    // threshold = 1000 * (10000 - 2500) / 10000 = 750
+    // implied_current = 700 < 750 → KILL fires.
+    await program.methods
+      .authorizeSpend(
+        vendor.publicKey,
+        new anchor.BN(500_000),  // 0.5 USDC
+        new anchor.BN(1),
+        0,                       // leverage_bps
+        new anchor.BN(700),      // implied_current_equity_usdc = 700 (< 750 threshold)
+      )
+      .accounts({ policy: pda, owner: owner.publicKey })
+      .rpc();
+
+    await new Promise((r) => setTimeout(r, 500));
+    await program.removeEventListener(sub);
+
+    assert.isTrue(
+      killDeniedSeen,
+      "denied AuditEvent with reason_code=7 (REASON_DRAWDOWN_KILLSWITCH) missing — " +
+        "threshold=750 but implied_current=700 should have tripped the kill-switch",
+    );
+
+    // Verify day_spent_usdc was NOT incremented (kill-switch denies before
+    // the existing check ladder, before the day-counter mutation).
+    const policyAfter = await program.account.policy.fetch(pda);
+    assert.equal(policyAfter.daySpentUsdc.toString(), "0");
+    // peak_equity_usdc was set by record_pnl and should remain unchanged.
+    assert.equal(policyAfter.peakEquityUsdc.toString(), "1000");
   });
 });
 
