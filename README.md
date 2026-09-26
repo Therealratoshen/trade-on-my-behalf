@@ -39,6 +39,28 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
 - [ ] D12-D14: weekly 1-min update + pitch (2-3 min) + demo (<=3 min).
 - [ ] D15-D17: polish + submit by Oct 12 11:59pm PT (target D16 EOD).
 
+## Reading paths
+
+If you have **5 minutes** and want the picture:
+
+1. [docs/architecture.md](docs/architecture.md) — system diagram and end-to-end data flow.
+2. [docs/onchain-program.md](docs/onchain-program.md) — the Anchor `Policy` PDA, every instruction, every `AuditEvent` field.
+3. [docs/sdk-api.md](docs/sdk-api.md) — `withTrader(wallet, rules)` plus a copy-pasteable 5-line example.
+
+If you are **a judge** with **15 minutes**, walk this path:
+
+1. [docs/onboarding.md](docs/onboarding.md) — clone to devnet demo in 5 steps.
+2. [docs/architecture.md](docs/architecture.md) — what the product does.
+3. [docs/security-model.md](docs/security-model.md) — why the on-chain gate is the only trust anchor.
+4. [docs/user-tests.md](docs/user-tests.md) — three outside-dev test runs on D10-D11.
+5. [docs/roadmap.md](docs/roadmap.md) — what shipped when.
+
+If you are **a developer** cloning the repo:
+
+- [docs/onboarding.md](docs/onboarding.md) is the canonical entry. Five steps.
+- [docs/sdk-api.md](docs/sdk-api.md) is the API surface; the rest of the docs assume you have read it.
+- [docs/testing-plan.md](docs/testing-plan.md) is the testing pyramid and what to run before submitting a PR.
+
 ## Quickstart
 
 ```bash
@@ -48,7 +70,7 @@ anchor test
 pnpm dev
 ```
 
-See `SPEC.md` once frozen on D3 and `docs/copilot-verdict.md` for the idea's
+See `SPEC.md` for the frozen scope and `docs/copilot-verdict.md` for the idea's
 evidence-backed gap classification.
 
 ## Layout
