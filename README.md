@@ -1,27 +1,31 @@
 # Trade On My Behalf
 
-> Per-agent on-chain policy enforcement for Solana perps. Routes trades
-> through Jupiter Perps and Drift; signs only inside your wallet's rules.
+> An on-chain risk-gated perps agent for time-poor Solana traders.
 
-A end-user perps product where "I trade for you" and "I cannot break your
-rules" are the *same statement*. The Anchor program gates every trade at the
-signing layer, so no signal — RSI, LLM, copy-trade, Telegram — can bypass it.
+I can see a setup in the market — a trend forming, an RSI dipping, a
+news-driven move — and I know what the right trade is. I don't have the
+time to sit in front of charts waiting for it. So I'm building software
+that watches the market for me, executes trades I would have taken, and
+**physically cannot break the rules I set**, because the rules are
+enforced at the wallet's signing layer by an Anchor program.
 
 Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsfair)
 (Solana track).
 
 ## Why this and not another perps bot
 
-- **No end-user product is policy-bound at the wallet layer.** Existing
-  perps bots run as off-chain services; a bad signal or a compromised
-  signal source can blow past your rules. We move the rules **on-chain**
-  so they cannot be circumvented.
-- **The founder is the user.** I'm building this because I want to use it.
-  That's the strongest possible pitch for judges weighing the Business
-  Plan criterion.
-- **Composability.** Trades route through Jupiter Perps, Drift, and Zeta.
-  Signals can come from AgentBazaar. Webhooks via Helius. Every layer is
-  a primitive the hackathon judges already reward.
+- **The pain is mine.** I'm the first user. I can describe setups but
+  cannot watch charts. Existing perps bots solve a different problem:
+  they're 24/7 *signal executors*. None of them lets you write down your
+  own setup, your budget, and your kill-switch, and have those rules
+  enforced at the signing layer.
+- **Rules are enforced on-chain.** No rogue signal source, no exploited
+  dependency, no compromised key wrapping can bypass them. The Anchor
+  program signs or doesn't sign.
+- **Composability.** Trades route through Jupiter Perps (primary) and
+  Drift. Signals can come from AgentBazaar. Webhooks via Helius. Fills,
+  mark prices, liquidations come from indexed events. Every layer is a
+  primitive the hackathon judges reward.
 
 ## Status
 

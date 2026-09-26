@@ -6,16 +6,32 @@
 
 ## Problem (reframed)
 
-Every perps trader on Solana configures a bot. None of those bots are
-*policy-bound at the wallet layer*. They leak: a single bad signal can
-oversize, lever up, hit an off-venue pair, drain the wallet, or trade
-against the user's stated rules while the user sleeps. There is no
-end-user product where "I trade for you" and "I cannot break your rules"
-are the *same statement*.
+I'm a person who can recognize a tradable setup (a trend, a momentum
+shift, a news-driven move), and I know what the right action would be —
+long SOL here, short this pair there, exit now. But I don't have the time
+to sit in front of charts, monitor price action, and pull the trigger at
+the right second. The setup's gone before I get to it, or worse, I miss
+the window and end up chasing.
+
+Existing bots solve a different problem: they run 24/7 and execute
+*whatever signals come in*. They don't care whether the user has a
+recognizable setup pattern in their head. They leak: a single bad signal
+or a compromised signal source oversizes, levers up, hits an off-venue
+pair, drains the wallet, or trades *against* the user's stated rules
+while the user sleeps. There's no end-user product where "I trade for you"
+and "I cannot break your rules" are the *same statement*.
+
+What I want is software that lets me say:
+
+> "When my conditions fire, take *this* trade, with *these* constraints,
+> without me needing to be watching. If a trade would break a rule, don't
+> take it — even if the signal says to."
 
 ## Target user (pivoted)
 
-1. **Retail perps traders** on Solana who want rules-bound automation.
+1. **Me, and people like me.** Time-poor retail traders who can describe
+   setups but cannot watch charts. The product is the founder's pain
+   first; the market is downstream.
 2. **Prop-trading firms / teams** with a wallet-per-strategy setup and
    hard risk limits per strategy.
 3. **Influencer-signal followers** who want copy-trading with hard caps
@@ -23,28 +39,32 @@ are the *same statement*.
 
 ## Top-5 user stories (frozen)
 
-1. As a user, I `pnpm add @trade-on-my-behalf/sdk` and call
-   `withTrader(wallet, rules)`, where `rules` is:
+1. As a user, I write my setup in plain English once
+   ("long SOL when 15m RSI < 30 and 1h trend is up; exit at +3% or -1.5%"),
+   set a budget ("max $200 per trade, max 3 trades a day, kill if down 15%"),
+   and walk away. The trader runs it 24/7. I check the app when I have time.
+2. As a user, I `pnpm add @trade-on-my-behalf/sdk` (or use the dashboard)
+   and configure rules:
    ```ts
    { venues: ['jupiter-perps','drift'],
      maxLeverage: 5,
-     maxPositionUsd: 1000,
-     maxDailyLossUsd: 200,
-     killSwitchDrawdownPct: 20 }
+     maxPositionUsd: 200,
+     maxDailyLossUsd: 60,
+     killSwitchDrawdownPct: 15 }
    ```
-   The trader enforces this **at the signing layer** via the Anchor
-   program; no rogue path can bypass it.
-2. As a user, I tell the agent "long SOL 0.1 at 3x if RSI < 30, exit at
-   +5%, stop at -2%" — and the trader constructs the conditional, routes
-   via Jupiter Perps, signs only if all rules pass.
-3. As an operator, I see a `RiskFlag` event in the dashboard for every
-   denied trade, with the reason code (leverage exceeded, drawdown hit,
-   venue-denied).
-4. As a Telegram/Slack user, I get DM control + alerts without giving
-   anyone my key.
-5. As an auditor, I export every on-chain decision (allowed and
-   denied) with policy inputs, signal source, market state at decision
-   time, and outcome.
+   These rules are enforced **at the signing layer** by the Anchor
+   program; no rogue path can bypass them — including a compromised
+   signal source.
+3. When the trader's signal fires, I get a Telegram DM *before* the trade
+   with the rationale: "Long SOL perp 0.1 at 3x — RSI 27, trend up, $40
+   risk. Tap approve in 60s or it auto-skips." So I stay in control
+   without watching charts.
+4. As an operator, I see a `RiskFlag` event in the dashboard for every
+   denied or skipped trade, with the reason code (leverage exceeded,
+   drawdown hit, venue-denied, expired, kill-switch active).
+5. As an auditor (or myself in retrospect), I export every on-chain
+   decision (allowed and denied) with the policy inputs at decision
+   time, the signal that triggered it, the market state, and the fill.
 
 ## Explicit non-goals (frozen)
 
@@ -85,8 +105,11 @@ are the *same statement*.
 - **Jupiter Perps** as primary venue (`packages/agent/venues/jupiter-perps.ts`).
 - **Drift** as secondary venue (`packages/agent/venues/drift.ts`).
 - **Helius webhooks + DAS** for fills, mark-price, liquidation signals.
-- **AgentBazaar MCP** for an *optional* paid signal marketplace integration.
-- **Phantom Connect** for embedded wallet in dashboard.
+- **AgentBazaar MCP** for an *optional* paid signal marketplace integration
+  (the user can subscribe to a paid signal stream with a daily USDC cap).
+- **Telegram bot** as the primary *control surface* — the user does not
+  want a web dashboard open; wants a phone notification with approve/deny.
+- **Phantom Connect** for embedded wallet in the dashboard fallback.
 - **LiteSVM** for unit tests, **Surfpool** for devnet fork + cheatcodes D10.
 
 ## Repo layout (frozen; renamed)
