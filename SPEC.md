@@ -1,130 +1,154 @@
-# SPEC — Agent Treasury SDK (frozen D3)
+# SPEC — Trade On My Behalf (pivot from Agent Treasury SDK, frozen D3')
 
-> Frozen after D2 Colosseum Copilot Deep Dive. See
-> `docs/copilot-verdict.md` for evidence and gap classification.
+> Pivot effective Sep 26 16:07 PT. Treasury program from D4 becomes the
+> **risk-gate kernel** of the larger product. LTC-bridge dropped (saves D8-D9).
+> Re-validates after next Copilot Deep Dive lands.
 
-## Problem
+## Problem (reframed)
 
-Inside the most crowded cluster in Colosseum's project corpus (v1-c14 "Solana
-AI Agent Infrastructure", 325 projects), 4 recent prize winners already cover:
+Every perps trader on Solana configures a bot. None of those bots are
+*policy-bound at the wallet layer*. They leak: a single bad signal can
+oversize, lever up, hit an off-venue pair, drain the wallet, or trade
+against the user's stated rules while the user sleeps. There is no
+end-user product where "I trade for you" and "I cannot break your rules"
+are the *same statement*.
 
-- **MCPay** (C4 accelerator) — x402 micropayments for MCP tools.
-- **Latinum Agentic Commerce** (Breakout 1st-AI $25K) — payment middleware.
-- **CORBITS.DEV** (Cypherpunk 2nd-Infra $20K) — x402 merchant dashboard.
-- **Mercantill** (Cypherpunk 4th-Stablecoins $10K) — enterprise policy engine
-  + audit log, Squads Grid-based.
+## Target user (pivoted)
 
-None of them is a drop-in SDK that *any agent wallet can call*. None ships a
-Web2 bridge. None emit on-chain anomaly events. None is openly designed to
-*compose* with the others.
-
-## Target user (frozen)
-
-1. **Indie MCP server authors** who already integrate with MCPay or Latinum
-   and need spend controls (the closest seg-needs).
-2. **Agent framework authors** (LangChain, Eliza, OpenAgents) shipping a wallet
-   and needing policy enforcement.
-3. **Single developers / small teams** running agent wallets — too small for
-   Mercantill's enterprise dashboard.
+1. **Retail perps traders** on Solana who want rules-bound automation.
+2. **Prop-trading firms / teams** with a wallet-per-strategy setup and
+   hard risk limits per strategy.
+3. **Influencer-signal followers** who want copy-trading with hard caps
+   ("follow this trader up to $500/day, kill if drawdown > 20%").
 
 ## Top-5 user stories (frozen)
 
-1. As a developer, I `pnpm add @agent-treasury/sdk` and wrap my agent's wallet
-   with `withTreasury(wallet, policy)` in 5 lines of code.
-2. As a developer, I define a policy once:
-   `{ vendors: ["openai","anthropic"], perTxCap: 0.5_USDC, perDayCap: 10_USDC, ttl: 30d }`
-   and every spend is checked on-chain before signing.
-3. As an operator, I call `treasury.audit(agent)` and get a paginated array
-   of on-chain spend events with risk scores.
-4. As an agent, when my goal requires a non-x402 endpoint, the SDK
-   auto-detects, swaps USDC→wSOL→LTC via the bridge package, settles to the
-   merchant, and emits a `BridgeSettled` event.
-5. As an auditor, I subscribe to `RiskFlag` events on devnet/mainnet and see
-   any over-limit or anomalous spend in real time (Helius webhook).
+1. As a user, I `pnpm add @trade-on-my-behalf/sdk` and call
+   `withTrader(wallet, rules)`, where `rules` is:
+   ```ts
+   { venues: ['jupiter-perps','drift'],
+     maxLeverage: 5,
+     maxPositionUsd: 1000,
+     maxDailyLossUsd: 200,
+     killSwitchDrawdownPct: 20 }
+   ```
+   The trader enforces this **at the signing layer** via the Anchor
+   program; no rogue path can bypass it.
+2. As a user, I tell the agent "long SOL 0.1 at 3x if RSI < 30, exit at
+   +5%, stop at -2%" — and the trader constructs the conditional, routes
+   via Jupiter Perps, signs only if all rules pass.
+3. As an operator, I see a `RiskFlag` event in the dashboard for every
+   denied trade, with the reason code (leverage exceeded, drawdown hit,
+   venue-denied).
+4. As a Telegram/Slack user, I get DM control + alerts without giving
+   anyone my key.
+5. As an auditor, I export every on-chain decision (allowed and
+   denied) with policy inputs, signal source, market state at decision
+   time, and outcome.
 
 ## Explicit non-goals (frozen)
 
-- Enterprise dashboard UI. Out of scope.
-- Our own payment rail. Compose with MCPay, Latinum, CORBITS.
-- KYC/AML. Out of scope.
-- Agent identity / reputation engine. Compose with AgentBazaar.
-- Credit lines (Amex-for-agents). Out of scope for 17 days.
-- Multi-chain. Solana only.
-
-## Tech stack (frozen)
-
-- Anchor **0.31.1** for the policy program (already installed).
-- `@solana/kit` (web3.js v3) + `@solana/react` for client.
-- Helius RPC + webhooks + DAS via `/helius:build` skill.
-- AgentBazaar MCP for agent identity + x402.
-- Jupiter for USDC → wSOL via `/helius:jupiter` skill.
-- Phantom Connect for embedded wallet via `/helius:phantom` skill.
-- LiteSVM for unit tests (per Solana dev skill testing pyramid).
-- Surfpool for devnet fork + cheatcodes (D10).
-- LTC bridge: TBD on D8 from `{SideShift, Trocador, ChangeNow}`.
+- No credit lines.
+- No multi-chain. Solana only.
+- No LTC bridge (pivot dropped it). Track purity wins.
+- No mobile-first design.
+- No AI signal generation v1 — we route human/strategy signals through
+  the agent. LLM-driven signals are a v2 extension.
 
 ## Architecture diagram
 
 ```
-+------------------+   +--------------------+   +-----------------+
-| MCPay/Latinum/   |-->|  @agent-treasury/  |-->|  USDC transfer  |
-| CORBITS/Custom   |   |  sdk (5-line wrap) |   |  on Solana      |
-+------------------+   +--------------------+   +-----------------+
-                                |
-                                v
-                       +----------------+        +----------------+
-                       | Anchor treasury|        | Helius webhook |
-                       | program        |<------>| RiskFlag       |
-                       +----------------+        +----------------+
-                                |
-                       (over-limit or non-x402)
-                                v
-                       +----------------+        +----------------+
-                       | Bridge package |------->| SideShift /    |
-                       | USDC->wSOL->LTC|        | Trocador (TBD) |
-                       +----------------+        +----------------+
++-----------------------+        +-----------------+        +-------------------+
+| User intent           | -----> | Trade O.M.B     | -----> | Anchor treasury   |
+| (signal: RSI, P&L,    |        | agent runtime   |        | (policy gate)     |
+|  conditional, manual) |        | packages/agent/ |        | programs/treasury |
++-----------------------+        +-----------------+        +-------------------+
+                                                                       |
+                                            (approved only)             v
+                                                              +-------------------+
+                                                              | Jupiter Perps /   |
+                                                              | Drift / Zeta      |
+                                                              | (venue router)    |
+                                                              +-------------------+
+                                                                       |
+                                            (signal events)            v
+                                                              +-------------------+
+                                                              | apps/dashboard    |
+                                                              | (audit + rules)   |
+                                                              +-------------------+
 ```
 
-## Repository layout (frozen)
+## Tech stack (frozen)
+
+- Anchor **0.31.1** — treasury program (already compiling, D4).
+- `@solana/kit` + `@solana/react` for the SDK + dashboard client.
+- **Jupiter Perps** as primary venue (`packages/agent/venues/jupiter-perps.ts`).
+- **Drift** as secondary venue (`packages/agent/venues/drift.ts`).
+- **Helius webhooks + DAS** for fills, mark-price, liquidation signals.
+- **AgentBazaar MCP** for an *optional* paid signal marketplace integration.
+- **Phantom Connect** for embedded wallet in dashboard.
+- **LiteSVM** for unit tests, **Surfpool** for devnet fork + cheatcodes D10.
+
+## Repo layout (frozen; renamed)
 
 ```
-programs/treasury/             Anchor program: spend authorization + audit events
-packages/sdk/                  npm package: 5-line `withTreasury` wrapper
-packages/agent/                x402 + AgentBazaar client (composes, doesn't own)
-packages/policy-engine/        off-chain policy evaluator (LiteSVM-tested)
-packages/bridge/               USDC -> wSOL -> LTC bridge (provider TBD D8)
-apps/dashboard/                Next.js 15 minimal audit viewer (not enterprise)
+programs/treasury/             Anchor program: per-agent policy engine (DONE D4)
+packages/sdk/                  @trade-on-my-behalf/sdk: 5-line `withTrader` wrap
+packages/agent/                trader runtime: signal handlers, venue router
+packages/policy-engine/        off-chain evaluator (LiteSVM-tested)
+packages/venues/               per-venue adapters (jupiter-perps, drift, zeta)
+apps/dashboard/                Next.js 15 audit + rules editor
 scripts/devnet-demo.sh         one-shot judges run cold
-docs/                          architecture, copilot-verdict, user-tests, ltc-settlement
+docs/                          architecture, user-tests, venue-comparison
 ```
 
-## Integration adapters (D6-D7)
+## Adapter surface (frozen; 1 file per venue)
 
-Each a thin file in `packages/sdk/src/integrations/`:
+```ts
+// packages/venues/jupiter-perps.ts
+export interface Venue {
+  name: string;
+  openPosition(p: { side:'long'|'short', sizeUsd:number, lev:number, market:string }): Promise<TxSig>;
+  closePosition(id:string): Promise<TxSig>;
+  listPositions(): Promise<Position[]>;
+}
+```
 
-- `mc-pay.ts` — wraps MCPay payments with a policy check before signing.
-- `latinum.ts` — same for Latinum Agentic Commerce.
-- `corbits.ts` — same for CORBITS.DEV reverse-proxy.
-- `phantom.ts` — for raw Phantom-walleted agents.
-- `agent-bazaar.ts` — registers the wallet + policy with AgentBazaar.
+## Iteration cadence
 
-## Iteration cadence (composability principle)
+Weekly 1-min update videos:
+- D11 — SDK ships + first Jupiter Perps test trade through policy gate.
+- D14 — Drift adapter wired, drawdown kill-switch demo.
+- D16 — Three outside-dev user tests + final cut.
 
-Every Monday after D7: a 1-min update video showing one new integration or one
-new anomaly rule. By D15 that's 3 updates posted — judges see momentum.
+## Risk gates (re-used directly from D4 treasury program)
 
-## Open questions (resolve D4-D8)
+| Gate | Source field |
+|---|---|
+| Venue whitelist | `policy.vendors` |
+| Per-trade size cap | `policy.per_tx_cap_usdc` |
+| Per-day loss cap | `policy.per_day_cap_usdc` + decrement on adverse fills |
+| TTL on policies | `policy.ttl_slots` |
+| Audit event on every decision | `AuditEvent` in state |
 
-- D4: Anchor program storage strategy. Per-(agent, vendor) PDA vs per-tag?
-- D6: How to integrate with MCPay without forking — interceptor vs proxy?
-- D8: LTC bridge provider by fee/UX/country availability.
-- D10: Anomaly model. Z-score on per-vendor spend? Time-of-day pattern?
+**To add for perps:**
+- Leverage cap (need a `max_leverage_bps` u16 field on Policy).
+- Drawdown kill-switch (a daily-spend vs peak-equity check; may need
+  an off-chain indexer feeding `treasury.drawdown_reset`).
 
-## Out of scope deferred notes (for accelerator pitch post-hackathon)
+## Open questions (resolve D5-D9)
 
-- A risk-scoring model trained on on-chain spend history (agent credit).
-- A credit line against accumulated on-chain reputation (Amex layer).
-- Dashboards for fleets (enterprise).
+- D5: Should leverage cap live in the Anchor program or be enforced off-chain?
+- D6: How does the trader fund its treasury PDA — user transfer pre-trade?
+- D7: Insurance fund exposure on Kill-Switch vs liquidation delay.
+- D9: Telegram/Slack control surface — open-source bot vs Paywalled via AgentBazaar?
+
+## Removed (from prior pivot, no longer applicable)
+
+- LTC bridge package.
+- USDC -> wSOL swap path inside program.
+- Web2 non-x402 fallback.
 
 ---
-Updated D3-frozen by Copilot Deep Dive.
+Updated D3'-pivot. Awaiting Copilot Deep Dive on perps agents to confirm
+wedge before code resumes.

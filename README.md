@@ -1,37 +1,39 @@
-# Agent Treasury SDK
+# Trade On My Behalf
 
-> Drop-in on-chain spending policies for AI agent wallets on Solana.
-> Composes with MCPay, Latinum, and CORBITS.DEV.
+> Per-agent on-chain policy enforcement for Solana perps. Routes trades
+> through Jupiter Perps and Drift; signs only inside your wallet's rules.
 
-Agent Treasury is an open-source SDK + Anchor program that lets any agent
-wallet opt in to programmable, on-chain-enforced spending rules: vendor
-whitelists, per-tx caps, per-day budgets, time-bounded limits, and a public
-`RiskFlag` event stream. It also ships a USDC→wSOL→Litecoin bridge for
-non-x402 endpoints — the only Web2 bridge in cluster v1-c14.
+A end-user perps product where "I trade for you" and "I cannot break your
+rules" are the *same statement*. The Anchor program gates every trade at the
+signing layer, so no signal — RSI, LLM, copy-trade, Telegram — can bypass it.
 
 Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsfair)
 (Solana track).
 
-## Why this and not another agent wallet
+## Why this and not another perps bot
 
-Per [Colosseum Copilot Deep Dive](../docs/copilot-verdict.md):
-
-- The cluster is the densest in Solana (v1-c14, 325 projects).
-- MCPay, Latinum, CORBITS.DEV, and Mercantill already won prizes on adjacent
-  theses. We don't compete with them — we **compose with them**.
-- Our wedge: open-source SDK + on-chain anomaly events + the only USDC→LTC
-  Web2 bridge inside v1-c14.
+- **No end-user product is policy-bound at the wallet layer.** Existing
+  perps bots run as off-chain services; a bad signal or a compromised
+  signal source can blow past your rules. We move the rules **on-chain**
+  so they cannot be circumvented.
+- **The founder is the user.** I'm building this because I want to use it.
+  That's the strongest possible pitch for judges weighing the Business
+  Plan criterion.
+- **Composability.** Trades route through Jupiter Perps, Drift, and Zeta.
+  Signals can come from AgentBazaar. Webhooks via Helius. Every layer is
+  a primitive the hackathon judges already reward.
 
 ## Status
 
-- [x] D1: scaffolding + skills installed (Colosseum Copilot v1.2.1, Solana dev, Helius {build,jupiter,phantom,svm})
-- [x] D2: **Copilot Deep Dive verdict written** — see [`docs/copilot-verdict.md`](docs/copilot-verdict.md). Verdict: PIVOT to SDK+composition wedge.
-- [x] D3: **SPEC frozen** — see [`SPEC.md`](SPEC.md).
-- [ ] D4-D7: Anchor program + Next.js audit viewer + Helius webhook + adapters for MCPay/Latinum/CORBITS
-- [ ] D8-D9: USDC -> wSOL -> LTC bridge
-- [ ] D10-D11: tests + 3 outside-dev user tests
-- [ ] D12-D14: videos
-- [ ] D15-D17: submit by Oct 12 11:59pm PT (target D16 EOD)
+- [x] D1: scaffolding + skills installed (Copilot v1.2.1, Solana dev, Helius {build,jupiter,phantom,svm})
+- [x] D2: Copilot Deep Dive verdict — see [docs/copilot-verdict.md](docs/copilot-verdict.md)
+- [x] D3': **Pivot** — see [SPEC.md](SPEC.md). Now "Trade On My Behalf" (perps agent with on-chain policy gates). Treasury program from D4 becomes the risk-gate kernel.
+- [x] D4: Anchor `treasury` program compiles (203KB .so, IDL generated). D4 logic stays; D5+ extends with leverage cap + drawdown kill.
+- [ ] D5: Rotate Copilot PAT, re-run Deep Dive on perps-agent wedge. **Pending your new PAT.**
+- [ ] D6-D9: SDK + agent runtime + venue adapters (Jupiter Perps primary, Drift secondary).
+- [ ] D10-D11: Surfpool integration + 3 outside-dev user tests.
+- [ ] D12-D14: weekly 1-min update + pitch (2-3 min) + demo (<=3 min).
+- [ ] D15-D17: polish + submit by Oct 12 11:59pm PT (target D16 EOD).
 
 ## Quickstart
 
