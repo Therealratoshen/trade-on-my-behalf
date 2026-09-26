@@ -178,6 +178,9 @@ Weekly 1-min update videos:
 - D6: How does the trader fund its treasury PDA — user transfer pre-trade?
 - D7: Insurance fund exposure on Kill-Switch vs liquidation delay.
 - D9: Telegram/Slack control surface — open-source bot vs Paywalled via AgentBazaar?
+- **D10+:** Add **tighten-timelock** to `update_policy` so a stolen `owner` key cannot loosen caps within the policy's TTL window. The current `update_policy` accepts loosening — flagged in `docs/security-model.md` §"Scenario 1".
+- **D10+:** Add **CPI-wrapper or PDA-bound memo** so `authorize_spend` becomes the *authoritative* enforcer of "venue CPI actually targets the whitelisted program." Current defense is SDK-trust — flagged in `docs/security-model.md` §"Scenario 4".
+- **D10+:** Document "what kills an open position" — venue liquidation only; the on-chain gate does not see venue-side state. Flagged in `docs/security-model.md` §"Scenario 2".
 
 ## Removed (from prior pivot, no longer applicable)
 
