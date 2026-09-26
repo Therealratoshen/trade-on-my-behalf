@@ -81,13 +81,14 @@ describe("treasury", () => {
       .accounts({ policy: policyPda, agent: agent.publicKey, owner: owner.publicKey })
       .rpc();
 
-    // Capture audit events for both calls
+    // Capture audit events for both calls.
     let approvedSeen = false;
     let deniedSeen = false;
 
     const sub = program.addEventListener("auditEvent", (ev: any) => {
       if (ev.approved && ev.amountUsdc.toString() === "500000") approvedSeen = true;
-      if (!ev.approved && ev.reasonCode === 3 && ev.amountUsdc.toString() === "1500000") deniedSeen = true;
+      // REASON_PER_TX_CAP = 2 (not 3; 3 is REASON_DAILY_CAP).
+      if (!ev.approved && ev.reasonCode === 2 && ev.amountUsdc.toString() === "1500000") deniedSeen = true;
     });
 
     await program.methods
@@ -100,12 +101,18 @@ describe("treasury", () => {
       .accounts({ policy: policyPda, owner: owner.publicKey })
       .rpc();
 
-    // Give the listener a tick
-    await new Promise((r) => setTimeout(r, 500));
+    // Give the listener a tick to surface the events.
+    await new Promise((r) => setTimeout(r, 1500));
     await program.removeEventListener(sub);
 
     assert.isTrue(approvedSeen, "approve event missing");
-    assert.isTrue(deniedSeen, "deny event missing (reason_code=3 = REASON_PER_TX_CAP)");
+    assert.isTrue(deniedSeen, "deny event missing (reason_code=2 = REASON_PER_TX_CAP)");
+
+    // day_spent_usdc must reflect only the approved 500_000 spend; the
+    // 1_500_000 attempt must NOT have mutated state.
+    const policyAfter = await program.account.policy.fetch(policyPda);
+    assert.equal(policyAfter.daySpentUsdc.toString(), "500000",
+      "day_spent_usdc was mutated by the rejected over-cap spend");
   });
 
   // ---------- D7: leverage cap + UpdatePolicy tests ----------
