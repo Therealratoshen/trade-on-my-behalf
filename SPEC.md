@@ -185,6 +185,29 @@ Scanned for adjacent projects on D3''' (Sep 26). Confirmed:
   Could become a *receipt layer* downstream (D14-D17 stretch) but is
   not a competitor for our wedge.
 
+## Perps-agent deep dive (D5 gating artifact — PENDING)
+
+D5 was scheduled to run a Copilot Deep Dive on the perps-agent wedge to
+validate (or invalidate) the build direction before code resumes. The
+script is staged at `scripts/research/perps-deepsafe.sh` (run via
+`bash scripts/research/perps-deepsafe.sh`); it does single-call retries
+with exponential backoff to avoid tripping the edge auth flap.
+
+Findings will be appended here once auth resolves. Until then, the
+build proceeds on prior evidence:
+
+- Cluster **v1-c9 "Solana DEX and Trading Infrastructure"** has 323
+  projects in the corpus; the *agent-personal-trading* sub-cluster is
+  not visible in top-3 of any winners filter from earlier searches.
+- **Mercantill** (cypherpunk 2025-09, 4th Stablecoins) is the closest
+  prior-art for a *policy-gated agent wallet*; not a perps venue.
+- **MCPay** (cypherpunk 2025-09, 1st Stablecoins, x402 on MCP tools)
+  is the closest analog for *agent-pay-on-behalf*; not perps venues.
+
+If the D5 Deep Dive finds a *direct perps-agent personal product*
+winner in the corpus, the SPEC pivots further. If not, we ship as
+written.
+
 ## Top-5 user stories (frozen)
 
 (The stories and tech stack above are still the source of truth; not
