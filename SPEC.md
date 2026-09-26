@@ -172,6 +172,25 @@ Weekly 1-min update videos:
 - USDC -> wSOL swap path inside program.
 - Web2 non-x402 fallback.
 
+## Adjacent protocol scan (D3''')
+
+Scanned for adjacent projects on D3''' (Sep 26). Confirmed:
+
+- **Pieverse (PIEVERSE)** — real Solana SPL token; live on CoinMarketCap,
+  CoinGecko, Phantom, Solflare, Kraken, OKX. Web3 payment infrastructure
+  with on-chain legal receipts via x402b protocol; chat-agent surface on
+  WhatsApp/LINE/Kakao. *Does not solve the same pain:* Pieverse watches
+  *transactions* not market price action, doesn't target perps venues,
+  and its compliance layer records rather than prevents bad trades.
+  Could become a *receipt layer* downstream (D14-D17 stretch) but is
+  not a competitor for our wedge.
+
+## Top-5 user stories (frozen)
+
+(The stories and tech stack above are still the source of truth; not
+duplicated here.)
+
 ---
 Updated D3'-pivot. Awaiting Copilot Deep Dive on perps agents to confirm
-wedge before code resumes.
+wedge before code resumes. D3''' adds Pieverse adjacencies without
+changing the wedge.
