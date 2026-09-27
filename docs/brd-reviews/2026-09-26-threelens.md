@@ -3,6 +3,14 @@
 > Verbatim capture of a three-lens code review done by the user on
 > D6/D7 boundary. Persisted so the open issues can be tracked and
 > the security claim stays honest.
+>
+> **Delta since this review (D8.5+):** the v1 control surface was
+> **Telegram bot** at the time of this review; it has since been
+> **superseded by a webapp** (Phantom Connect or Trust Wallet + Next.js
+> viewer + rule editor). See `docs/control-surface.md` for the current
+> design. Telegram bot moved to v3, never. The 60-second timeout
+> anxiety risk flagged in this review is now moot. Wedge verdict
+> (PARTIAL GAP in v1-c9) still holds.
 
 ## Lens 1 — judge
 

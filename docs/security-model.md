@@ -20,7 +20,7 @@ this and think "wait, what about X?", that is a gap we want named.
 | **Anchor treasury program** | Every rule evaluation. The only code that can move the wallet through `authorize_spend`. | Would require program upgrade + governance capture. Not realistic for a single hackathon project; mitigated by shipping the program as verified source + reproducible IDL. |
 | **Solana runtime** | Transaction ordering, slot time, PDA derivation. | Out of scope; if Solana runtime is compromised, every Solana dapp is compromised. |
 | **User's signer** | Holds the key that signs `create_policy`, `authorize_spend`, and venue CPIs. | Loss of key = loss of wallet. Standard. The product never sees the key. |
-| **Telegram bot runtime** | Holds the binding token (`HMAC(chat_id, pubkey, nonce)`). | Can lie to the user about what trades will happen. Cannot sign anything. Cannot trigger a trade. |
+| **Webapp frontend (`apps/dashboard`)** | Holds the user's wallet connection (read-only; signing delegated to Phantom Connect / Trust Wallet). | Can display fake data to the user (e.g. hide an `AuditEvent` they should see). Cannot move funds, cannot trigger trades, cannot change rules (those require wallet-signed instructions). |
 
 ## Threat scenarios and the layer that defends
 
@@ -170,8 +170,8 @@ runtime never has the choice.
 
 ### Scenario 3 — Rogue signal source
 
-**Failure mode.** A Telegram channel, RSS feed, copy-trade
-influencer, or AgentBazaar signal stream pushes an intent that
+**Failure mode.** A malicious webhook, RSS feed, copy-trade
+influencer, or rogue specialist-skill output pushes an intent that
 would breach the user's policy (50x leverage on SOL-PERP when
 the cap is 3x, vendor X when the whitelist is Y, etc.). The
 signal source has **no signing authority** — it can only emit
@@ -367,7 +367,8 @@ deterministic, open-source, compiled to a verifiable artifact, and
 the only way a spend gets the user's signature is by passing the
 program's checks. Every other layer is replaceable. The signal
 source can be swapped, the venue can be swapped, the runtime can
-be rebuilt, and the Telegram bot can be re-bound — but the program
+be rebuilt, and the user can reconnect their wallet to a fresh
+webapp deploy — but the program
 stays, and as long as it stays correct, the user's rules stay
 enforced.
 

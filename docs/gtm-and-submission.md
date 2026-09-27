@@ -98,14 +98,22 @@ Format: unlisted YouTube, recorded on D13. Slide budget: 8 slides.
 
 | Slide | Title | Body |
 |---|---|---|
-| 1 | "Trade On My Behalf." | One-liner. |
+| 1 | "Trade On My Behalf." | One-liner: *"I cannot break your rules — within the as-stored caps."* |
 | 2 | "I'm the user." | Founder persona. Time-poor, recognizes setups, can't watch charts. |
 | 3 | "Existing bots solve the wrong problem." | 24/7 signal executors. They run whatever signals come in. They don't know the user's *own* rules. |
 | 4 | "What I want is one sentence." | "When my conditions fire, take *this* trade, with *these* constraints. If a trade would break a rule, don't take it — even if the signal says to." |
-| 5 | "The rules are on-chain." | Anchor program + Policy PDA + AuditEvent. Diagram from docs/architecture.md. |
-| 6 | "I approve on my phone." | Telegram DM, 60 s window, approve / deny buttons. Bot doesn't hold keys. |
-| 7 | "Two precedents, neither solves it." | Infty.trade (AI venue, not personal client). Armor Wallet (AI agent, no perps, no policy). TG bots (no policy layer). |
+| 5 | "The rules are on-chain." | Anchor program + Policy PDA + AuditEvent. Diagram from [docs/architecture.md](architecture.md). |
+| 6 | "The rule fires while I sleep." | Webapp audit-log row lights up red within 2 s. No human approve/deny button — the kernel decides. |
+| 7 | "Two precedents, neither solves it." | Infty.trade (AI venue, not personal client). Armor Wallet (AI agent, no perps, no policy). Competitor TG/chat bots (no policy layer). |
 | 8 | "DEMO (link). Submit by Oct 12." | |
+
+**Honest security framing in the pitch:** the on-screen headline
+on slides 1, 5, 6 reads *"I cannot break your rules — within the
+as-stored caps."* The qualifier is load-bearing and short enough to
+stay on the slide. The full honest read — including the two carve-
+outs (stolen-key loosening, hostile-venue CPI) — lives in
+[docs/security-model.md](security-model.md) and is referenced on
+slide 5 via QR-style link to the doc, not in the spoken pitch.
 
 Each slide is <40 words. Each title is the takeaway in 4-6 words.
 The deck is readable in 15 seconds per slide.
@@ -118,12 +126,19 @@ Format: unlisted YouTube, recorded on D14. Two-screen capture:
    --provider.cluster devnet && pnpm --filter @trade-on-my-behalf/agent dev`.
    Founder narrates over the screen.
 2. **Live trade** (90 s): paste a `TradeIntent`, watch the runtime
-   evaluate it, see the Telegram DM land on phone, tap Approve,
-   show the `AuditEvent` confirm on the dashboard, show the venue
-   position open on Solana Explorer.
+   evaluate it, see the webapp's audit-log row light up red (deny)
+   or green (approve) within 2 s, show the venue position open on
+   Solana Explorer.
 3. **Deny + audit** (30 s): paste an over-leverage intent, watch
-   the runtime deny off-chain, see the `AuditEventView(approved:
-   false, reasonCode: 6)` row land on the dashboard.
+   the kernel deny on-chain, see the `AuditEvent { approved: false,
+   reason_code: 6 }` row land on the dashboard. Solscan link visible
+   for the receipt.
+
+**Receipt-backed proof:** every claim in the demo video is paired
+with a Solscan-verifiable receipt in [docs/demo-receipts.md](demo-receipts.md).
+The receipts are filled D10–D14. Until they land, the demo video
+records against placeholder state and is re-cut once real
+transactions are available.
 
 Both videos are uploaded as **unlisted** YouTube. The submission
 form gets the share URL, not the public URL.

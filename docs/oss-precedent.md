@@ -23,6 +23,11 @@ where possible. No file modification.
 
 ## Bucket 2 — TG bot × perps (15 hits)
 
+*(Historical bucket. Captured when our v1 control surface was a
+Telegram bot. The wedge has since pivoted to a webapp — see
+`docs/control-surface.md`. The competitive landscape for *other*
+projects' TG bots still holds; this bucket documents that.)*
+
 - Heavy on TG bots (`dex-sentinel`, `pot-bot-1/2`, `kiwi`, `helix`,
   `jumpa-bot`, `solbet`) but **none target a perps venue** —
   DEX / LP / copy-trade only.

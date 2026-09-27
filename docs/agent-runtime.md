@@ -1,17 +1,18 @@
 # Agent Runtime — `packages/agent`
 
-> Frozen for D6. The agent runtime is the long-running process that
-> listens for signals, evaluates them against rules, routes through
-> the venue adapter, and surfaces decisions to the user via Telegram
-> and the dashboard.
+> Frozen for D6. Updated D8.5+ to webapp-first control surface.
+> The agent runtime is the long-running process that listens for
+> signals, evaluates them against rules, routes through the venue
+> adapter, and surfaces decisions to the user via the webapp
+> (`apps/dashboard/`).
 
 ## What it does
 
 The runtime turns the SDK into a product. A developer who installs
 `@trade-on-my-behalf/sdk` gets a `TradeAPI` and calls it; a user who
-wants a 24/7 trader installs the runtime, points it at their wallet,
-and gets a Telegram bot, a dashboard, and a Telegram-driven
-approve/deny loop on top.
+wants a 24/7 trader installs the runtime + the webapp, points it at
+their wallet, and gets a wallet-connected viewer + rule editor +
+an on-chain audit log on top.
 
 The runtime is intentionally thin. The Anchor program is the gate;
 the SDK is the ergonomic wrapper; the runtime is the glue.
@@ -25,31 +26,19 @@ sequenceDiagram
     participant Eval as Policy evaluator (off-chain mirror)
     participant Anchor as Anchor treasury
     participant Venue as Venue adapter
-    participant TG as Telegram bot
-    participant Dash as Audit viewer
+    participant Web as Webapp (apps/dashboard)
+    participant Helius as Helius DAS index
 
     Signal->>Runtime: Signal (market, side, size, lev, rationale)
     Runtime->>Eval: rules + intent
     Eval-->>Runtime: pass | deny(reasonCode)
-    alt deny
-        Runtime->>TG: skipped DM (rationale + reason)
-        Runtime->>Dash: AuditEventView (approved:false)
-    else pass
-        Runtime->>TG: approve/deny DM (60 s window)
-        alt user deny or timeout
-            Runtime->>Dash: AuditEventView (approved:false, reason:timeout|denied)
-        else user approve
-            Runtime->>Anchor: authorize_spend(vendor, size, nonce)
-            Anchor-->>Runtime: AuditEvent (on-chain)
-            alt on-chain deny
-                Runtime->>Dash: AuditEventView (deny, reason from chain)
-            else on-chain approve
-                Runtime->>Venue: openPosition(intent)
-                Venue-->>Runtime: Fill
-                Runtime->>Dash: Fill + AuditEventView
-            end
-        end
-    end
+    Runtime->>Anchor: authorize_spend(vendor, size, nonce, leverage_bps, implied_equity)
+    Anchor-->>Runtime: AuditEvent (on-chain) — REASON_OK or one of REASON_*
+    Runtime->>Venue: openPosition(intent) (only if APPROVE)
+    Venue-->>Runtime: Fill
+    Runtime->>Helius: emit fills / mark prices via webhook
+    Helius-->>Web: indexed AuditEvent (within ~2 s of slot confirmation)
+    Web->>User: red row in audit log panel (if deny) or position row (if approve)
 ```
 
 ## Module map (sketch)
@@ -57,11 +46,15 @@ sequenceDiagram
 ```text
 packages/agent/
 ├── src/
-│   ├── index.ts                # boot: load wallet, rules, venues, telegram
+│   ├── index.ts                # boot: load wallet, rules, venues
 │   ├── signals/
 │   │   ├── helius.ts           # webhook receiver: mark price, funding, liquidations
-│   │   ├── agentbazaar.ts      # MCP client for paid signals
-│   │   ├── manual.ts           # Telegram slash-command (e.g. /long SOL 0.1 3x)
+│   │   ├── skill-runner.ts     # Specialist's skill code (private, not vendored)
+│   │   ├── samplers/
+│   │   │   ├── helius.ts       # webhook receiver: mark price, funding, liquidations
+│   │   │   ├── rsi.ts          # RSI calculation sampler
+│   │   │   └── funding.ts      # funding rate sampler
+│   │   └── manual.ts           # local CLI signal trigger
 │   │   └── copytrade.ts        # follower relay
 │   ├── classifier.ts           # normalizes raw Signal -> TradeIntent
 │   ├── evaluator.ts            # off-chain mirror of authorize_spend rules
@@ -69,16 +62,18 @@ packages/agent/
 │   ├── venue/
 │   │   ├── index.ts            # Venue interface
 │   │   ├── jupiter-perps.ts    # primary adapter
-│   │   ├── drift.ts            # secondary adapter
-│   │   └── zeta.ts             # stretch (D14)
-│   ├── telegram/
-│   │   ├── bot.ts              # bot father wiring
-│   │   ├── bind.ts             # wallet binding flow
-│   │   └── notify.ts           # DM templates, approve/deny buttons
-│   └── audit/
-│       ├── log.ts              # in-memory mirror of AuditEvent stream
-│       └── http.ts             # local push to apps/dashboard
+│   │   ├── drift.ts            # secondary adapter (v2)
+│   │   └── zeta.ts             # stretch (v3)
+│   ├── audit/
+│   │   ├── log.ts              # in-memory mirror of AuditEvent stream
+│   │   └── http.ts             # local push to apps/dashboard (webapp reads)
+│   └── webapp-bridge/          # webhook receiver for apps/dashboard (SWR source)
+│       └── serve.ts            # localhost:3000/api/audit tail
 ```
+
+`apps/dashboard/` is the Next.js 15 webapp — read-only viewer +
+rule editor. It does NOT live under `packages/agent/` because
+it's a separate runtime with its own deploy target (Vercel).
 
 ## Venue interface
 
@@ -135,15 +130,19 @@ If `intent.sizeUsd < 1` after clamping, the signal is dropped silently.
 
 ## Concurrency model
 
-- One async loop per signal source (`helius.ts`, `agentbazaar.ts`, etc.).
+- One async loop per sampler (`helius.ts`, `rsi.ts`, `funding.ts`, etc.).
+  Each feeds typed events into the skill runner. The skill produces
+  intents; the runtime calls `authorize_spend`.
   Each pushes typed `Signal`s into a shared `Channel<TradeIntent>`.
 - A single consumer (`router.ts`) reads from the channel, calls
   `evaluator.ts`, and forwards approved intents to the venue.
-- Telegram approve/deny is awaited with a 60 s `Promise.race` against
-  the user click. On timeout the intent is dropped and a
-  `AuditEventView(approved:false, reasonCode: 99 /* timeout */)` is
-  emitted. (Reason 99 is runtime-local; the on-chain `REASON_*` set
-  is reserved 0..5 today, 0..7 after D7.)
+- **No human approve/deny.** The kernel decides. The runtime
+  submits `authorize_spend` for every intent; the chain returns
+  `AuditEvent { approved, reasonCode, ... }`. The webapp picks up
+  the event via Helius DAS index and renders the red/green row
+  within ~2 s. There is no 60-second timeout because the user is
+  not in the loop. (Telegram-DM approve/deny with 60s `Promise.race`
+  was the v2 control-surface design; superseded D8.5+.)
 
 ## Rule evaluation order (mirrors on-chain)
 
@@ -176,7 +175,7 @@ import { solanaDevnetRpc } from '@solana/kit-plugin-rpc';
 import { signerFromFile } from '@solana/kit-plugin-signer';
 import { loadRules } from './rules';
 import { bindVenues } from './venue';
-import { bindTelegram } from './telegram/bind';
+import { startAuditBridge } from './webapp-bridge/serve';
 import { startSignalLoops } from './signals';
 
 export async function boot(opts: { keyfile: string; rulesFile: string; rpcUrl?: string }) {
@@ -186,11 +185,16 @@ export async function boot(opts: { keyfile: string; rulesFile: string; rpcUrl?: 
     .use(solanaDevnetRpc(opts.rpcUrl));
   const rules = await loadRules(opts.rulesFile);
   const venues = await bindVenues(rules.venues, client);
-  const tg = await bindTelegram(wallet);
-  await startSignalLoops(client, rules, venues, tg);
+  // Tail AuditEvent stream to the webapp via localhost SSE.
+  // Webapp itself reads on-chain state via Phantom Connect; this is
+  // a low-latency push for the red-row moment.
+  startAuditBridge(client, rules);
+  await startSignalLoops(client, rules, venues);
 }
 ```
 
 `pnpm --filter @trade-on-my-behalf/agent dev` boots locally with a
-devnet keyfile. The same code path runs in production against mainnet
+devnet keyfile. The webapp runs separately via
+`pnpm --filter @trade-on-my-behalf/dashboard dev` on Vercel in
+production. The same code path runs in production against mainnet
 by swapping the RPC plugin.

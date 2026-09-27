@@ -9,7 +9,7 @@
 | --- | --- | --- | --- |
 | **Solana MCP** (official) | Docs + Anchor + Stack Exchange Q&A in-IDE | none | Asking "what is rent on Solana?" returns cited answer |
 | **Helius MCP** | RPC, webhooks, DAS | `HELIUS_API_KEY` (free tier at dashboard.helius.dev) | Query `getAccountInfo` on a public devnet key |
-| **AgentBazaar MCP** | x402, register/hire agents | USDC wallet on devnet (sign at colosseum.com) | `search_agents` returns list |
+| ~~**AgentBazaar MCP**~~ | dropped v1 (D8.5+); "specialist skill marketplace" deferred to v3 | — | — |
 | **Jupiter MCP** | Swap routing | `JUPITER_API_KEY` (free at portal.jup.ag) | `getQuote(USDC->SOL)` returns a route |
 | **Phantom Connect MCP** | Embedded wallets | Phantom Portal account | Dashboard logs in |
 
@@ -32,5 +32,5 @@ guessing would break the install. The reliable path is:
 - [ ] Add `HELIUS_API_KEY` (helius.dev dashboard).
 - [ ] Add `JUPITER_API_KEY` (portal.jup.ag).
 - [ ] Add Cursor MCP entries via Settings UI, not by hand.
-- [ ] Generate an AgentBazaar devnet wallet (colosseum.com/agentbazaar).
+- [ ] ~~Generate an AgentBazaar devnet wallet~~ — dropped D8.5+.
 - [ ] Register team on colosseum.com/worldsfair (claim Solana track).

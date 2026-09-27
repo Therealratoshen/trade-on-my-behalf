@@ -23,7 +23,8 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
   dependency, no compromised key wrapping can bypass them. The Anchor
   program signs or doesn't sign.
 - **Composability.** Trades route through Jupiter Perps (primary) and
-  Drift. Signals can come from AgentBazaar. Webhooks via Helius. Fills,
+  Drift. Sampler inputs come from Helius webhooks (RSI, funding,
+  mark-price, on-chain metrics). Fills,
   mark prices, liquidations come from indexed events. Every layer is a
   primitive the hackathon judges reward.
 
@@ -32,36 +33,53 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
 - [x] D1: scaffolding + skills installed (Copilot v1.2.1, Solana dev, Helius {build,jupiter,phantom,svm})
 - [x] D2: Copilot Deep Dive verdict — see [docs/copilot-verdict.md](docs/copilot-verdict.md)
 - [x] D3': **Pivot** — see [SPEC.md](SPEC.md). Now "Trade On My Behalf" (perps agent with on-chain policy gates). Treasury program from D4 becomes the risk-gate kernel.
-- [x] D4: Anchor `treasury` program compiles (203KB .so, IDL generated). D5+ extends with leverage cap + drawdown kill.
-- [x] D5: Perps-agent Copilot Deep Dive verdict — see [SPEC.md](SPEC.md) §"Perps-agent deep dive (D5 — DONE)"
-- [x] D6: 13-doc documentation-first scaffold (see docs/)
-- [x] D7: leverage cap + UpdatePolicy + 3 LiteSVM tests; treasury.so → 209KB
-- [x] D8: on-chain drawdown kill-switch (`record_pnl` + drawdown check in `authorize_spend` + LiteSVM test)
-- [ ] D9: SDK `withTrader(wallet, rules)` + Jupiter Perps adapter (proprietary TG cut to D14)
-- [ ] D9: Drift adapter + TG bot integration (TG deferred per BRD review)
-- [ ] D10: Surfpool integration + dry run with 1 tester
-- [ ] D11: 3 outside-dev user tests (decision gate)
-- [ ] D12-D14: weekly 1-min update + pitch (2-3 min) + demo (<=3 min) + Telegram control surface
-- [ ] D15-D17: polish + submit by Oct 12 11:59pm PT (target D16 EOD)
+- [x] D4: Anchor `treasury` program compiles (203KB .so, IDL generated).
+- [x] D5: Perps-agent Copilot Deep Dive verdict — PARTIAL GAP in v1-c9 — see [SPEC.md](SPEC.md) §"Perps-agent deep dive (D5 — DONE)"
+- [x] D6: 16-doc documentation-first scaffold (see [docs/](docs/))
+- [x] D7: leverage cap + `update_policy` + 3 LiteSVM tests; treasury.so → 209 KB
+- [x] D8: on-chain drawdown kill-switch (`record_pnl` + drawdown check in `authorize_spend` + LiteSVM test); 6/6 tests passing
+- [x] D8.5: webapp-first pivot (Telegram bot → webapp), SAS framing, breach-modeling (4 scenarios), D10+ hardening queue captured
+- [ ] **D9: SDK `withTrader(wallet, rules)` + Jupiter Perps adapter + Next.js 15 webapp** — *the load-bearing gate; everything below depends on this*
+- [ ] D10: Surfpool integration test + devnet deploy
+- [ ] D11: 3 outside-dev user tests (decision gate per [docs/user-tests.md](docs/user-tests.md))
+- [ ] D12: weekly 1-min update #1 (per SPEC §"Iteration cadence")
+- [ ] D13: pitch video (2–3 min) — see [design-thinking/pitch-script.md](design-thinking/pitch-script.md)
+- [ ] D14: demo video (≤3 min) + Drift drawdown extension (stretch)
+- [ ] D15: polish pass + cross-doc consistency
+- [ ] D16: outside-person link check + final read-through
+- [ ] D17: submit by Oct 12 11:59 pm PT (target D16 EOD)
 
-## Security claim — honest read (D7 BRD → D8 ship)
+**Days remaining:** ~16. **Commits:** 14. **Critical path:** D9 → D11 → D14 → D16.
+
+## Security claim — honest read (D7 BRD → D8 ship → D8.5 breach-model)
+
+> **Headline (verbatim):** *"I cannot break your rules — **within
+> the as-stored caps**."*
+
+The qualifier is load-bearing. Without it, the claim over-promises
+in two of four breach scenarios — see [docs/security-model.md](docs/security-model.md).
 
 - **On-chain enforced today** (D7): vendor whitelist, per-tx cap,
   per-day cap, TTL, leverage cap.
 - **On-chain enforced today** (D8): drawdown kill-switch via
-  `record_pnl` + drawdown check in `authorize_spend`.
+  `record_pnl` + monotonic `peak_equity_usdc` + drawdown check at
+  the top of `authorize_spend`.
 - **Best-effort runtime-supplied** (caveat): the implied-current-
   equity number is reported by the runtime from off-chain venue
   reconciliation. Peak is on-chain monotonic; the *delta* is
   best-effort. A compromised runtime can lie about current
   equity; the wedge defends the *envelope*, not the *truth*.
-- **Off-chain (runtime) enforced**: signal classification, TG bot
-  60s TTL, position sizing before CPI.
+- **Off-chain (runtime) enforced**: signal classification, position
+  sizing before CPI, webapp refresh interval (~2 s), position
+  reconciliation, fill-event ingestion.
+- **Honest carve-outs** (per [docs/security-model.md](docs/security-model.md) §"Scenario 1" + §"Scenario 4"):
+  - A **stolen `owner` key** beats every cap *via `update_policy`* — `update_policy` accepts loosening today. Mitigated by adding a **tighten-timelock** (D10+; queued).
+  - The **on-chain gate does not CPI the venue** — the SDK constructs the follow-through CPI. A compromised SDK could lie about the destination program id or the amount. Mitigated by adding a **CPI-wrapper or PDA-bound memo** (D10+; queued).
+  - See [PM-LOG.md](PM-LOG.md) §5 R14–R16 for the full D10+ hardening queue with owners and targets.
 
-The headline line "*I cannot break your rules*" is true for
-vendor / size / day / TTL / leverage / drawdown-envelope. See
-`SUBMISSION.md` §"Security claim" for the exact wording
-submitted to the form.
+The headline is true **for the envelope**: vendor / size / day /
+TTL / leverage / drawdown-envelope at the as-stored policy values.
+For the two carve-outs, see the D10+ queue in PM-LOG §5.
 
 ## Reading paths
 
@@ -102,10 +120,10 @@ evidence-backed gap classification.
 ```
 programs/treasury/             Anchor program: per-agent policy engine
 packages/sdk/                  @trade-on-my-behalf/sdk: 5-line withTrader wrap
-packages/agent/                trader runtime (PROPRIETARY TG layer ships D12+)
+packages/agent/                trader runtime (webapp v1 control surface, see docs/control-surface.md)
 packages/policy-engine/        off-chain policy evaluator (LiteSVM-tested)
 packages/bridge/               USDC -> wSOL (LTC bridge dropped D3')
-apps/dashboard/                Next.js 15 audit + rules editor
+apps/dashboard/                Next.js 15 webapp control surface (Phantom Connect or Trust Wallet) — see docs/control-surface.md
 scripts/devnet-demo.sh         one-shot judges can run
 docs/                          architecture, onchain-program, sdk-api,
                                agent-runtime, venues, control-surface,
@@ -114,7 +132,7 @@ docs/                          architecture, onchain-program, sdk-api,
                                gtm-and-submission, onboarding, roadmap,
                                mcp-setup, research/, dimension-map,
                                oss-precedent
-design-thinking/               5-stage design-thinking pass (assumption mode)
+design-thinking/               founder voice: why I'm building this
 PM-LOG.md                      single-page PM dashboard
 SPEC.md / GTM.md / SUBMISSION.md
 ```

@@ -41,14 +41,16 @@ What I want is software that lets me say:
 
 - `programs/treasury/` — **MIT** (the on-chain policy kernel)
 - `packages/sdk/`, `packages/agent/`, `packages/venues/`,
-  `apps/dashboard/` — **MIT** (the integration + UI layer)
-- `packages/agent/telegram/` — **Proprietary** (the Telegram
-  control surface; non-forkable by design)
+  `apps/dashboard/` — **MIT** (the integration + UI layer; webapp v1
+  control surface ships here)
 - Hosted alert + PnL reporting — **Proprietary** (v2)
+- ~~`packages/agent/telegram/` — cut D8.5+~~ (Telegram bot moved to v3, never; superseded by webapp)
 
-OSS-native precedent is empty on the (P + X + T) intersection;
+OSS-native precedent is empty on the (P + X + W) intersection —
+where **W** = "transport-pluggable control surface (webapp v1)" —
 see `docs/oss-precedent.md` for evidence. `fridonai` is the
-strongest MIT candidate overall; it ships no policy / perps / TG.
+strongest MIT candidate overall; it ships no policy / perps / wallet
+control layer.
 
 ## Top-5 user stories (frozen)
 
@@ -68,13 +70,16 @@ strongest MIT candidate overall; it ships no policy / perps / TG.
    These rules are enforced **at the signing layer** by the Anchor
    program; no rogue path can bypass them — including a compromised
    signal source.
-3. When the trader's signal fires, I get a Telegram DM *before* the trade
-   with the rationale: "Long SOL perp 0.1 at 3x — RSI 27, trend up, $40
-   risk. Tap approve in 60s or it auto-skips." So I stay in control
-   without watching charts.
-4. As an operator, I see a `RiskFlag` event in the dashboard for every
-   denied or skipped trade, with the reason code (leverage exceeded,
-   drawdown hit, venue-denied, expired, kill-switch active).
+3. *(Superseded D8.5+)* The kernel decides; there is no human
+   approve/deny step. The webapp (`apps/dashboard/`) shows every
+   `AuditEvent` — approve or deny — with the rule inputs, the
+   reason code, the slot number, and the venue position if any.
+   The user does not need to be present.
+4. As an operator, I see a `RiskFlag` row in the webapp's audit
+   log for every denied trade, with the reason code (leverage
+   exceeded, drawdown hit, venue-denied, expired, kill-switch
+   active). The row lights up within ~2 s of the runtime pushing
+   the intent (SWR refresh of the Helius-indexed event stream).
 5. As an auditor (or myself in retrospect), I export every on-chain
    decision (allowed and denied) with the policy inputs at decision
    time, the signal that triggered it, the market state, and the fill.
@@ -85,8 +90,10 @@ strongest MIT candidate overall; it ships no policy / perps / TG.
 - No multi-chain. Solana only.
 - No LTC bridge (pivot dropped it). Track purity wins.
 - No mobile-first design.
-- No AI signal generation v1 — we route human/strategy signals through
-  the agent. LLM-driven signals are a v2 extension.
+- **No LLM signal generation v1.** Specialists write their own
+  skills; no AI agent invents signals for them. The kernel enforces
+  the algorithm; the specialist owns the skill. See
+  `docs/skills-and-algorithms.md` for the SAS model.
 
 ## Architecture diagram
 
@@ -114,16 +121,24 @@ strongest MIT candidate overall; it ships no policy / perps / TG.
 ## Tech stack (frozen)
 
 - Anchor **0.31.1** — treasury program (already compiling, D4).
-- `@solana/kit` + `@solana/react` for the SDK + dashboard client.
+- `@solana/kit` + `@solana/react` for the SDK + webapp client.
+- **Next.js 15** for the v1 control surface webapp (`apps/dashboard/`) —
+  Phantom Connect **or** Trust Wallet via `@solana/wallet-adapter-react`,
+  SWR for periodic refresh, no server-side state.
 - **Jupiter Perps** as primary venue (`packages/agent/venues/jupiter-perps.ts`).
-- **Drift** as secondary venue (`packages/agent/venues/drift.ts`).
-- **Helius webhooks + DAS** for fills, mark-price, liquidation signals.
-- **AgentBazaar MCP** for an *optional* paid signal marketplace integration
-  (the user can subscribe to a paid signal stream with a daily USDC cap).
-- **Telegram bot** as the primary *control surface* — the user does not
-  want a web dashboard open; wants a phone notification with approve/deny.
-- **Phantom Connect** for embedded wallet in the dashboard fallback.
+- **Drift** as secondary venue (v2; `packages/agent/venues/drift.ts`).
+- **Helius webhooks + DAS** for fills, mark-price, liquidation signals,
+  and indexed `AuditEvent` history for the webapp audit-log panel.
+- ~~**AgentBazaar MCP** for paid signal marketplace integration~~ —
+  **dropped from v1** D8.5+ (moved to v3 "specialist skill marketplace"
+  if demand emerges). The SAS framing means specialists own their
+  skills; v1 ships no signal-marketplace layer.
+- ~~**Telegram bot** — cut D8.5+, moved to v3 (never)~~ (superseded by webapp)
 - **LiteSVM** for unit tests, **Surfpool** for devnet fork + cheatcodes D10.
+
+The control surface is **transport-pluggable**. The kernel decides;
+the webapp shows the receipts. v2 may add Discord / Slack / push
+notifications as additional transports — none change the kernel.
 
 ## Repo layout (frozen; renamed)
 
@@ -177,10 +192,11 @@ Weekly 1-min update videos:
 - D5: Should leverage cap live in the Anchor program or be enforced off-chain?
 - D6: How does the trader fund its treasury PDA — user transfer pre-trade?
 - D7: Insurance fund exposure on Kill-Switch vs liquidation delay.
-- D9: Telegram/Slack control surface — open-source bot vs Paywalled via AgentBazaar?
-- **D10+:** Add **tighten-timelock** to `update_policy` so a stolen `owner` key cannot loosen caps within the policy's TTL window. The current `update_policy` accepts loosening — flagged in `docs/security-model.md` §"Scenario 1".
-- **D10+:** Add **CPI-wrapper or PDA-bound memo** so `authorize_spend` becomes the *authoritative* enforcer of "venue CPI actually targets the whitelisted program." Current defense is SDK-trust — flagged in `docs/security-model.md` §"Scenario 4".
-- **D10+:** Document "what kills an open position" — venue liquidation only; the on-chain gate does not see venue-side state. Flagged in `docs/security-model.md` §"Scenario 2".
+- ~~D9: Telegram/Slack control surface — open-source bot vs Paywalled via AgentBazaar?~~ **Closed D8.5+** — webapp is v1 control surface (Phantom Connect or Trust Wallet + viewer + rule editor). Telegram bot moved to v3, never. See `docs/control-surface.md`.
+- **D10+ hardening queue** — tracked in [PM-LOG.md §5 R14–R16](../PM-LOG.md) (the canonical surface for risks and follow-ups, not this spec doc). The three items, named here for cross-reference:
+  - **R14** — **tighten-timelock** on `update_policy` so a stolen `owner` key cannot loosen caps within the policy's TTL window. The current `update_policy` accepts loosening — flagged in `docs/security-model.md` §"Scenario 1".
+  - **R15** — **CPI-wrapper or PDA-bound memo** so `authorize_spend` becomes the *authoritative* enforcer of "venue CPI actually targets the whitelisted program." Current defense is SDK-trust — flagged in `docs/security-model.md` §"Scenario 4`.
+  - **R16** — document "what kills an open position" — venue liquidation only; the on-chain gate does not see venue-side state. Flagged in `docs/security-model.md` §"Scenario 2".
 
 ## Removed (from prior pivot, no longer applicable)
 
@@ -202,6 +218,13 @@ Scanned for adjacent projects on D3''' (Sep 26). Confirmed:
   not a competitor for our wedge.
 
 ## Perps-agent deep dive (D5 — DONE, 16:39 PT)
+
+> Historical. The wedge has since pivoted from "Telegram-bot-fronted"
+> to "webapp-fronted" (D8.5+, see `docs/control-surface.md`). The
+> competitor landscape this section documents still holds — many
+> other projects use Telegram as their control surface; ours no
+> longer does. The wedge-line "no project combines personal AI agent
+> + perps venue + on-chain policy gates" is still true.
 
 **Verdict: PARTIAL GAP inside v1-c9.** Both halves of the market exist
 separately (perps venues + Telegram/chat bots), but **no project

@@ -6,7 +6,7 @@
 The SDK is the *one* npm package a developer installs to give their
 agent a wallet with hard risk limits. It is intentionally small — five
 lines of code from `pnpm add` to first authorized spend — and the rest
-of the system (agent runtime, dashboard, Telegram bot) is layered on
+of the system (agent runtime, webapp control surface) is layered on
 top of it. This is the wedge against the existing perps-bot landscape:
 composability, not a black-box dashboard.
 
@@ -46,7 +46,7 @@ export interface TradeIntent {
   leverage: number;      // bps (500 = 5x)
   /** Optional override venue; defaults to the cheapest in `rules.venues`. */
   venue?: VenueId;
-  /** Free-form rationale surfaced to the user in the Telegram DM. */
+  /** Free-form rationale surfaced to the user in the webapp audit log. */
   rationale?: string;
 }
 

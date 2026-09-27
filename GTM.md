@@ -14,9 +14,9 @@ evidence that this position is uncrowded.
 Layer | License | Why
 |---|---|---|
 | `programs/treasury/` Anchor kernel | **MIT** | The on-chain policy gate. Earns Open-source criterion. No MIT cross-license conflict (`smart-wallet` is the closest precedent but unlicensed).
-| `packages/sdk/` + `packages/agent/` + `packages/venues/` | **MIT** | The integration layer. Earns Composability criterion. `fridonai` is the strongest MIT candidate in adjacent space but ships no policy / perps / TG primitives.
-| `apps/dashboard/` audit viewer | **MIT** | Earns Business Plan and Open-source both.
-| Telegram control surface (`packages/agent/telegram/`) | **Proprietary** | Earns Business Plan. Contains Helius Sender heuristics, drawdown algorithm, signal-to-DM template — *not forkable*, *not copyable from public precedent*. This is the layered moat on top of the open kernel.
+| `packages/sdk/` + `packages/agent/` + `packages/venues/` | **MIT** | The integration layer. Earns Composability criterion. `fridonai` is the strongest MIT candidate in adjacent space but ships no policy / perps / wallet-control primitives.
+| `apps/dashboard/` webapp (v1 control surface) | **MIT** | Phantom Connect or Trust Wallet, viewer + rule editor. Earns Business Plan and Open-source both.
+| ~~Telegram control surface~~ | v3, never (cut D8.5+) | Superseded by webapp. Replaced at the design table, not the code table.
 | Hosted alert + PnL reporting | **Proprietary (hosted)** | Optional v2; aligns with performance-fee pricing.
 
 ## Pricing model (evidence-led, D6)
@@ -86,6 +86,12 @@ The wedge is the *one statement* that combines all three:
 
 > "I trade for you, and I cannot break your rules."
 
+**Updated framing (D8.5+, see `docs/skills-and-algorithms.md`):**
+the wedge is *for specialists who already have a setup*. The
+algorithm enforces their rules; the skill decides what to trade;
+the runtime samples. We don't promise AI — we promise discipline.
+That's the SAS model: Specialist, Algorithm, Skill.
+
 No existing perps bot can say both halves of that sentence truthfully
 because none of them has an on-chain policy gate.
 
@@ -122,17 +128,19 @@ Three converging signals:
    developer can ship an audited-by-construction policy program in
    days, not months. The treasury program already compiles at
    203 KB and emits a clean `AuditEvent`.
-3. **TG bots are the consumer UX.** The user does not want a web
-   dashboard; they want a phone notification. The combination of
-   Kit 8 + Telegram Bot API + Helius webhooks makes this a 200-line
-   TypeScript module rather than a 2000-line monorepo.
+3. **Phantom Connect / Trust Wallet + Next.js 15 make the
+   webapp-first v1 control surface cheap.** A solo developer can
+   ship a wallet-connected viewer + rule editor in days. The
+   combination of Kit 8 + `@solana/wallet-adapter-react` + Helius
+   DAS event index makes this a small monorepo, not a chat-bot
+   surface to maintain.
 
 If any of those three were missing, the wedge would not exist. All
 three are present *now*; the wedge closes if any of them goes away.
 
 ## Alternative wedge (fallback)
 
-If the perps-on-Telegram wedge proves too crowded between D5 and
+If the perps-on-webapp wedge proves too crowded between D5 and
 D17, the fallback wedge is the **non-perps version of the same
 product**: an on-chain risk-gated spending agent for *any* Solana
 transaction type, not just perps. The treasury program as it exists

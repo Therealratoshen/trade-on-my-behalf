@@ -9,7 +9,7 @@ Each project is scored on 5 dimensions of our wedge.
 - **P** = Perps venue (Jupiter Perps / Drift / Zeta / Infinity-style AMM).
 - **A** = AI agent runtime that decides trades.
 - **X** = On-chain policy gate at signing layer (the wedge; the hard one).
-- **T** = Telegram chat as primary control surface.
+- **T** = Telegram chat as primary control surface *(historical; our v1 control surface is now the webapp — `apps/dashboard/` — but the **T** axis still describes competitor choices).*
 - **M** = Personal end-user product (vs infra / SDK for builders).
 
 ## Why most prior winners DON'T do what we do

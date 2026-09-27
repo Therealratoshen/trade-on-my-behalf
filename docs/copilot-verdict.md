@@ -140,7 +140,7 @@ The four sub-gaps above drove that pivot:
 - Our own payment rail. We compose with MCPay/Latinum/CORBITS. *(still true;
   perps venues too)*
 - KYC/AML features. Out of scope. *(still true)*
-- Agent identity / reputation. Composes with AgentBazaar only. *(still true)*
+- Agent identity / reputation. ~~Composes with AgentBazaar only~~ *(AgentBazaar dropped v1 D8.5+; identity/reputation is a v3+ specialist-skill-marketplace concern. See `docs/skills-and-algorithms.md`.)*
 - LTC bridge. **(EXPLICITLY KILLED at D3'. Decision #2 in PM-LOG.md.)**
 
 ## Decision gate answer at D2: PROCEED with the pivot
