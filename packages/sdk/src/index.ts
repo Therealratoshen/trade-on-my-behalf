@@ -23,6 +23,7 @@ export {
   decodePolicy,
   derivePolicyPda,
   micro,
+  parseAuditEvents,
 } from './withTrader.js';
 export { reasonCodeName } from './types.js';
 
@@ -34,6 +35,7 @@ export {
   MICRO_USDC_PER_USD,
   TREASURY_PROGRAM_ID,
   MAX_VENDORS,
+  SLOTS_PER_DAY,
   DEFAULT_TTL_SLOTS,
   DEFAULT_MAX_LEVERAGE_BPS,
   DEFAULT_KILL_SWITCH_DRAWDOWN_PCT,

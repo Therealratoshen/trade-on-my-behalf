@@ -71,7 +71,7 @@ export interface Policy {
   killSwitchDrawdownPct: number;
   /** Highest observed equity in USDC micro-units; monotonic. D8+. */
   peakEquityUsdc: BN;
-  /** Today's spent USDC micro-units (resets at midnight UTC). */
+  /** Spent USDC micro-units in the current window (resets SLOTS_PER_DAY after lastResetSlot). */
   daySpentUsdc: BN;
   /** Slot the policy was created at. */
   createdAtSlot: BN;
@@ -104,28 +104,25 @@ export interface PolicyLike {
 // ============================================================================
 
 /**
- * The `AuditEvent` emitted on every `authorize_spend` call.
- * Indexers (Helius DAS, custom sweeper) pick this up off-chain.
+ * The `AuditEvent` emitted by `authorize_spend` (every call, approve or
+ * deny), `update_policy` and `record_pnl` (vendor = system program).
+ * Decoded from the transaction's `Program data:` log lines.
  */
 export interface AuditEvent {
-  approved: boolean;
-  reasonCode: ReasonCode;
-  /** Slot of the `authorize_spend` transaction. */
-  slot: number;
+  /** Policy PDA the event belongs to. */
+  policy: PublicKey;
   /** Agent the policy applies to. */
   agent: PublicKey;
   /** Vendor the runtime asked about. */
   vendor: PublicKey;
   /** Spend amount in USDC micro-units. */
   amountUsdc: BN;
-  /** Trade leverage (basis points). D7+. */
-  leverageBps: number;
-  /** Runtime-reported current equity in USDC micro-units. D8+. */
-  impliedCurrentEquityUsdc: BN;
-  /** Monotonic peak equity in USDC micro-units at the time of the audit. D8+. */
-  peakEquityUsdc: BN;
-  /** Monotonic counter; strictly increasing per (agent, vendor). */
+  approved: boolean;
+  reasonCode: ReasonCode;
+  /** Caller-supplied nonce for `authorize_spend`; the slot for admin events. Not checked on-chain in v1. */
   nonce: BN;
+  /** On-chain `at_slot`. */
+  slot: number;
   /** Signature of the enclosing transaction. */
   signature: string;
   /** Wall-clock timestamp the SDK first observed the event. */
@@ -168,6 +165,8 @@ export interface AuthorizeSpendInput {
   leverageBps: number;
   /** Runtime-reported current equity in USD. Drives drawdown kill-switch. */
   impliedCurrentEquityUsd: number;
+  /** Optional explicit nonce. Default: strictly increasing per process. */
+  nonce?: bigint | number;
 }
 
 /** Inputs to `updatePolicy`. All fields optional; only the ones present are updated. */
@@ -206,6 +205,9 @@ export const TREASURY_PROGRAM_ID = '4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph
 
 /** Max vendors per policy (enforced on-chain in `create_policy`). */
 export const MAX_VENDORS = 16;
+
+/** Rolling daily-cap window, in slots (24h at ~0.4 s/slot). Mirrors state/mod.rs. */
+export const SLOTS_PER_DAY = 216_000;
 
 /** Default TTL: 7 days at ~0.4 s/slot = ~1.5M slots. */
 export const DEFAULT_TTL_SLOTS = 1_512_000;

@@ -1,57 +1,56 @@
 /**
  * withTrader(wallet, rules) — the SDK entry point.
  *
- * Usage:
+ * Two keys, two handles. The owner (the user's wallet) creates and tightens
+ * the policy; the agent (a hot key on the runtime host) asks for permission
+ * on every trade. Both handles point at the same policy PDA, which is keyed
+ * by the agent pubkey.
  *
  * ```ts
- * import { withTrader, TREASURY_PROGRAM_ID } from "@trade-on-my-behalf/sdk";
- * import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+ * import { withTrader } from "@trade-on-my-behalf/sdk";
+ * import { Connection } from "@solana/web3.js";
  *
  * const connection = new Connection("https://api.devnet.solana.com");
- * const trader = withTrader({
- *   connection,
- *   wallet: agentKeypair,
- *   policy: agentPubkey,
- * });
  *
- * // On boot, ensure the policy exists.
- * const policyPda = await trader.ensurePolicy({
- *   agent: agentPubkey,
- *   vendors: [JUPITER_PERPS_DEVNET],
+ * // Owner, once:
+ * const owner = withTrader({ connection, wallet: ownerKeypair, policy: agentKeypair.publicKey });
+ * await owner.ensurePolicy({
+ *   agent: agentKeypair.publicKey,
+ *   vendors: [JUPITER_PERPS_PROGRAM_ID],
  *   perTxCapUsd: 200,
- *   perDayCapUsd: 60,
- *   maxLeverageBps: 500,
- *   killSwitchDrawdownPct: 2500,
+ *   perDayCapUsd: 600,
+ *   maxLeverageBps: 500,        // 5x
+ *   killSwitchDrawdownPct: 25,  // percent, not bps
  * });
  *
- * // For every trade intent:
- * const { signature, audit } = await trader.authorizeSpend({
- *   agent: agentPubkey,
- *   vendor: JUPITER_PERPS_DEVNET,
+ * // Agent, for every trade intent:
+ * const agent = withTrader({ connection, wallet: agentKeypair, policy: agentKeypair.publicKey });
+ * const { audit } = await agent.authorizeSpend({
+ *   agent: agentKeypair.publicKey,
+ *   vendor: JUPITER_PERPS_PROGRAM_ID,
  *   amountUsd: 150,
  *   leverageBps: 300,
  *   impliedCurrentEquityUsd: 1000,
  * });
- * console.log(`Audit: ${audit.approved ? "approved" : "DENIED"} rc=${audit.reasonCode}`);
+ * if (!audit.approved) console.log(`DENIED: ${reasonCodeName(audit.reasonCode)}`);
  * ```
- *
- * The function returns a thin facade over the Anchor `Program` object.
- * It hides IDL loading, PDA derivation, BN/u64 marshalling, and the
- * `AuditEvent` subscription plumbing.
  */
 
 import {
   AnchorProvider,
-  Program,
   BN,
+  EventParser,
   Idl,
+  Program,
+  Wallet,
 } from '@coral-xyz/anchor';
 import {
+  Commitment,
+  ConfirmOptions,
   Connection,
   Keypair,
   PublicKey,
-  Commitment,
-  Finality,
+  SystemProgram,
 } from '@solana/web3.js';
 
 import { IDL as TREASURY_IDL } from './treasury.idl.js';
@@ -63,29 +62,18 @@ import {
   MICRO_USDC_PER_USD,
   Policy,
   PolicyLike,
-  REASON_CODES,
   RecordPnlInput,
   ReplaceVendorsInput,
   TREASURY_PROGRAM_ID,
   UpdatePolicyInput,
 } from './types.js';
 
-// Anchor's `logsSubscribe` accepts Finality, a subset of Commitment.
-const FINALITY: Finality = 'confirmed';
-
 // ============================================================================
 // Helpers
 // ============================================================================
 
 export function micro(amountUsd: number): BN {
-  // Anchor uses BN. We accept a JS number and convert.
   return new BN(Math.round(amountUsd * Number(MICRO_USDC_PER_USD)));
-}
-
-function bnToBig(b: BN | number | bigint | undefined, fallback = 0): BN {
-  if (b === undefined) return new BN(fallback);
-  if (b instanceof BN) return b;
-  return new BN(b.toString());
 }
 
 /**
@@ -97,21 +85,22 @@ function bnToBig(b: BN | number | bigint | undefined, fallback = 0): BN {
  */
 export function decodePolicy(data: Buffer): PolicyLike {
   let o = 8; // skip Anchor discriminator
-  const owner = new PublicKey(data.slice(o, o + 32)); o += 32;
-  const agent = new PublicKey(data.slice(o, o + 32)); o += 32;
+  const owner = new PublicKey(data.subarray(o, o + 32)); o += 32;
+  const agent = new PublicKey(data.subarray(o, o + 32)); o += 32;
   const vendorLen = data.readUInt32LE(o); o += 4;
   const vendors: PublicKey[] = [];
   for (let i = 0; i < vendorLen; i++) {
-    vendors.push(new PublicKey(data.slice(o, o + 32))); o += 32;
+    vendors.push(new PublicKey(data.subarray(o, o + 32))); o += 32;
   }
-  const per_tx_cap_usdc = new BN(data.slice(o, o + 8)); o += 8;
-  const per_day_cap_usdc = new BN(data.slice(o, o + 8)); o += 8;
-  const day_spent_usdc = new BN(data.slice(o, o + 8)); o += 8;
-  const ttl_slots = new BN(data.slice(o, o + 8)); o += 8;
-  const created_at_slot = new BN(data.slice(o, o + 8)); o += 8;
-  const last_reset_slot = new BN(data.slice(o, o + 8)); o += 8;
+  const u64 = () => { const v = new BN(data.subarray(o, o + 8), 'le'); o += 8; return v; };
+  const per_tx_cap_usdc = u64();
+  const per_day_cap_usdc = u64();
+  const day_spent_usdc = u64();
+  const ttl_slots = u64();
+  const created_at_slot = u64();
+  const last_reset_slot = u64();
   const max_leverage_bps = data.readUInt16LE(o); o += 2;
-  const peak_equity_usdc = new BN(data.slice(o, o + 8)); o += 8;
+  const peak_equity_usdc = u64();
   const kill_switch_drawdown_pct = data.readUInt8(o); o += 1;
   const bump = data.readUInt8(o);
   return {
@@ -121,10 +110,6 @@ export function decodePolicy(data: Buffer): PolicyLike {
     max_leverage_bps, peak_equity_usdc, kill_switch_drawdown_pct, bump,
   };
 }
-
-// ============================================================================
-// PDA derivation
-// ============================================================================
 
 /**
  * Derive the policy PDA for a given agent.
@@ -137,15 +122,66 @@ export function derivePolicyPda(agent: PublicKey): [PublicKey, number] {
   );
 }
 
+interface RawAuditEvent {
+  policy: PublicKey;
+  agent: PublicKey;
+  vendor: PublicKey;
+  amountUsdc: BN;
+  approved: boolean;
+  reasonCode: number;
+  nonce: BN;
+  atSlot: BN;
+}
+
+function toAuditEvent(raw: RawAuditEvent, signature: string): AuditEvent {
+  return {
+    policy: raw.policy,
+    agent: raw.agent,
+    vendor: raw.vendor,
+    amountUsdc: raw.amountUsdc,
+    approved: raw.approved,
+    reasonCode: raw.reasonCode as AuditEvent['reasonCode'],
+    nonce: raw.nonce,
+    slot: raw.atSlot.toNumber(),
+    signature,
+    observedAt: Date.now(),
+  };
+}
+
+/**
+ * Parse every `AuditEvent` out of a transaction's log messages.
+ * `authorize_spend` returns Ok on deny, so the event is the only place the
+ * approve/deny decision lives — never infer it from transaction success.
+ */
+export function parseAuditEvents(program: Program, logs: string[], signature: string): AuditEvent[] {
+  const parser = new EventParser(program.programId, program.coder);
+  const out: AuditEvent[] = [];
+  for (const ev of parser.parseLogs(logs)) {
+    if (ev.name === 'auditEvent' || ev.name === 'AuditEvent') {
+      out.push(toAuditEvent(ev.data as unknown as RawAuditEvent, signature));
+    }
+  }
+  return out;
+}
+
+let lastNonce = 0n;
+/** Strictly increasing per process: microseconds since epoch, bumped on collision. */
+function nextNonce(): BN {
+  let n = BigInt(Date.now()) * 1000n;
+  if (n <= lastNonce) n = lastNonce + 1n;
+  lastNonce = n;
+  return new BN(n.toString());
+}
+
 // ============================================================================
 // The facade
 // ============================================================================
 
 export interface WithTraderOptions {
   connection: Connection;
-  /** Wallet that signs on-chain actions (typically the agent keypair). */
+  /** Keypair that signs: the owner for policy admin, the agent for trades. */
   wallet: Keypair;
-  /** The agent pubkey the policy is bound to. */
+  /** The agent pubkey the policy is bound to (PDA seed). */
   policy: PublicKey;
   /** Commitment level. Default 'confirmed'. */
   commitment?: Commitment;
@@ -162,41 +198,42 @@ export interface WithTraderHandle {
   authorizeSpend(input: AuthorizeSpendInput): Promise<{ signature: string; audit: AuditEvent }>;
   recordPnl(input: RecordPnlInput): Promise<{ signature: string }>;
   updatePolicy(input: UpdatePolicyInput): Promise<{ signature: string }>;
-  /** v1 doesn't support rotating vendors via update_policy; close + recreate the policy. */
+  /** Not supported by the v1 program; throws. See the method body. */
   replaceVendors(input: ReplaceVendorsInput): Promise<{ signature: string }>;
   fetchPolicy(): Promise<PolicyLike | null>;
+  /** Subscribe to decoded AuditEvents for this policy only. */
   subscribeAudit(handler: (event: AuditEvent) => void): number;
-  unsubscribeAudit(handle: number): void;
+  unsubscribeAudit(handle: number): Promise<void>;
 }
 
-/**
- * The factory. Call this once per runtime boot.
- */
 export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   const { connection, wallet, policy } = opts;
   const commitment = opts.commitment ?? 'confirmed';
-  const provider = new AnchorProvider(connection, wallet as any, { commitment });
-  const programId = new PublicKey(TREASURY_PROGRAM_ID);
+  const confirmOpts: ConfirmOptions = { commitment, preflightCommitment: commitment };
+  const provider = new AnchorProvider(connection, new Wallet(wallet), confirmOpts);
   const program = new Program(TREASURY_IDL as unknown as Idl, provider);
   const [policyPda] = derivePolicyPda(policy);
 
-  // ------------------------------------------------------------------
-  // ensurePolicy
-  // ------------------------------------------------------------------
+  async function fetchPolicy(): Promise<PolicyLike | null> {
+    const info = await connection.getAccountInfo(policyPda, commitment);
+    if (info === null) return null;
+    return decodePolicy(info.data);
+  }
+
   async function ensurePolicy(input: CreatePolicyInput) {
     if (input.vendors.length > MAX_VENDORS) {
       throw new Error(`vendors array length ${input.vendors.length} > MAX_VENDORS (${MAX_VENDORS})`);
     }
-    const existing = await fetchPolicy();
-    if (existing !== null) {
-      return { signature: '', createdNew: false };
+    if (!input.agent.equals(policy)) {
+      throw new Error(`input.agent ${input.agent.toBase58()} does not match handle policy ${policy.toBase58()}`);
     }
-    const sig = await program.methods
+    if (await fetchPolicy()) return { signature: '', createdNew: false };
+    const signature = await program.methods
       .createPolicy(
         input.vendors,
         micro(input.perTxCapUsd),
         micro(input.perDayCapUsd),
-        new BN(input.ttlSlots ?? 1_512_000),
+        new BN((input.ttlSlots ?? 1_512_000).toString()),
         input.maxLeverageBps ?? 500,
         input.killSwitchDrawdownPct ?? 25,
       )
@@ -204,176 +241,81 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
         policy: policyPda,
         agent: input.agent,
         owner: wallet.publicKey,
-        systemProgram: new PublicKey('11111111111111111111111111111111'),
+        systemProgram: SystemProgram.programId,
       })
-      .rpc();
-    return { signature: sig, createdNew: true };
+      .rpc(confirmOpts);
+    return { signature, createdNew: true };
   }
 
-  // ------------------------------------------------------------------
-  // authorizeSpend
-  // ------------------------------------------------------------------
   async function authorizeSpend(input: AuthorizeSpendInput) {
-    const sig = await program.methods
+    const signature = await program.methods
       .authorizeSpend(
         input.vendor,
         micro(input.amountUsd),
-        new BN(0),                          // nonce (server-supplied in v2)
+        input.nonce !== undefined ? new BN(input.nonce.toString()) : nextNonce(),
         input.leverageBps,
         micro(input.impliedCurrentEquityUsd),
       )
-      .accounts({
-        policy: policyPda,
-        owner: wallet.publicKey,
-      })
-      .rpc();
-    // Fetch the transaction to read the slot + AuditEvent.
-    const tx = await connection.getParsedTransaction(sig, { commitment: FINALITY });
-    const slot = tx?.slot ?? 0;
-    // The AuditEvent is emitted as a self-CPI log line in the program.
-    // The SDK parses the `programReturn` field of the inner instruction.
-    // For v1 we extract the audit from the trailing return data log.
-    const audit: AuditEvent = {
-      approved: true,
-      reasonCode: REASON_CODES.OK,
-      slot,
-      agent: input.agent,
-      vendor: input.vendor,
-      amountUsdc: micro(input.amountUsd),
-      leverageBps: input.leverageBps,
-      impliedCurrentEquityUsdc: micro(input.impliedCurrentEquityUsd),
-      peakEquityUsdc: new BN(0),
-      nonce: new BN(0),
-      signature: sig,
-      observedAt: Date.now(),
-    };
-    // If the tx didn't land successfully, mark denied.
-    if (!tx) {
-      audit.approved = false;
-      // Runtime-local code (not emitted on-chain). Cast through number.
-      audit.reasonCode = 99 as unknown as AuditEvent['reasonCode'];
+      .accounts({ policy: policyPda, authority: wallet.publicKey })
+      .rpc(confirmOpts);
+
+    const tx = await connection.getTransaction(signature, {
+      commitment: commitment === 'finalized' ? 'finalized' : 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    });
+    const audits = parseAuditEvents(program, tx?.meta?.logMessages ?? [], signature);
+    if (audits.length !== 1) {
+      throw new Error(
+        `authorize_spend ${signature}: expected 1 AuditEvent in logs, found ${audits.length}. ` +
+        'Refusing to guess the decision.',
+      );
     }
-    return { signature: sig, audit };
+    return { signature, audit: audits[0] };
   }
 
-  // ------------------------------------------------------------------
-  // recordPnl
-  // ------------------------------------------------------------------
   async function recordPnl(input: RecordPnlInput) {
-    const sig = await program.methods
+    const signature = await program.methods
       .recordPnl(micro(input.newEquityUsd))
-      .accounts({
-        policy: policyPda,
-        owner: wallet.publicKey,
-      })
-      .rpc();
-    return { signature: sig };
+      .accounts({ policy: policyPda, authority: wallet.publicKey })
+      .rpc(confirmOpts);
+    return { signature };
   }
 
-  // ------------------------------------------------------------------
-  // updatePolicy
-  // ------------------------------------------------------------------
   async function updatePolicy(input: UpdatePolicyInput) {
-    // update_policy has 5 Option<T> args; pass null for "do not change".
-    const sig = await program.methods
+    // update_policy takes 5 Option<T> args; null means "do not change".
+    const signature = await program.methods
       .updatePolicy(
-        input.maxLeverageBps === undefined ? null : input.maxLeverageBps,
+        input.maxLeverageBps ?? null,
         input.perTxCapUsd === undefined ? null : micro(input.perTxCapUsd),
         input.perDayCapUsd === undefined ? null : micro(input.perDayCapUsd),
-        input.ttlSlots === undefined ? null : new BN(input.ttlSlots),
-        input.killSwitchDrawdownPct === undefined ? null : input.killSwitchDrawdownPct,
+        input.ttlSlots === undefined ? null : new BN(input.ttlSlots.toString()),
+        input.killSwitchDrawdownPct ?? null,
       )
-      .accounts({
-        policy: policyPda,
-        owner: wallet.publicKey,
-      })
-      .rpc();
-    return { signature: sig };
+      .accounts({ policy: policyPda, owner: wallet.publicKey })
+      .rpc(confirmOpts);
+    return { signature };
   }
 
-  // ------------------------------------------------------------------
-  // replaceVendors
-  //
-  // update_policy doesn't accept vendors (D9 limitation). To rotate
-  // vendors, the user closes the policy and re-creates it. v2 (D10+
-  // tighten-timelock) will add this to update_policy.
-  // ------------------------------------------------------------------
-  async function replaceVendors(input: ReplaceVendorsInput) {
-    if (input.vendors.length > MAX_VENDORS) {
-      throw new Error(`vendors array length ${input.vendors.length} > MAX_VENDORS (${MAX_VENDORS})`);
-    }
-    const existing = await fetchPolicy();
-    if (existing === null) {
-      throw new Error(`No policy at ${policyPda.toBase58()}; call ensurePolicy first`);
-    }
-    const sig = await program.methods
-      .createPolicy(
-        input.vendors,
-        bnToBig(existing.per_tx_cap_usdc),
-        bnToBig(existing.per_day_cap_usdc),
-        bnToBig(existing.ttl_slots),
-        existing.max_leverage_bps,
-        existing.kill_switch_drawdown_pct,
-      )
-      .accounts({
-        policy: policyPda,
-        agent: input.agent,
-        owner: wallet.publicKey,
-        systemProgram: new PublicKey('11111111111111111111111111111111'),
-      })
-      .rpc();
-    return { signature: sig };
-  }
-
-  // ------------------------------------------------------------------
-  // fetchPolicy
-  // ------------------------------------------------------------------
-  async function fetchPolicy(): Promise<PolicyLike | null> {
-    const info = await connection.getAccountInfo(policyPda, commitment);
-    if (info === null) return null;
-    return decodePolicy(info.data);
-  }
-
-  // ------------------------------------------------------------------
-  // subscribeAudit
-  //
-  // v1 uses polling-via-RPC (logsSubscribe). Production should use
-  // Helius DAS + Yellowstone gRPC for sub-second latency.
-  // ------------------------------------------------------------------
-  function subscribeAudit(handler: (event: AuditEvent) => void): number {
-    const subId = connection.onLogs(
-      programId,
-      async (logInfo) => {
-        if (logInfo.err) return;
-        const tx = await connection.getParsedTransaction(logInfo.signature, { commitment: FINALITY });
-        if (!tx) return;
-        // Parse the AuditEvent from the inner instruction return data.
-        // The Anchor convention is to put the Borsh-serialized event
-        // in the inner instructions array; for v1 we surface the slot
-        // and signature to the handler.
-        const event: AuditEvent = {
-          approved: !logInfo.err,
-          reasonCode: REASON_CODES.OK,
-          slot: tx.slot,
-          agent: policy,
-          vendor: PublicKey.default,
-          amountUsdc: new BN(0),
-          leverageBps: 0,
-          impliedCurrentEquityUsdc: new BN(0),
-          peakEquityUsdc: new BN(0),
-          nonce: new BN(0),
-          signature: logInfo.signature,
-          observedAt: Date.now(),
-        };
-        handler(event);
-      },
-      FINALITY,
+  async function replaceVendors(_input: ReplaceVendorsInput): Promise<{ signature: string }> {
+    // The v1 program has no instruction that edits `vendors` and no
+    // close_policy, and create_policy uses `init` so it cannot overwrite the
+    // PDA. Rotating venues today means a new agent key (new PDA).
+    throw new Error(
+      'replaceVendors is not supported by the v1 program: vendors are fixed at create_policy. ' +
+      'Generate a new agent keypair and call ensurePolicy with the new vendor list.',
     );
-    return subId;
   }
 
-  function unsubscribeAudit(handle: number): void {
-    connection.removeOnLogsListener(handle);
+  function subscribeAudit(handler: (event: AuditEvent) => void): number {
+    return program.addEventListener('auditEvent', (raw: unknown, _slot: number, signature: string) => {
+      const ev = raw as RawAuditEvent;
+      if (!ev.policy.equals(policyPda)) return;
+      handler(toAuditEvent(ev, signature));
+    });
+  }
+
+  async function unsubscribeAudit(handle: number): Promise<void> {
+    await program.removeEventListener(handle);
   }
 
   return {
@@ -383,8 +325,5 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   };
 }
 
-// (decodePolicy, derivePolicyPda, micro, withTrader are already
-// exported above as named functions. TREASURY_IDL is a value export
-// via the import at the top — re-export it explicitly here.)
 export { TREASURY_IDL, TREASURY_PROGRAM_ID };
 export type { AuditEvent, Policy };
