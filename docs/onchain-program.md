@@ -24,9 +24,18 @@ and the `AuditEvent` is the proof that the venue call was sanctioned
 by the policy.
 
 For Trade On My Behalf, the same gate is reused to enforce per-trade
-size caps, daily loss caps, and (D7-D8 stretch) leverage and drawdown
-limits on perps positions. The fields already exist for the first two
-and will be extended with `max_leverage_bps` and a drawdown checkpoint.
+size caps, daily loss caps, leverage limits, and drawdown kill-switches
+on perps positions. **D7 shipped the leverage cap** (`max_leverage_bps`)
+in [`authorize_spend.rs`](../programs/treasury/programs/treasury/src/instructions/authorize_spend.rs).
+**D8 shipped the drawdown kill-switch** (`peak_equity_usdc` monotonic
+watermark + threshold check at the top of `authorize_spend`) via the
+new `record_pnl` instruction. Both ship in the same compiled `.so`
+artifact (~209 KB).
+
+Future hardening (D10+) is tracked in [PM-LOG §5 R14–R16](../PM-LOG.md):
+tighten-timelock on `update_policy`, CPI-wrapper or PDA-bound memo, and
+documentation of "what kills an open position." Those are honest v2
+work, not v1 blockers.
 
 ## State — `Policy` PDA
 

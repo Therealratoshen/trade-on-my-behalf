@@ -16,24 +16,40 @@ Solana (primary).
 > common loss-pattern (per rules §14(e-l) and Superteam Türkiye
 > post-mortem).
 
-## Videos (URLs filled D13-D14, unlisted-YouTube preferred)
+## Videos (unlisted-YouTube preferred)
 
-- Pitch (2–3 min): TBD *(target D13)*
-- Demo (≤ 3 min): TBD *(target D14)*
+- Pitch (2–3 min): `https://youtu.be/<UNLISTED_PITCH_ID>` *(recorded D13, Oct 4)*
+- Demo (≤ 3 min): `https://youtu.be/<UNLISTED_DEMO_ID>` *(recorded D14, Oct 5)*
+
+The exact unlisted IDs are filled at D13/D14 and re-pasted here. The
+canonical reading order is: pitch first (story + wedge), then demo
+(live trade + red-row moment). The demo video is the receipt; the
+pitch video is the framing.
 
 ## Repo
 
-(Repo URL filled D15 — placeholder left intentionally blank until
-the public GitHub remote is created and the D16 outside-person
-link check passes.)
+`https://github.com/Therealratoshen/trade-on-my-behalf`
+
+Public remote is created at D15 and pasted here. The D16
+outside-person link check verifies that:
+
+1. `README.md` renders correctly on github.com.
+2. Every link in `README.md`, `docs/architecture.md`, `docs/onboarding.md`,
+   `docs/roadmap.md`, `docs/security-model.md`, and `docs/control-surface.md`
+   resolves to a real file or external URL.
+3. `programs/treasury/target/deploy/treasury.so` is downloadable from
+   the commit referenced in `docs/onchain-program.md`.
+4. The anchor program id `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`
+   is the one deployed on devnet (verifiable via `solana account
+   <PROGRAM_ID> --url devnet`).
 
 ## Demo receipts (filled D10-D14 from on-chain transactions)
 
 | Receipt | What it proves | Slot / sig | Where to look |
 |---|---|---|---|
-| **Approve** (D10/D11) | On-chain `AuditEvent { approved: true, reason_code: 0 }` for a policy-compliant trade | TBD | [docs/demo-receipts.md](docs/demo-receipts.md) |
-| **Leverage deny** (D11) | On-chain `AuditEvent { approved: false, reason_code: 6 }` when `leverage_bps > max_leverage_bps` | TBD | [docs/demo-receipts.md](docs/demo-receipts.md) |
-| **Drawdown deny** (D11) | On-chain `AuditEvent { approved: false, reason_code: 7 }` when `implied_equity < threshold` | TBD | [docs/demo-receipts.md](docs/demo-receipts.md) |
+| **Approve** (D10/D11) | On-chain `AuditEvent { approved: true, reason_code: 0 }` for a policy-compliant trade | _filled D10_ | [docs/demo-receipts.md §"Receipt 1"](docs/demo-receipts.md) |
+| **Leverage deny** (D11) | On-chain `AuditEvent { approved: false, reason_code: 6 }` when `leverage_bps > max_leverage_bps` | _filled D11_ | [docs/demo-receipts.md §"Receipt 2"](docs/demo-receipts.md) |
+| **Drawdown deny** (D11) | On-chain `AuditEvent { approved: false, reason_code: 7 }` when `implied_equity < threshold` | _filled D11_ | [docs/demo-receipts.md §"Receipt 3"](docs/demo-receipts.md) |
 
 These three receipts — verifiable on Solscan — are the load-bearing
 proof of the headline *"I cannot break your rules — within the
@@ -53,7 +69,7 @@ constitute functional code.
 
 ## Team
 
-Solo: Filberthenrico. Location: <filled D15>.
+Solo: Filberthenrico. Location: Bali, Indonesia (Asia/Makassar, WIT / UTC+8).
 
 ## GTM
 

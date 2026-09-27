@@ -1,6 +1,6 @@
 # Agent Runtime — `packages/agent`
 
-> Frozen for D6. Updated D8.5+ to webapp-first control surface.
+> Frozen for D6. Updated D8.5+ to webapp-first control surface. Updated D9' to mark D7 + D8 rules as shipped (present-tense).
 > The agent runtime is the long-running process that listens for
 > signals, evaluates them against rules, routes through the venue
 > adapter, and surfaces decisions to the user via the webapp
@@ -156,9 +156,9 @@ the chain would have said:
    `REASON_DAILY_CAP` (3). `todayLoss` is tracked off-chain from
    `Fill.unrealizedPnlUsd` and confirmed by the `AuditEvent` stream.
 4. `Clock.slot - created_at_slot <= ttl_slots` → else `REASON_EXPIRED` (4).
-5. **D7**: `intent.leverage <= policy.max_leverage_bps` → else
+5. *(shipped D7)* `intent.leverage <= policy.max_leverage_bps` → else
    `REASON_LEVERAGE_CAP` (6).
-6. **D8**: `(peakEquity - nowEquity) / peakEquity * 100 <= killSwitchDrawdownPct`
+6. *(shipped D8)* `(peakEquity - nowEquity) / peakEquity * 100 <= killSwitchDrawdownPct`
    → else `REASON_DRAWDOWN_KILLSWITCH` (7).
 
 The runtime never trusts its own evaluation as final for an *approve*.

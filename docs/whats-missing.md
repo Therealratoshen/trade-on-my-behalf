@@ -47,7 +47,7 @@ list, the spec assumes it ships.
 |---|---|---|
 | Devnet keypair generated + SOL airdropped (R3) | ❌ | PM-LOG §5 R3 — **certain blocker** |
 | Program deployed to devnet | ❌ | Depends on R3 |
-| Vendor pubkeys resolved (Jupiter Perps program id) | ❌ | PM-LOG §5 R18 — `docs/venues.md` §"Vendor pubkey mapping" lists TBD |
+| Vendor pubkeys resolved (Jupiter Perps program id) | ✅ mainnet · devnet resolves at boot | PM-LOG §5 R18 — Jupiter Perps mainnet `PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as`; Drift v2 `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH`. Zeta discontinued May 2025 (pivoted to Bullet), removed from v1. See `docs/venues.md` §"Vendor pubkey mapping". |
 | Surfpool integration test (`s01_full_flow`) | ❌ | `docs/testing-plan.md` Tier 2 |
 | Helius API key | ❌ | PM-LOG §6 U2 |
 | Jupiter API key | ❌ | PM-LOG §6 U3 |
