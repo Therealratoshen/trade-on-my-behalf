@@ -44,6 +44,7 @@ pub mod treasury {
     }
 
     /// Authorize a single spend. Emits an `AuditEvent` either way.
+    /// Signer must be the policy's agent or owner.
     ///
     /// `implied_current_equity_usdc` is a best-effort runtime-reported
     /// value derived off-chain from venue position reconciliation. It
@@ -90,7 +91,7 @@ pub mod treasury {
     /// D8: Record PnL after a venue fill. The **only** on-chain path that
     /// mutates `peak_equity_usdc`. Updates the peak-equity watermark
     /// monotonically (`max(peak, new_equity)`) so the drawdown math has a
-    /// stable reference. Owner-only.
+    /// stable reference. Agent or owner.
     pub fn record_pnl(
         ctx: Context<RecordPnl>,
         new_equity_usdc: u64,

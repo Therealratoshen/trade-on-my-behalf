@@ -3,9 +3,16 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct AuthorizeSpend<'info> {
-    #[account(mut, seeds = [b"policy", policy.agent.as_ref()], bump = policy.bump)]
+    #[account(
+        mut,
+        seeds = [b"policy", policy.agent.as_ref()],
+        bump = policy.bump,
+        constraint = authority.key() == policy.agent || authority.key() == policy.owner
+            @ TreasuryError::Unauthorized,
+    )]
     pub policy: Account<'info, Policy>,
-    pub owner: Signer<'info>,
+    /// The agent's hot key (normal path) or the policy owner.
+    pub authority: Signer<'info>,
 }
 
 pub fn handler(
@@ -25,6 +32,11 @@ pub fn handler(
 ) -> Result<()> {
     let p = &mut ctx.accounts.policy;
     let clock = Clock::get()?;
+
+    if clock.slot.saturating_sub(p.last_reset_slot) >= SLOTS_PER_DAY {
+        p.day_spent_usdc = 0;
+        p.last_reset_slot = clock.slot;
+    }
 
     let mut reason_code = REASON_OK;
     let mut approved = true;

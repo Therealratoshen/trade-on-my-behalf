@@ -35,6 +35,10 @@ pub struct AuditEvent {
     pub at_slot: u64,
 }
 
+/// Length of the `per_day_cap_usdc` window: 24h at ~0.4 s/slot. The window
+/// is rolling from `last_reset_slot`, not aligned to midnight UTC.
+pub const SLOTS_PER_DAY: u64 = 216_000;
+
 pub const REASON_OK: u8 = 0;
 pub const REASON_VENDOR_DENIED: u8 = 1;
 pub const REASON_PER_TX_CAP: u8 = 2;

@@ -9,11 +9,21 @@ use anchor_lang::system_program;
 /// Monotonic: `peak_equity_usdc = max(peak_equity_usdc, new_equity_usdc)`.
 /// day_spent_usdc is intentionally left untouched; it is already managed
 /// by the existing `authorize_spend` per-day counter logic.
+///
+/// Callable by the agent as well as the owner: raising the watermark can
+/// only make the kill-switch trip sooner, so a compromised agent key
+/// cannot use this instruction to loosen the policy.
 #[derive(Accounts)]
 pub struct RecordPnl<'info> {
-    #[account(mut, seeds = [b"policy", policy.agent.as_ref()], bump = policy.bump)]
+    #[account(
+        mut,
+        seeds = [b"policy", policy.agent.as_ref()],
+        bump = policy.bump,
+        constraint = authority.key() == policy.agent || authority.key() == policy.owner
+            @ TreasuryError::Unauthorized,
+    )]
     pub policy: Account<'info, Policy>,
-    pub owner: Signer<'info>,
+    pub authority: Signer<'info>,
 }
 
 pub fn handler(
@@ -22,11 +32,6 @@ pub fn handler(
 ) -> Result<()> {
     let p = &mut ctx.accounts.policy;
     let clock = Clock::get()?;
-
-    require!(
-        ctx.accounts.owner.key() == p.owner,
-        TreasuryError::Unauthorized
-    );
 
     // Monotonic peak-equity watermark. Gains raise the watermark; losses do
     // not lower it (the drawdown math uses peak as the reference).
