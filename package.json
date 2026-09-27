@@ -1,8 +1,8 @@
 {
-  "name": "agent-treasury",
+  "name": "trade-on-my-behalf",
   "version": "0.1.0",
   "private": true,
-  "description": "Agent Treasury - on-chain spending policy engine for AI agent wallets on Solana (Solana World Fair 2026)",
+  "description": "Trade On My Behalf — perps agent with on-chain policy gates (Solana World Fair 2026)",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "build": "pnpm -r build",
@@ -13,10 +13,6 @@
     "anchor:test": "anchor test",
     "devnet:demo": "bash scripts/devnet-demo.sh"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "engines": {
     "node": ">=20"
   }
