@@ -106,9 +106,23 @@ If you are **a developer** cloning the repo:
 ## Quickstart
 
 ```bash
+# 1. (optional) install the agent skills this project was built with.
+#    They are tooling instructions, not shipped code — see skills-lock.json:
+npx skills add ColosseumOrg/colosseum-copilot
+npx skills add https://github.com/solana-foundation/solana-dev-skill
+npx skills add helius-labs/core-ai --skill build
+npx skills add helius-labs/core-ai --skill jupiter
+npx skills add helius-labs/core-ai --skill phantom
+npx skills add helius-labs/core-ai --skill svm
+
+# 2. build + test
 pnpm install
 anchor build
-anchor test
+anchor test --provider.cluster localnet   # 6/6 expected
+
+# 3. SDK smoke tests
+pnpm --filter @trade-on-my-behalf/sdk test   # 8/8 expected
+
 pnpm dev
 ```
 
