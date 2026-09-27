@@ -8,6 +8,31 @@ importers:
 
   .: {}
 
+  packages/agent:
+    dependencies:
+      '@solana/web3.js':
+        specifier: ^1.95.3
+        version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@trade-on-my-behalf/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      bn.js:
+        specifier: ^5.2.1
+        version: 5.2.5
+    devDependencies:
+      '@types/bn.js':
+        specifier: ^5.1.6
+        version: 5.2.0
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.43
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
   packages/sdk:
     dependencies:
       '@coral-xyz/anchor':
