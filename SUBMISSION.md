@@ -2,9 +2,13 @@
 
 ## Project
 
-Trade On My Behalf — programmable on-chain perps agent for time-poor
-Solana traders. Rules enforced at the wallet's signing layer via an
-Anchor program.
+Trade On My Behalf — a perps agent for time-poor Solana traders whose
+every trade is first approved or denied by an Anchor program enforcing
+the user's caps, with each decision recorded on-chain.
+
+**Scope, stated plainly:** the on-chain policy gate, SDK, agent runtime
+and CLI are built and tested. Venue fills are **paper** (simulated at
+the live Jupiter Perps oracle price); live order placement is not built.
 
 ## Track
 
@@ -23,15 +27,14 @@ Solana (primary).
 
 The exact unlisted IDs are filled at D13/D14 and re-pasted here. The
 canonical reading order is: pitch first (story + wedge), then demo
-(live trade + red-row moment). The demo video is the receipt; the
+(paper trade at live price + on-chain deny receipts). The demo video is the receipt; the
 pitch video is the framing.
 
 ## Repo
 
 `https://github.com/Therealratoshen/trade-on-my-behalf`
 
-Public remote is created at D15 and pasted here. The D16
-outside-person link check verifies that:
+Public since 2026-09-27. The D16 outside-person link check verifies that:
 
 1. `README.md` renders correctly on github.com.
 2. Every link in `README.md`, `docs/architecture.md`, `docs/onboarding.md`,

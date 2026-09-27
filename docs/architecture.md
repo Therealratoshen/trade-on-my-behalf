@@ -77,36 +77,32 @@ flowchart LR
    timestamp, and a source identifier. The runtime's skill-runner
    consumes the stream and decides whether to fire a `TradeIntent`.
 
-2. **Rule evaluation.** The runtime sends the `Signal` to the off-chain
-   policy evaluator (packages/policy-engine) which mirrors the on-chain
-   checks in `instructions/authorize_spend.rs`. This is the *fast path*:
-   if the evaluator rejects, the trade is skipped locally, no Anchor
-   call is made, no fee is paid, and an `AuditEvent` with
-   `approved: false` is emitted (still canonical on-chain).
+2. **Classify.** The runtime normalizes the signal into a `TradeIntent`
+   and, by default, clamps collateral and leverage to the policy caps
+   (`packages/agent/src/classifier.ts`).
 
-3. **Authorize gate.** For rules that pass off-chain but for which the
-   runtime wants the strongest possible receipt, the runtime calls
-   `authorize_spend` against the `Policy` PDA. The Anchor program runs
-   the same vendor/per-tx/per-day/TTL/leverage/drawdown check as the
-   off-chain mirror and emits an `AuditEvent` regardless of outcome.
+3. **Preflight.** The off-chain evaluator (`packages/agent/src/evaluator.ts`)
+   mirrors `authorize_spend` — same order, same integer math. It is a
+   diagnostic only: it never skips the on-chain call.
 
-4. **Venue router.** On approve, the runtime selects the cheapest venue
-   from the user's `rules.venues` list that quotes the requested market,
-   builds the venue-specific transaction, simulates it, and submits it.
-   On reject, no venue call is made; the `AuditEvent` is the only
-   on-chain evidence.
+4. **Authorize gate.** The runtime sends `authorize_spend` for **every**
+   intent, denies included, so each decision leaves a public receipt. The
+   program emits an `AuditEvent`; the SDK decodes it from the transaction
+   logs. If the chain and the preflight disagree, the chain wins and the
+   receipt is flagged.
 
-5. **Fill event.** A venue adapter waits for the venue's program logs
-   or for a Helius webhook (whichever is faster) and reports a `Fill`
-   back to the runtime. The runtime updates the local P&L ledger and,
-   on a loss that trips the daily-loss gate, the runtime calls
-   `record_pnl` so the on-chain drawdown check sees the new peak.
+5. **Venue.** On approve, the Jupiter Perps adapter opens the position.
+   **v1 is paper mode**: the fill is simulated at the live Jupiter price
+   with the 6 bps fee. On deny, nothing is sent to the venue. When
+   equity makes a new high the runtime calls `record_pnl`, which raises
+   the on-chain peak the kill-switch measures from.
 
-6. **Audit viewer.** Every `AuditEvent` is indexed by Helius DAS
+6. **Audit viewer (planned).** Every `AuditEvent` is indexed by Helius DAS
    (program `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`,
    discriminator `241,242,94,109,175,205,78,0`) and surfaced in the
    webapp (`apps/dashboard/`) via SWR refresh (~2 s). The webapp is
    the audit surface for both the user and a downstream auditor.
+   Until the webapp ships, `tomb watch` streams the decoded events.
 
 7. **Webapp control.** The user opens the webapp, connects Phantom
    Connect or Trust Wallet, views the policy + audit log + positions,

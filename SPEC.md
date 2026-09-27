@@ -40,7 +40,7 @@ What I want is software that lets me say:
 ## Licensing posture (path c, D6 founder call)
 
 - `programs/treasury/` — **MIT** (the on-chain policy kernel)
-- `packages/sdk/`, `packages/agent/`, `packages/venues/`,
+- `packages/sdk/`, `packages/agent/` (incl. venue adapters),
   `apps/dashboard/` — **MIT** (the integration + UI layer; webapp v1
   control surface ships here)
 - Hosted alert + PnL reporting — **Proprietary** (v2)
@@ -145,25 +145,19 @@ notifications as additional transports — none change the kernel.
 ```
 programs/treasury/             Anchor program: per-agent policy engine (DONE D4)
 packages/sdk/                  @trade-on-my-behalf/sdk: 5-line `withTrader` wrap
-packages/agent/                trader runtime: signal handlers, venue router
-packages/policy-engine/        off-chain evaluator (LiteSVM-tested)
-packages/venues/               per-venue adapters (jupiter-perps, drift, zeta)
+packages/agent/                runtime, evaluator, `tomb` CLI
+packages/agent/src/venue/      venue adapters (jupiter-perps, paper mode in v1)
 apps/dashboard/                Next.js 15 audit + rules editor
-scripts/devnet-demo.sh         one-shot judges run cold
+scripts/demo.sh                one-shot judges run cold (`pnpm demo` / `pnpm devnet:demo`)
 docs/                          architecture, user-tests, venue-comparison
 ```
 
-## Adapter surface (frozen; 1 file per venue)
+## Adapter surface (1 file per venue)
 
-```ts
-// packages/venues/jupiter-perps.ts
-export interface Venue {
-  name: string;
-  openPosition(p: { side:'long'|'short', sizeUsd:number, lev:number, market:string }): Promise<TxSig>;
-  closePosition(id:string): Promise<TxSig>;
-  listPositions(): Promise<Position[]>;
-}
-```
+Shipped D10 at `packages/agent/src/venue/index.ts`; see
+[docs/venues.md](docs/venues.md#adapter-contract) for the current
+interface (`openPosition`, `closePosition`, `listPositions`, `equityUsd`).
+v1 ships `jupiter-perps` in paper mode.
 
 ## Iteration cadence
 

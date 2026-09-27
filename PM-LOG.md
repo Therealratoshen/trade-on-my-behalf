@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Snapshot (last updated 2026-09-27 22:10 WIB)
+## 1. Snapshot (last updated 2026-09-27 23:10 WIB)
 
 | Field | Value |
 |---|---|
@@ -14,14 +14,14 @@
 | Wedge | Personal time-poor retail perps agent with on-chain policy gates (SAS model: Specialist, Algorithm, Skill) |
 | Cluster | v1-c9 "Solana DEX and Trading" (323 projects, 23 winners) |
 | Verdict (D5) | Partial gap. Closest analogs: `infty.trade` (AI pricing AMM), `armor-wallet` (AI wallet + trading, no perps, no on-chain policy), `mercantill` (on-chain policy, no perps), `solmind`/`pot-bot`/`debonk` TG bots (no policy layer). |
-| Build state | Kernel done (6/6 LiteSVM). **SDK done** — `@trade-on-my-behalf/sdk` v0.1.0, 8/8 smoke tests. Venue adapter + agent runtime + dashboard still empty (D10 gap, see R20). **GitHub repo PUBLIC** — https://github.com/Therealratoshen/trade-on-my-behalf |
+| Build state | **Program** hardened D10 (signer check, rolling daily reset), 12/12 localnet tests. **SDK** fixed D10 (decodes real AuditEvents), 11/11. **Agent runtime + `tomb` CLI + Jupiter Perps adapter (paper mode)** shipped D10, 16/16. `pnpm demo` runs the full 9-step story end-to-end on a local validator. Dashboard still empty. Repo public. |
 | Branch | `main` |
-| Last commit | `ed0677f README quickstart: add skills re-install block + localnet test note` — **pushed to public GitHub** |
+| Last commit | see `git log -1` — D10 build pushed to public GitHub |
 | Days to deadline | **15** (Oct 12, 2026 11:59 pm PT) |
-| Commits | 34 (all pushed to origin/main) |
-| Sol at risk | Tests done (6/6 LiteSVM), SDK done (8/8). **Venue adapter + agent runtime + webapp still empty** — the D10 load-bearing gap (R20). Devnet demo blocked on 0 SOL (R3 partial: keypair file exists, balance empty, faucet throttled — use https://faucet.solana.com). |
-| On-chain program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`, 209 KB, 4 instructions, 8 reason codes |
-| On-chain deployed? | **No** — devnet keypair not yet generated (R3 open). |
+| Commits | all pushed to origin/main |
+| Sol at risk | Devnet demo blocked **only** on devnet SOL (U1: ~4 SOL). Venue is paper-only — the submission and README say so. Dashboard not started (R21). |
+| On-chain program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`, 217 KB, 4 instructions, 8 reason codes |
+| On-chain deployed? | **No** — local validator only. `pnpm devnet:demo` deploys once the owner key has ~4 devnet SOL. |
 | Honest security claim | *"I cannot break your rules — within the as-stored caps"* (qualifier added D8.5+; see [SUBMISSION.md](SUBMISSION.md) §"Security claim" + [docs/security-model.md](docs/security-model.md)) |
 
 ## 2. Day-progress ledger
@@ -40,7 +40,8 @@
 | **D7** | 2026-09-26 | UpdatePolicy instruction, add leverage cap to state, add first LiteSVM tests | ✅ done | `cfa6b67` | none |
 | **D8** | 2026-09-26 | On-chain drawdown kill-switch + `record_pnl` instruction + drawdown-test for kill=25% peak=1000 implied=700 | ✅ done | `fd2b449` | none |
 | **D8.5** | 2026-09-26 | `pnpm install` + `anchor test --provider.cluster localnet`; fix pre-D7 test (REASON_PER_TX_CAP constant correction; state-fetch fallback added). 6/6 LiteSVM tests passing. | ✅ done | `e91fb26` | none |
-| **D8-D10** | — | SDK + agent runtime + venue adapter + first devnet demo | ⏳ pending | — | see risks §5 |
+| **D9** | 2026-09-27 | SDK `@trade-on-my-behalf/sdk` | ✅ done | `9a6d38e` | none |
+| **D10** | 2026-09-27 | Agent runtime + CLI + Jupiter paper adapter + `pnpm demo`; program + SDK bug fixes; vendor-id correction | ✅ done (local) · ⏳ devnet | see git log | devnet SOL (U1) |
 | **D11-D14** | — | Polish, tests, user tests, weekly update video #1 | ⏳ pending | — | — |
 | **D15-D17** | — | Pitch + demo videos, GTM, submit | ⏳ pending | — | depends on D7-D14 |
 
@@ -65,6 +66,9 @@
 | 14 | 2026-09-27 | **Whats-missing tracker added (docs/whats-missing.md).** Internal-facing doc that lists every gap between v1-as-spec'd and v1-as-shipped, with mitigation per gap. Surfaced so the founder can prioritize D9 without re-deriving the gap list from scratch each session. | PM-LOG §5 already had the risks; an explicit "what's not built yet" doc is faster to scan than re-reading 6+ specs. | docs/whats-missing.md |
 | 15 | 2026-09-27 | **Trader lifecycle & edge cases catalog added (docs/trader-lifecycle-edge-cases.md).** 14 lifecycle stages, ~140 edge cases with on-chain / off-chain / runtime / out-of-scope framing per case. Each row is a potential D11 tester ticket or D10+ hardening queue item. Augments the implied BRD with the trader-lifecycle view that was missing. | Founder feedback: "how is the prd and define further based on edge case and many more from traders lifecycle and how they do." Real perps traders use Telegram bots + spreadsheets + mental stops; the gap to TOMB must be legible. | docs/trader-lifecycle-edge-cases.md |
 | 16 | 2026-09-27 | **Repo made public on GitHub** — https://github.com/Therealratoshen/trade-on-my-behalf. Before pushing: secret scan clean (no PAT in worktree or history, no keypairs tracked, deploy keypair git-ignored); stopped tracking `.agents/skills/` (83 files) because `colosseum-copilot` is Proprietary-licensed and the Helius skills have no license — both are re-installable via the README quickstart. Pushed over HTTPS with the `gh` credential helper (the SSH key on this machine is a deploy key without access). | Founder call: push once documentation is clear. The SUBMISSION.md repo URL was 404 until this push. | commit `ed0677f`, remote SHA = local SHA |
+| 17 | 2026-09-27 | **Jupiter Perps ships in paper mode for v1.** Fills simulated at the live Jupiter oracle price (`lite-api.jup.ag/price/v3`) with the 6 bps fee; every fill gated by a real on-chain `authorize_spend`. | Jupiter Perps is mainnet-only and its position-request flow is multi-day work; the wedge is the on-chain gate, which is fully real. Saying "paper" everywhere beats a half-working live path. | `packages/agent/src/venue/jupiter-perps.ts`, SUBMISSION.md scope line |
+| 18 | 2026-09-27 | **Every intent goes on-chain, denies included.** Off-chain evaluator is a preflight diagnostic; a disagreement flags the receipt and the chain wins. | The public deny receipt is the product. Resolves a contradiction in `docs/agent-runtime.md` (D6 draft skipped the tx on off-chain deny). | `packages/agent/src/runtime.ts` |
+| 19 | 2026-09-27 | **Program + SDK security fixes before any deploy.** `authorize_spend` and `record_pnl` now require agent-or-owner signer (was: anyone — daily-cap griefing); daily counter resets every 216 000 slots (was: never); `record_pnl` callable by agent (only tightens). SDK decodes the real AuditEvent (was: reported every call approved), decodes u64 little-endian (was: big-endian), wraps Keypair in `Wallet` (was: could not sign). | Found by wiring the runtime to a live validator; each has a regression test. Nothing was deployed, so no migration. | `docs/security-model.md` §"Fixed on D10" |
 
 ## 4. Open questions
 
@@ -97,16 +101,18 @@
 | R14 | **D10+ tightening-timelock on `update_policy`** — stolen `owner` key can loosen every cap today | medium | high | Queue as D10+ per `docs/security-model.md` §"Scenario 1". Honest-v2 framing if time runs out. |
 | R15 | **D10+ CPI-wrapper or PDA-bound memo** — Anchor program does not CPI the venue; SDK constructs follow-through | medium | high | Queue as D10+ per `docs/security-model.md` §"Scenario 4". Honest-v2 framing if time runs out. |
 | R16 | **D10+ document "what kills an open position"** — venue liquidation only; the on-chain gate has no concept of an open position | low | medium | Add to `docs/security-model.md` + `docs/agent-runtime.md` §"Concurrency model" |
-| R17 | ~~**Empty packages block D9 ship**~~ **PARTLY RESOLVED D9** — `packages/sdk` shipped (v0.1.0, 8/8 smoke tests, commit `9a6d38e`). `packages/agent/src` and `apps/dashboard/` still empty; tracked as R20. | — | — | SDK half closed 2026-09-27 |
-| R20 | **Venue adapter + agent runtime unbuilt** — `packages/venues/` does not exist; `packages/agent/src/` is empty. The SDK can authorize a spend on-chain, but nothing yet turns an approved intent into a Jupiter Perps / Drift transaction. The devnet demo (and all 3 receipts in `docs/demo-receipts.md`) depend on this. | **certain** | blocker | D10 first task: create `packages/venues/` with a `VenueAdapter` interface + Jupiter Perps adapter; wire `packages/agent` runtime to call `sdk.authorizeSpend` then the adapter. Fallback: demo the on-chain approve/deny receipts without a real venue fill. |
-| R18 | ~~**Vendor pubkey TBD** — `docs/venues.md` §"Vendor pubkey mapping" lists Jupiter / Drift / Zeta pubkeys as `TBD`.~~ **RESOLVED D9'** — Jupiter Perps mainnet program id confirmed at `PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as` (via Solscan IDL link); Drift v2 confirmed at `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` (same on mainnet + devnet); Zeta discontinued May 2025 (pivoted to Bullet), removed from v1. Devnet Jupiter Perps program id is resolved at boot from the on-chain IDL, never hardcoded. See `docs/venues.md` §"Vendor pubkey mapping". | certain | resolved | resolution captured 2026-09-27 15:40 WIB; `docs/venues.md` rewritten |
+| R17 | ~~**Empty packages block D9 ship**~~ **RESOLVED D10** — SDK (D9) and agent runtime (D10) shipped. Only `apps/dashboard/` remains empty (R21). | — | — | closed 2026-09-27 |
+| R20 | ~~**Venue adapter + agent runtime unbuilt**~~ **RESOLVED D10 (paper mode)** — `packages/agent/src/venue/jupiter-perps.ts` + `runtime.ts` + `tomb` CLI; `pnpm demo` green. Residual: live Jupiter Perps order placement not built (Jupiter Perps is mainnet-only; building its position-request tx is multi-day). The submission states paper mode plainly. | — | — | closed 2026-09-27; residual tracked in `docs/whats-missing.md` |
+| R21 | **Dashboard unbuilt** — `apps/dashboard/` empty; the demo video would show a terminal, not a webapp | likely | medium | `tomb watch` is a working live audit feed today. Decide by D12: minimal read-only Next.js page (policy + AuditEvent list) or ship CLI-only and say so. |
+| R22 | **Agent key needs SOL for fees** — every `authorize_spend` is paid by the agent key; an unfunded agent stops trading | certain | low | Demo funds it with 0.05 SOL (~10 000 tx). Runtime should warn below a threshold (not built). |
+| R18 | **Vendor pubkey — CORRECTED D10.** The Jupiter Perps id recorded at D9' (`PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as`, "via Solscan") **does not exist on mainnet** (`getAccountInfo` → null). Correct id `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` — executable on mainnet, matches Jupiter docs + `jupiter-perps-sdk`. Replaced in all 7 places incl. code. Drift `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` re-verified executable. Lesson: verify ids against an RPC, not a doc link. | certain | resolved | 2026-09-27 23:00 WIB |
 | R19 | **D11 outside-dev testers not lined up** — recruiting is the longest-lead D9-D11 task | high | blocker | DM 5–10 Solana devs now (BRD review open Q #4); capture names + handles in PM-LOG §6 |
 
 ## 6. Tasks pending user action
 
 | # | Task | Why | Where |
 |---|---|---|---|
-| U1 | ~~Generate `~/.config/solana/id.json`~~ (file exists) — **fund it with devnet SOL**: balance is 0 and `solana airdrop` is throttled. Use https://faucet.solana.com (paste `solana address`, request 2 SOL). | Required for `anchor deploy` + devnet demo | browser |
+| U1 | **Fund the owner key with ~4 devnet SOL** at https://faucet.solana.com (paste the output of `solana address`; two requests if capped at 2). Program rent ~1.54 SOL + same-size deploy buffer (refunded) + agent fees. Then run `pnpm devnet:demo` and paste the three receipt links into `docs/demo-receipts.md`. | Required for devnet deploy + the 3 Solscan receipts | browser + 1 command |
 | U2 | Obtain Helius API key + `export HELIUS_API_KEY=...` | Per `docs/mcp-setup.md` | dashboard.helius.dev |
 | U3 | Obtain Jupiter API key + `export JUPITER_API_KEY=...` | Per `docs/venues.md` | portal.jup.ag |
 | U4 | Register team on colosseum.com/worldsfair; claim Solana track | Required before deadline | browser |

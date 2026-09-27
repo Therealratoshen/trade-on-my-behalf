@@ -1,27 +1,30 @@
 # Venues — Supported Solana Perps Adapters
 
-> **Status:** Updated 2026-09-27 15:40 WIB. Mainnet program IDs
-> resolved from public docs + Solscan. Devnet values resolved
-> at boot by the runtime from the published IDL/config account,
-> not hardcoded (see [§"Vendor pubkey mapping"](#vendor-pubkey-mapping)
-> below).
+> **Status:** Updated 2026-09-27 23:00 WIB (D10).
 >
-> **v1 ships with Jupiter Perps only.** Drift is a v2 fallback
-> candidate. Zeta was discontinued in May 2025 (pivoted to Bullet)
-> and is removed from the v1 cut — see [§"Removed from v1"](#removed-from-v1).
+> **v1 ships Jupiter Perps in paper mode.** The adapter
+> (`packages/agent/src/venue/jupiter-perps.ts`) simulates fills at the
+> live Jupiter oracle price with Jupiter Perps' 6 bps fee. Every fill is
+> gated by a real on-chain `authorize_spend`. Live order placement is
+> **not built**. Drift is a v2 candidate. Zeta was discontinued in May
+> 2025 (pivoted to Bullet) and is removed from v1.
+>
+> **Program-id correction (D10):** earlier revisions of this repo used
+> `PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as`, which has **no account on
+> mainnet**. The correct id, confirmed executable via mainnet
+> `getAccountInfo` on 2026-09-27 and matching Jupiter's docs and the
+> `jupiter-perps-sdk` crate, is `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu`.
 
-Trade On My Behalf routes orders through one of three perps venues.
-The user whitelists venues in their `Rule.venues` array; the runtime
-picks the cheapest available for each intent. The Anchor program does
-not care which venue — it only sees a `vendor: Pubkey` from the
-`policy.vendors` whitelist. The mapping from `VenueId` to `vendor`
-pubkey is owned by the runtime and resolved at boot.
+The Anchor program does not care which venue a trade goes to — it only
+checks that the `vendor: Pubkey` passed to `authorize_spend` is in the
+`policy.vendors` whitelist. The runtime owns the mapping from venue to
+vendor pubkey. v1 has one venue.
 
 ## Per-venue comparison
 
 | Venue | API style | Account model | Leverage range | Oracle source | Integration status |
 |---|---|---|---|---|---|
-| Jupiter Perps | REST + on-chain CPI | Program-owned sub-account per user (`PositionRequest` PDA) | 1×–100× retail, up to 250× in some markets | Pyth + Switchboard composite | **v1 primary (D9, ship gate)** |
+| Jupiter Perps | REST + on-chain CPI | Program-owned sub-account per user (`PositionRequest` PDA) | 1×–100× retail, up to 250× in some markets | Pyth + Switchboard composite | **v1 primary — paper mode (D10)** |
 | Drift v2 | TypeScript SDK + on-chain CPI | User deposits collateral into a Drift account | 1×–20× spot, 1×–50× perps | Pyth (primary), L2 fallback | **v2 fallback (deferred)** |
 | Bullet (formerly Zeta) | REST + TS SDK | Network-extension L2 per-market position | 1×–100× | Pyth | **v3 stretch (deferred)** |
 
@@ -31,15 +34,16 @@ pubkey is owned by the runtime and resolved at boot.
 Trading Infrastructure", 323 projects, 23 winners) already routes
 most Solana perps flow through Jupiter, and the REST surface + IDL
 is the most stable contract in the perps space. We treat it as the
-default for the devnet demo. The runtime builds the position via
-the Jupiter Perps CPI, then submits a v1 transaction containing
-`authorize_spend` first, the Jupiter Perps CPI second, and
-(optionally) an SPL memo last. The tx is simulated before signing.
+default for the devnet demo. **Shipped (paper):** the runtime sends
+`authorize_spend`, and on approve simulates the fill. **Planned (live):**
+build the Jupiter Perps `createIncreasePositionMarketRequest` and submit
+it in the same transaction as `authorize_spend` (see
+[security-model.md](security-model.md) Scenario 4 for why atomicity matters).
 
-Mainnet program id: `PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as`
-(verified via [Solscan program page](https://solscan.io/account/PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as#programIdl)).
-Devnet program id is resolved at runtime from the published IDL — see
-[§"Vendor pubkey mapping"](#vendor-pubkey-mapping).
+Mainnet program id: `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu`
+(verified executable on mainnet 2026-09-27; [Solscan](https://solscan.io/account/PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu)).
+Jupiter Perps is not known to be deployed on devnet; `tomb resolve-venue`
+checks any cluster.
 
 **Drift v2.** Secondary / v2 fallback because Drift's TypeScript SDK
 is the public anchor for `drift-labs/protocol-v2` and the user base
@@ -93,85 +97,69 @@ park it for v2.
 
 ## Adapter contract
 
-The runtime speaks to every venue through one interface:
+The runtime speaks to every venue through one interface
+(`packages/agent/src/venue/index.ts`):
 
 ```ts
-// packages/agent/src/venue/index.ts
 export interface Venue {
-  readonly name: 'jupiter-perps' | 'drift' | 'bullet';
-  openPosition(p: { side: 'long'|'short'; sizeUsd:number; leverage:number; market:string }): Promise<{ signature:string; venuePositionId:string }>;
-  closePosition(id: string): Promise<{ signature: string }>;
-  listPositions(): Promise<Position[]>;
-  quote(p: { market:string; side:'long'|'short'; sizeUsd:number }): Promise<{ priceUsd:number; feeBps:number; available:boolean }>;
-  /** Resolved at boot from on-chain IDL/config account. */
+  readonly name: 'jupiter-perps';
+  readonly mode: 'paper' | 'live';
+  /** Pubkey the on-chain policy whitelists as the `vendor`. */
   readonly programId: PublicKey;
+  openPosition(p: { market: Market; side: Side; collateralUsd: number; leverageBps: number }): Promise<Fill>;
+  closePosition(venuePositionId: string): Promise<Fill & { realizedPnlUsd: number }>;
+  listPositions(): Promise<Position[]>;
+  /** Cash + unrealized PnL; feeds the drawdown kill-switch. */
+  equityUsd(): Promise<number>;
 }
 ```
 
-Per-venue implementations live under
-`packages/agent/src/venue/{jupiter-perps,drift,bullet}.ts` and are bound
-at boot from the `Rule.venues` whitelist. The `programId` field is
-populated from the on-chain IDL fetch, never hardcoded.
+`collateralUsd` is what the policy caps (`amount_usdc`); notional is
+collateral × leverage. Markets in v1: `SOL-PERP`, `ETH-PERP`, `BTC-PERP`
+(Jupiter Perps' three custodies). `Fill.simulated` is `true` in paper mode
+and every CLI receipt says so.
 
 ## Vendor pubkey mapping
 
-The runtime owns the mapping from `VenueId` to the `Pubkey` that the
-Anchor program whitelists in `Policy.vendors`. The mapping is
-**resolved at boot from the published on-chain IDL**, not hardcoded
-— this is important because devnet program ids change more often
-than mainnet ones.
+The runtime owns the mapping from venue to the `Pubkey` that the Anchor
+program whitelists in `Policy.vendors`. In v1 it is a constant,
+`JUPITER_PERPS_PROGRAM_ID` in `packages/agent/src/venue/jupiter-perps.ts`.
 
 ### Mainnet program ids (verified)
 
 | Venue | Mainnet program id | Source |
 |---|---|---|
-| Jupiter Perps | `PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as` | [Solscan](https://solscan.io/account/PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as#programIdl) |
-| Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | [Solana docs](https://solana.com/docs/programs/verified-builds) + Drift SDK |
+| Jupiter Perps | `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` | mainnet `getAccountInfo` → executable (2026-09-27); Jupiter docs; `jupiter-perps-sdk` crate |
+| Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | mainnet `getAccountInfo` → executable (2026-09-27); Drift SDK |
 | Bullet | _unstable as of D8.5 — re-resolve at D14 if stretch_ | — |
 
-### Devnet program ids
-
-Resolved at boot by `packages/agent/src/venue/jupiter-perps.ts`:
+### Checking a cluster
 
 ```bash
-# Bootstrap script: print the resolved devnet program id for paste into create_policy
-JUPITER_PERPS_ID=$(pnpm --filter @trade-on-my-behalf/agent run resolve-venue -- jupiter-perps --url devnet)
-echo "Resolved Jupiter Perps devnet program id: $JUPITER_PERPS_ID"
-# Paste this into the create_policy call's `vendors` array.
+pnpm --filter @trade-on-my-behalf/agent resolve-venue -- --url https://api.devnet.solana.com
+# prints the vendor pubkey on stdout, and on stderr whether the program is deployed there
 ```
 
-The bootstrap is wired into `scripts/devnet-demo.sh` (D9) — the
-script prints the resolved pubkey so the user can copy it into their
-`create_policy` call.
+In paper mode the policy whitelists the mainnet Jupiter Perps id on every
+cluster: the vendor field is an identity for "this venue", and the demo
+never sends an instruction to it. `tomb init-policy` does this by default.
 
 ### Vendor whitelist (Policy.vendors)
 
-The on-chain whitelist is set via `create_policy`:
-
-```rust
-policy.vendors = [
-    Pubkey::from_str(JUPITER_PERPS_DEVNET_ID),  // resolved at boot
-]
-.max_len(16)  // hard cap; see state/mod.rs
-```
-
-A vendor can be added or removed via `update_policy` (owner only,
-D7+). To rotate to a different Jupiter Perps program id (e.g.
-after a devnet reset), the user submits a new `update_policy`
-instruction with the replacement pubkey. See
-[security-model.md §"Scenario 1"](security-model.md) for the
-carve-out: today, the same `owner` key that can rotate the
-vendor can also loosen every cap. The D10+ tighten-timelock
-(PM-LOG §5 R14) will split those two capabilities.
+Set once by `create_policy` (max 16). **The v1 program cannot change it
+afterwards**: `update_policy` has no vendors argument and there is no
+close instruction. Rotating venues means a new agent key, which gives a
+new policy PDA. This also means a stolen owner key cannot add a drain
+address to the whitelist (see [security-model.md](security-model.md)
+Scenario 1).
 
 ## Why this matters
 
-- **For judges:** the venue pubkeys are public on-chain. The
-  devnet demo will print the resolved ids at boot so a judge can
-  verify them against Solscan.
-- **For users:** rotating a venue (e.g. switching from Jupiter Perps
-  to Drift after v2 ships) is one `update_policy` call, not a
-  redeploy.
-- **For the founder:** the resolution-at-boot pattern means the
-  runtime does not break when Jupiter Perps redeploys to a new
-  program id — the runtime re-fetches and re-binds at boot.
+- **For judges:** the vendor pubkey is public and printed by
+  `tomb status` and `tomb resolve-venue`; verify it on Solscan.
+- **For users:** the whitelist is fixed for the life of a policy, so
+  nobody — including a thief holding the owner key — can quietly point
+  the agent at a new venue.
+- **For the founder:** a wrong vendor id silently makes every policy
+  whitelist a dead address. The D10 correction above is why ids are now
+  checked against mainnet before they go into docs.

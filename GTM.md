@@ -14,7 +14,7 @@ evidence that this position is uncrowded.
 Layer | License | Why
 |---|---|---|
 | `programs/treasury/` Anchor kernel | **MIT** | The on-chain policy gate. Earns Open-source criterion. No MIT cross-license conflict (`smart-wallet` is the closest precedent but unlicensed).
-| `packages/sdk/` + `packages/agent/` + `packages/venues/` | **MIT** | The integration layer. Earns Composability criterion. `fridonai` is the strongest MIT candidate in adjacent space but ships no policy / perps / wallet-control primitives.
+| `packages/sdk/` + `packages/agent/` (incl. venue adapters) | **MIT** | The integration layer. Earns Composability criterion. `fridonai` is the strongest MIT candidate in adjacent space but ships no policy / perps / wallet-control primitives.
 | `apps/dashboard/` webapp (v1 control surface) | **MIT** | Phantom Connect or Trust Wallet, viewer + rule editor. Earns Business Plan and Open-source both.
 | ~~Telegram control surface~~ | v3, never (cut D8.5+) | Superseded by webapp. Replaced at the design table, not the code table.
 | Hosted alert + PnL reporting | **Proprietary (hosted)** | Optional v2; aligns with performance-fee pricing.

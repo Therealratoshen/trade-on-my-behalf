@@ -67,27 +67,21 @@ create_policy(
     per_tx_cap_usdc: u64,
     per_day_cap_usdc: u64,
     ttl_slots: u64,
+    max_leverage_bps: u16,          // 0 = no cap, else 100..=10_000
+    kill_switch_drawdown_pct: u8,   // 0 = off, else 1..=100 (PERCENT)
 ) -> Result<()>
 ```
 
-Accounts:
-
-| Name | Signer | Writable | Notes |
+| Account | Signer | Writable | Notes |
 |---|---|---|---|
-| `policy` | – | yes | PDA at `[b"policy", agent]`, freshly initialized. |
-| `agent` | – | – | The wallet the policy applies to. Stored as `UncheckedAccount`. |
+| `policy` | – | yes | PDA at `[b"policy", agent]`, freshly initialized (`init`). |
+| `agent` | – | – | The agent's hot-key pubkey. `UncheckedAccount`. |
 | `owner` | yes | yes | Pays rent. Stored as `policy.owner`. |
-| `system_program` | – | – | Standard `11111111…`. |
+| `system_program` | – | – | |
 
-Enforced invariants:
-
-- `vendors.len() <= 16` → `TreasuryError::TooManyVendors`.
-- `policy` PDA is freshly initialized (Anchor `init`).
-- `owner` and `agent` are independent pubkeys; one policy per agent.
-
-Behavior: writes all the fields above to the PDA, stores the current
-slot in both `created_at_slot` and `last_reset_slot`, and returns.
-No event is emitted; the PDA itself is the receipt.
+Invariants: `vendors.len() <= 16`; leverage and percent ranges above.
+Writes the current slot to `created_at_slot` and `last_reset_slot`.
+`vendors` cannot be changed afterwards.
 
 ## Instruction — `authorize_spend`
 
@@ -97,31 +91,49 @@ Source: `programs/treasury/programs/treasury/src/instructions/authorize_spend.rs
 authorize_spend(
     vendor: Pubkey,
     amount_usdc: u64,
-    nonce: u64,
+    nonce: u64,                         // recorded, not checked in v1
+    leverage_bps: u16,
+    implied_current_equity_usdc: u64,   // runtime-reported
 ) -> Result<()>
 ```
 
-Accounts:
-
-| Name | Signer | Writable | Notes |
+| Account | Signer | Writable | Notes |
 |---|---|---|---|
-| `policy` | – | yes | Derived PDA; must match `[b"policy", policy.agent]`. |
-| `owner` | yes | – | The same owner that created the policy. |
+| `policy` | – | yes | Must match `[b"policy", policy.agent]`. |
+| `authority` | yes | – | Must be `policy.agent` or `policy.owner`, else `Unauthorized` (6005) and the tx fails. |
 
-Evaluation order (first match wins):
+Order of operations:
 
-1. `vendor` not in `policy.vendors` → `REASON_VENDOR_DENIED` (1).
-2. `amount_usdc > policy.per_tx_cap_usdc` → `REASON_PER_TX_CAP` (2).
-3. `day_spent_usdc + amount_usdc > policy.per_day_cap_usdc` → `REASON_DAILY_CAP` (3).
-4. `Clock::slot - created_at_slot > ttl_slots` → `REASON_EXPIRED` (4).
+0. If `slot - last_reset_slot >= 216_000` (~24h), reset `day_spent_usdc`
+   to 0 and set `last_reset_slot = slot`. Rolling window, not UTC-aligned.
+1. Kill-switch: if `kill_switch_drawdown_pct > 0` and `peak_equity_usdc > 0`
+   and `implied_current_equity_usdc < peak × (100 − pct) / 100`
+   → `REASON_DRAWDOWN_KILLSWITCH` (7).
+2. `vendor` not in `policy.vendors` → `REASON_VENDOR_DENIED` (1).
+3. `amount_usdc > per_tx_cap_usdc` → `REASON_PER_TX_CAP` (2).
+4. `day_spent_usdc + amount_usdc > per_day_cap_usdc` → `REASON_DAILY_CAP` (3).
+5. `slot - created_at_slot > ttl_slots` → `REASON_EXPIRED` (4).
+6. `max_leverage_bps != 0` and `leverage_bps > max_leverage_bps` → `REASON_LEVERAGE_CAP` (6).
 
-If none of the above, the spend is approved: `day_spent_usdc` is
-saturated-added by `amount_usdc`, and the event reason is `REASON_OK` (0).
+Otherwise approved: `day_spent_usdc += amount_usdc`, reason `REASON_OK` (0).
 
-In every branch the program emits a single `AuditEvent`. Denial paths do
-not write to `day_spent_usdc`. This means a denied trade does *not*
-consume the daily budget — by design, so the user can correct the call
-without eating into the cap.
+Every branch emits exactly one `AuditEvent` and returns `Ok`, so a deny
+is a successful transaction with `approved = false` in the event.
+Clients must read the event, not the transaction status. Denials do not
+consume the daily budget.
+
+## Instruction — `update_policy`
+
+`update_policy(max_leverage_bps?, per_tx_cap_usdc?, per_day_cap_usdc?, ttl_slots?, kill_switch_drawdown_pct?)`.
+Signer `owner` must equal `policy.owner`. `None` leaves a field unchanged.
+Loosening is allowed (see security-model.md Scenario 1, R14 timelock).
+Emits an `AuditEvent` with `vendor = system_program`, `amount = 0`.
+
+## Instruction — `record_pnl`
+
+`record_pnl(new_equity_usdc)`. Signer `authority` must be `policy.agent`
+or `policy.owner`. Sets `peak_equity_usdc = max(peak, new)`; it can only
+raise the kill-switch floor, never lower it. Emits an admin `AuditEvent`.
 
 ## Event — `AuditEvent`
 
@@ -139,9 +151,9 @@ pub struct AuditEvent {
 }
 ```
 
-Every decision — approve or deny — emits one of these. The runtime
-uses `nonce` to deduplicate replays; off-chain indexers use
-`policy + at_slot` as a cursor.
+Every decision — approve or deny — emits one of these. The program does
+not deduplicate `nonce`; off-chain indexers use `policy + at_slot +
+signature` as a cursor.
 
 Reason codes (constant, frozen):
 
@@ -152,7 +164,9 @@ Reason codes (constant, frozen):
 | 2 | `REASON_PER_TX_CAP` | Exceeds per-tx cap. |
 | 3 | `REASON_DAILY_CAP` | Exceeds daily cap. |
 | 4 | `REASON_EXPIRED` | TTL elapsed. |
-| 5 | `REASON_UNKNOWN_VENDOR` | Reserved for future use (e.g., venue adapter mismatch). |
+| 5 | `REASON_UNKNOWN_VENDOR` | Reserved; not emitted in v1. |
+| 6 | `REASON_LEVERAGE_CAP` | Leverage above `max_leverage_bps`. |
+| 7 | `REASON_DRAWDOWN_KILLSWITCH` | Equity below the drawdown floor. |
 
 ## Forward compatibility — v1 transaction format (SIMD-0385)
 
@@ -173,17 +187,12 @@ requiring version negotiation at the wallet layer.
 ## What is **not** in the program (yet)
 
 - No CPI to a perps venue. The program approves; the venue adapter
-  moves money. This separation keeps the program small and reviewable.
-- No leverage cap field. `per_tx_cap_usdc` is in dollar terms, not
-  leverage-bps terms. The D7 deliverable adds `max_leverage_bps: u16`
-  to `Policy` with a corresponding `REASON_LEVERAGE_CAP` (6).
-- No drawdown kill-switch. The D8 deliverable adds a `drawdown_peak_usdc:
-  u64` field and an `REASON_DRAWDOWN_KILLSWITCH` (7).
-- No automatic `day_spent_usdc` reset. The runtime triggers
-  `last_reset_slot` updates via a separate `reset_day_window` instruction
-  (D7) once per day.
+  moves money (paper-simulated in v1). See security-model.md Scenario 4.
+- No nonce replay protection.
+- No way to change `vendors` or close a policy.
+- No tighten-timelock on `update_policy` (R14).
+- No notion of open positions (R16).
 
-Each of those is a small additive change to `state/mod.rs` and one
-more `if/else` branch in `authorize_spend`. No existing account layout
-is broken; new fields go at the end and account space grows by 2/8/8
-bytes respectively.
+Tests: `programs/treasury/tests/treasury.ts`, 12 cases covering every
+emitted reason code, signer checks, and agent-vs-owner permissions.
+Run with `anchor test --provider.cluster localnet`.

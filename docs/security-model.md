@@ -60,8 +60,9 @@ What the attacker **can** do, given the current
 - **`record_pnl`** — they can write `new_equity_usdc` upward to
   raise `peak_equity_usdc`. The monotonic `max(peak, new)`
   semantics mean a stolen key can raise the watermark but **not
-  lower it**, so this attack only *widens* the kill-switch
-  threshold (raising it by inflating peak), it does not reset it.
+  lower it**. Raising the peak raises the kill-switch floor, so
+  this can only make the kill-switch trip *sooner* (a nuisance,
+  not a loosening).
 
 What the attacker **can NOT** do:
 
@@ -113,19 +114,22 @@ owner's.
 
 What the runtime **can** do today:
 
-- Sign `authorize_spend` — yes, the agent key is the PDA seed
-  (`seeds = [b"policy", policy.agent.as_ref()]`) but the
-  *transaction signer* for `authorize_spend` is `owner`, not
-  `agent`. The agent key signs venue CPIs; `owner` signs the
-  gate call.
+- Sign `authorize_spend` and `record_pnl` with the agent key.
+  Since D10 both instructions require the signer to be
+  `policy.agent` or `policy.owner` (Anchor `constraint`, error
+  `Unauthorized`).
 - Choose which signals to act on; choose to skip trades
   silently; replay stale nonces (the program does **not** dedupe
   by `nonce`); sequence trades to *just* hit `per_day_cap_usdc`.
+- Raise `peak_equity_usdc` via `record_pnl`. This only tightens
+  the kill-switch, so it is safe to give the agent.
+- Spend the agent's SOL on transaction fees (the agent key pays
+  its own fees; fund it with a small amount only).
 
 What the runtime **can NOT** do:
 
-- Bypass `owner` on `update_policy` or `record_pnl` — both
-  require `owner.key() == p.owner`.
+- Call `update_policy` — it requires `owner.key() == p.owner`.
+  Tested: `agent key cannot loosen the policy via update_policy`.
 - Bypass any of the six on-chain checks at their current policy
   values.
 - Reuse an `authorize_spend` across more than one venue CPI
@@ -167,6 +171,17 @@ a SDK-side discipline — the on-chain program can't see the
 "follow-through" — but it must be enforced by the SDK
 construction path (`packages/agent/src/executor.ts`) so the
 runtime never has the choice.
+
+#### Fixed on D10 (2026-09-27)
+
+Found while wiring the runtime to the program:
+
+| Bug (before D10) | Impact | Fix | Test |
+|---|---|---|---|
+| `authorize_spend` accepted **any** signer | Anyone could call it on anyone's policy and burn the daily cap with approved spends — a free denial-of-service on the user's agent | Signer must be `policy.agent` or `policy.owner` | `rejects authorize_spend signed by a key that is neither agent nor owner` |
+| `day_spent_usdc` never reset | The "per-day" cap was a lifetime cap; the agent would stop forever after one day's budget | Rolling reset when `slot - last_reset_slot >= 216_000` (~24h) | evaluator mirror test (a 216k-slot wait is impractical on localnet) |
+| `record_pnl` was owner-only | The runtime (agent key) could not arm or raise the kill-switch without the user's key online | Agent or owner may call it; it can only tighten | `agent key can authorize_spend and record_pnl on its own policy` |
+| SDK reported every `authorize_spend` as approved | A runtime built on it would have traded after on-chain denies | SDK decodes the AuditEvent from logs; throws if absent | `parseAuditEvents surfaces a deny even though the transaction succeeded` |
 
 ### Scenario 3 — Rogue signal source
 
@@ -232,6 +247,12 @@ firing. Both are already specced at `docs/control-surface.md`
 §"Approve / deny"; D9 closes the loop.
 
 ### Scenario 4 — Hostile venue / CPI to wrong program
+
+> **v1 status (D10):** the shipped runtime runs Jupiter Perps in
+> **paper mode** — it sends `authorize_spend` on-chain and then
+> simulates the fill; no venue transaction exists. The
+> follow-through gap below is therefore not exercised by the demo,
+> but it is the first thing live mode must solve.
 
 **Failure mode.** The user's runtime intends to CPI into
 Jupiter Perps (`JupiterPerpsProgram1111...`). A compromised or

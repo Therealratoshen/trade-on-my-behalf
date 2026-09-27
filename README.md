@@ -19,14 +19,15 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
   they're 24/7 *signal executors*. None of them lets you write down your
   own setup, your budget, and your kill-switch, and have those rules
   enforced at the signing layer.
-- **Rules are enforced on-chain.** No rogue signal source, no exploited
-  dependency, no compromised key wrapping can bypass them. The Anchor
-  program signs or doesn't sign.
-- **Composability.** Trades route through Jupiter Perps (primary) and
-  Drift. Sampler inputs come from Helius webhooks (RSI, funding,
-  mark-price, on-chain metrics). Fills,
-  mark prices, liquidations come from indexed events. Every layer is a
-  primitive the hackathon judges reward.
+- **Rules are checked on-chain.** Every trade the agent wants to make
+  is first sent to an Anchor program that approves or denies it against
+  the caps you set, and records the decision publicly — denials included.
+  A buggy or hijacked agent key cannot loosen the caps (tested).
+- **Composable, honestly scoped.** v1 targets Jupiter Perps, in
+  **paper mode**: fills are simulated at the live Jupiter price, while
+  the approve/deny decision is a real on-chain transaction. Live order
+  placement, Drift, and signal samplers are next — see
+  [docs/whats-missing.md](docs/whats-missing.md).
 
 ## Status
 
@@ -39,8 +40,10 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
 - [x] D7: leverage cap + `update_policy` + 3 LiteSVM tests; treasury.so → 209 KB
 - [x] D8: on-chain drawdown kill-switch (`record_pnl` + drawdown check in `authorize_spend` + LiteSVM test); 6/6 tests passing
 - [x] D8.5: webapp-first pivot (Telegram bot → webapp), SAS framing, breach-modeling (4 scenarios), D10+ hardening queue captured
-- [ ] **D9: SDK `withTrader(wallet, rules)` + Jupiter Perps adapter + Next.js 15 webapp** — *the load-bearing gate; everything below depends on this*
-- [ ] D10: Surfpool integration test + devnet deploy
+- [x] D9: SDK `@trade-on-my-behalf/sdk` (`withTrader`)
+- [x] D10: agent runtime + `tomb` CLI + Jupiter Perps adapter (paper mode) + `pnpm demo` end-to-end on a local validator; program hardened (signer check, daily reset); 12 program + 11 SDK + 16 agent tests
+- [ ] D10: devnet deploy — needs ~4 devnet SOL
+- [ ] Next.js dashboard (`apps/dashboard/`) — `tomb watch` is the interim live audit feed
 - [ ] D11: 3 outside-dev user tests (decision gate per [docs/user-tests.md](docs/user-tests.md))
 - [ ] D12: weekly 1-min update #1 (per SPEC §"Iteration cadence")
 - [ ] D13: pitch video (2–3 min) — see [design-thinking/pitch-script.md](design-thinking/pitch-script.md)
@@ -49,7 +52,7 @@ Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsf
 - [ ] D16: outside-person link check + final read-through
 - [ ] D17: submit by Oct 12 11:59 pm PT (target D16 EOD)
 
-**Days remaining:** ~16. **Commits:** 14. **Critical path:** D9 → D11 → D14 → D16.
+**Critical path:** devnet deploy → D11 user tests → D14 demo video → D16 submit.
 
 ## Security claim — honest read (D7 BRD → D8 ship → D8.5 breach-model)
 
@@ -69,9 +72,8 @@ in two of four breach scenarios — see [docs/security-model.md](docs/security-m
   reconciliation. Peak is on-chain monotonic; the *delta* is
   best-effort. A compromised runtime can lie about current
   equity; the wedge defends the *envelope*, not the *truth*.
-- **Off-chain (runtime) enforced**: signal classification, position
-  sizing before CPI, webapp refresh interval (~2 s), position
-  reconciliation, fill-event ingestion.
+- **Off-chain (runtime) enforced**: signal classification, clamping
+  intents to the caps, paper position and equity tracking.
 - **Honest carve-outs** (per [docs/security-model.md](docs/security-model.md) §"Scenario 1" + §"Scenario 4"):
   - A **stolen `owner` key** beats every cap *via `update_policy`* — `update_policy` accepts loosening today. Mitigated by adding a **tighten-timelock** (D10+; queued).
   - The **on-chain gate does not CPI the venue** — the SDK constructs the follow-through CPI. A compromised SDK could lie about the destination program id or the amount. Mitigated by adding a **CPI-wrapper or PDA-bound memo** (D10+; queued).
@@ -117,14 +119,22 @@ npx skills add helius-labs/core-ai --skill svm
 
 # 2. build + test
 pnpm install
-anchor build
-anchor test --provider.cluster localnet   # 6/6 expected
+(cd programs/treasury && anchor build && anchor test --provider.cluster localnet)   # 12 passing
+pnpm --filter @trade-on-my-behalf/sdk test     # 11 passing
+pnpm --filter @trade-on-my-behalf/agent test   # 16 passing
 
-# 3. SDK smoke tests
-pnpm --filter @trade-on-my-behalf/sdk test   # 8/8 expected
+# 3. the whole story on a throwaway local validator (no SOL needed, ~20 s)
+pnpm demo
 
-pnpm dev
+# 4. same story on devnet (needs ~4 devnet SOL from https://faucet.solana.com)
+pnpm devnet:demo
 ```
+
+`pnpm demo` creates a policy ($50/trade, $150/day, 5x, 25% kill-switch),
+then shows: an approved trade, an oversized signal clamped to the caps,
+two rule-breaking intents denied on-chain, the owner tightening the
+kill-switch, a simulated crash tripping it, and the agent key failing
+to loosen its own policy. Every step prints an explorer receipt link.
 
 See `SPEC.md` for the frozen scope and `docs/copilot-verdict.md` for the idea's
 evidence-backed gap classification.
@@ -133,12 +143,10 @@ evidence-backed gap classification.
 
 ```
 programs/treasury/             Anchor program: per-agent policy engine
-packages/sdk/                  @trade-on-my-behalf/sdk: 5-line withTrader wrap
-packages/agent/                trader runtime (webapp v1 control surface, see docs/control-surface.md)
-packages/policy-engine/        off-chain policy evaluator (LiteSVM-tested)
-packages/bridge/               USDC -> wSOL (LTC bridge dropped D3')
-apps/dashboard/                Next.js 15 webapp control surface (Phantom Connect or Trust Wallet) — see docs/control-surface.md
-scripts/devnet-demo.sh         one-shot judges can run
+packages/sdk/                  @trade-on-my-behalf/sdk: typed wrapper over the program
+packages/agent/                runtime, off-chain evaluator, Jupiter Perps adapter (paper), `tomb` CLI
+apps/dashboard/                Next.js webapp (not built yet) — see docs/control-surface.md
+scripts/demo.sh                end-to-end demo: `pnpm demo` (local) / `pnpm devnet:demo`
 docs/                          architecture, onchain-program, sdk-api,
                                agent-runtime, venues, control-surface,
                                audit-and-receipts, testing-plan,

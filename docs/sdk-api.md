@@ -1,178 +1,138 @@
 # SDK API — `@trade-on-my-behalf/sdk`
 
-> Frozen for D6 (sketch only). Production code lands D7-D8 against the
-> IDL at `programs/treasury/target/idl/treasury.json`.
+> Updated 2026-09-27 (D10) to match the shipped code in `packages/sdk/src/`.
+> The earlier D6 sketch (a `@solana/kit`-based `TradeAPI.execute()`) was never
+> built; this page describes what exists.
 
-The SDK is the *one* npm package a developer installs to give their
-agent a wallet with hard risk limits. It is intentionally small — five
-lines of code from `pnpm add` to first authorized spend — and the rest
-of the system (agent runtime, webapp control surface) is layered on
-top of it. This is the wedge against the existing perps-bot landscape:
-composability, not a black-box dashboard.
+The SDK is a thin, typed wrapper over the Anchor `treasury` program. It
+hides IDL loading, PDA derivation, USD ⇄ USDC-micro conversion, and
+AuditEvent decoding. It does **not** talk to any venue — that is the
+agent runtime's job (`packages/agent`, see [agent-runtime.md](agent-runtime.md)).
 
-## Installation
+Built on `@coral-xyz/anchor` 0.31 and `@solana/web3.js` 1.x.
 
-```bash
-pnpm add @trade-on-my-behalf/sdk
-# peer deps installed by Kit 8:
-pnpm add @solana/kit @solana/kit-plugin-rpc @solana/kit-plugin-signer
-```
+## Two keys, two handles
 
-## Type surface (sketch)
+| Key | Who holds it | What it signs |
+|---|---|---|
+| **Owner** | The user's wallet | `create_policy`, `update_policy` (and may also sign the agent's calls) |
+| **Agent** | A hot key on the runtime host | `authorize_spend` for every trade, `record_pnl` after fills |
+
+The policy PDA is keyed by the agent pubkey (`seeds = ["policy", agent]`),
+so both handles point at the same account:
 
 ```ts
-// packages/sdk/src/types.ts
-export type VenueId = 'jupiter-perps' | 'drift' | 'zeta';
+import { Connection } from '@solana/web3.js';
+import { withTrader, reasonCodeName } from '@trade-on-my-behalf/sdk';
 
-export interface Rule {
-  /** Whitelisted venues. Any spend outside is denied. */
-  venues: VenueId[];
-  /** Cap on notional leverage, in basis points (500 = 5x). 0 disables. */
-  maxLeverage: number;
-  /** Max notional per single position, in USD. */
-  maxPositionUsd: number;
-  /** Max realized loss per UTC day, in USD. */
-  maxDailyLossUsd: number;
-  /** Equity drawdown (peak-to-now) that flips the kill-switch, in percent (15 = 15%). */
-  killSwitchDrawdownPct: number;
-  /** Optional override for venues not on the bundled adapter list. */
-  customVendors?: PublicKey[];
-}
+const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+const JUPITER_PERPS = new PublicKey('PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu');
 
-export interface TradeIntent {
-  side: 'long' | 'short';
-  market: string;        // e.g. 'SOL-PERP'
-  sizeUsd: number;       // notional
-  leverage: number;      // bps (500 = 5x)
-  /** Optional override venue; defaults to the cheapest in `rules.venues`. */
-  venue?: VenueId;
-  /** Free-form rationale surfaced to the user in the webapp audit log. */
-  rationale?: string;
-}
+// Owner, once.
+const owner = withTrader({ connection, wallet: ownerKeypair, policy: agentKeypair.publicKey });
+await owner.ensurePolicy({
+  agent: agentKeypair.publicKey,
+  vendors: [JUPITER_PERPS],
+  perTxCapUsd: 50,
+  perDayCapUsd: 150,
+  maxLeverageBps: 500,        // 5x
+  killSwitchDrawdownPct: 25,  // percent (1..=100), NOT bps
+});
 
-export interface TxSig {
-  /** Base58 transaction signature. */
-  signature: string;
-  /** Whether the on-chain `authorize_spend` was approved. */
-  approved: boolean;
-  /** Reason code from the AuditEvent (0 = OK, 1..7 = deny). */
-  reasonCode: number;
-  /** Slot the AuditEvent landed on. */
-  atSlot: number;
-}
+// Agent, per trade.
+const agent = withTrader({ connection, wallet: agentKeypair, policy: agentKeypair.publicKey });
+const { audit, signature } = await agent.authorizeSpend({
+  agent: agentKeypair.publicKey,
+  vendor: JUPITER_PERPS,
+  amountUsd: 40,
+  leverageBps: 300,
+  impliedCurrentEquityUsd: 1000,
+});
+if (!audit.approved) console.log(`denied: ${reasonCodeName(audit.reasonCode)}`);
+```
 
-export interface TradeAPI {
-  /** Submit a trade; the SDK runs the off-chain check, then `authorize_spend`, then the venue tx. */
-  execute(intent: TradeIntent): Promise<TxSig>;
-  /** List positions across all configured venues. */
-  listPositions(): Promise<Position[]>;
-  /** Close a single position by its venue-local id. */
-  closePosition(id: string): Promise<TxSig>;
-  /** Subscribe to AuditEvent stream (off-chain mirror + on-chain tail). */
-  onAudit(cb: (ev: AuditEventView) => void): () => void;
-}
+## `withTrader(opts)` → handle
 
-export interface AuditEventView {
+| Option | Type | Notes |
+|---|---|---|
+| `connection` | `Connection` | |
+| `wallet` | `Keypair` | Signs and pays fees. Owner for admin, agent for trades. |
+| `policy` | `PublicKey` | The **agent** pubkey (PDA seed). |
+| `commitment` | `Commitment` | Default `'confirmed'`. Used for both preflight and confirmation. |
+
+| Method | Signer must be | Returns |
+|---|---|---|
+| `ensurePolicy(input)` | owner | `{ signature, createdNew }`. No-op if the PDA exists. |
+| `authorizeSpend(input)` | agent or owner | `{ signature, audit }` — see below. |
+| `recordPnl({ agent, newEquityUsd })` | agent or owner | `{ signature }`. Raises `peak_equity_usdc` if higher. |
+| `updatePolicy(input)` | owner | `{ signature }`. Only the fields you pass change. |
+| `fetchPolicy()` | — | Decoded `PolicyLike` or `null`. |
+| `subscribeAudit(handler)` | — | Listener id. Decoded AuditEvents for **this** policy only. |
+| `unsubscribeAudit(id)` | — | |
+| `replaceVendors(input)` | — | **Throws.** The v1 program cannot change `vendors`; use a new agent key. |
+
+### `authorizeSpend` and the deny path
+
+`authorize_spend` returns `Ok` on a deny so the denial is recorded
+on-chain instead of reverting. Transaction success therefore says
+nothing about the decision. The SDK fetches the confirmed transaction,
+decodes the `AuditEvent` from its `Program data:` logs, and returns it:
+
+```ts
+interface AuditEvent {
   policy: PublicKey;
   agent: PublicKey;
   vendor: PublicKey;
-  amountUsdc: number;
+  amountUsdc: BN;      // micro-USDC
   approved: boolean;
-  reasonCode: number;
-  nonce: number;
-  atSlot: number;
+  reasonCode: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  nonce: BN;
+  slot: number;        // on-chain at_slot
+  signature: string;
+  observedAt: number;  // ms, when the SDK decoded it
 }
 ```
 
-## Entry point
+If the logs do not contain exactly one AuditEvent the call **throws**
+rather than guessing. `nonce` defaults to a per-process strictly
+increasing value; the v1 program records it but does not check it.
 
-```ts
-// packages/sdk/src/index.ts
-export function withTrader(
-  wallet: Signer,
-  rules: Rule,
-  rpc?: Rpc<SolanaRpcApi>,
-): TradeAPI;
+Signer errors (`Unauthorized`, 6005) are real transaction failures and
+surface as thrown `AnchorError`s.
+
+### Reason codes
+
+| Code | Name | Rule |
+|---|---|---|
+| 0 | `REASON_OK` | approved |
+| 1 | `REASON_VENDOR_DENIED` | vendor not in `policy.vendors` |
+| 2 | `REASON_PER_TX_CAP` | `amount > per_tx_cap` |
+| 3 | `REASON_DAILY_CAP` | `day_spent + amount > per_day_cap` (rolling 216 000-slot window) |
+| 4 | `REASON_EXPIRED` | `slot - created_at > ttl_slots` |
+| 5 | reserved | not emitted in v1 |
+| 6 | `REASON_LEVERAGE_CAP` | `leverage_bps > max_leverage_bps` (0 = no cap) |
+| 7 | `REASON_DRAWDOWN_KILLSWITCH` | `equity < peak × (1 − pct/100)`; checked first |
+
+## Other exports
+
+`derivePolicyPda(agent)`, `decodePolicy(buffer)`, `parseAuditEvents(program, logs, sig)`,
+`micro(usd)`, `reasonCodeName(code)`, `REASON_CODES`, `TREASURY_PROGRAM_ID`,
+`TREASURY_IDL`, `MAX_VENDORS` (16), `SLOTS_PER_DAY` (216 000), and the
+`DEFAULT_*` constants.
+
+## Keeping the IDL in sync
+
+`src/treasury.idl.ts` is generated. After changing the program:
+
+```bash
+cd programs/treasury && anchor build
+pnpm --filter @trade-on-my-behalf/sdk run sync-idl
+pnpm --filter @trade-on-my-behalf/sdk test
 ```
 
-`withTrader` returns a `TradeAPI` bound to `wallet` as both payer and
-identity (the standard case per `solana-dev` skill default). The
-returned object builds v1 transactions (`transactionConfig.version = 1`).
+## Tests
 
-## Five-line copy-paste example
-
-```ts
-import { createClient, publicKey, lamports } from '@solana/kit';
-import { solanaDevnetRpc } from '@solana/kit-plugin-rpc';
-import { generatedSigner, signer } from '@solana/kit-plugin-signer';
-import { airdropSigner } from '@solana/kit-plugin-rpc';
-import { withTrader } from '@trade-on-my-behalf/sdk';
-
-const wallet = await generatedSigner();
-const client = createClient().use(signer(wallet)).use(solanaDevnetRpc());
-await airdropSigner(client, wallet, lamports(1_000_000_000n));
-
-const trade = withTrader(wallet, {
-  venues: ['jupiter-perps', 'drift'],
-  maxLeverage: 500,
-  maxPositionUsd: 200,
-  maxDailyLossUsd: 60,
-  killSwitchDrawdownPct: 15,
-}, client.rpc);
-
-const sig = await trade.execute({
-  side: 'long',
-  market: 'SOL-PERP',
-  sizeUsd: 150,
-  leverage: 300,
-  rationale: '15m RSI 27 + 1h trend up, stop -1.5%, target +3%',
-});
-
-console.log(sig);
-```
-
-If `sig.approved` is `true`, the venue transaction has been submitted
-and `sig.signature` is the venue tx signature; the on-chain
-`authorize_spend` AuditEvent is its own signature, retrievable from the
-`onAudit` subscription by matching `atSlot`. If `approved` is `false`,
-`sig.reasonCode` is the matching `REASON_*` code from `state/mod.rs`,
-and no venue transaction was sent.
-
-## Off-chain vs on-chain checks
-
-`withTrader(...).execute(intent)` runs the rule evaluation twice:
-
-1. **Off-chain (fast path).** The SDK reads the local `Policy` PDA and
-   mirrors the on-chain checks in TypeScript. If any rule fails here,
-   no transaction is built; `execute` resolves with `approved: false`
-   and the right `reasonCode` from the off-chain mirror. This is the
-   happy path for 99% of denies — free, instant, no fee.
-2. **On-chain (canonical).** For approves, the SDK builds a v1
-   transaction containing a single `authorize_spend` instruction, signs
-   it with `wallet`, and submits. The resulting `AuditEvent` is the
-   canonical proof of the decision. Even on the happy path the SDK
-   reads the event back to confirm the on-chain reason code matches
-   the off-chain one (defends against stale state).
-
-The runtime (`packages/agent`) wires these together; the SDK alone is
-enough for a developer who wants to call `execute` from their own code
-without the agent runtime in the loop.
-
-## Versioning
-
-`@trade-on-my-behalf/sdk` follows the IDL. Whenever `treasury.json`
-regenerates, the SDK bumps minor (additive) or major (breaking) and
-the CHANGELOG points at the IDL commit hash. The dashboard pins to
-an exact version.
-
-## Errors thrown by `execute`
-
-| Error | Cause |
-|---|---|
-| `SdkRuleDeniedError` | Off-chain mirror rejected. Carries `reasonCode`. |
-| `SdkSimulationError` | On-chain `simulateTransaction` failed. Carries the Anchor error code. |
-| `SdkVenueError` | Venue adapter rejected (price moved, market halted, leverage > venue max). |
-| `SdkTimeoutError` | No confirmation within the configured `confirmTimeoutMs` (default 30 s). |
-
-All four extend `SdkError`, which carries `atSlot` and a correlation
-id that matches the corresponding `AuditEvent.nonce`.
+- `packages/sdk/tests/*.test.ts` — offline: PDA derivation, reason codes,
+  Policy decoding (little-endian u64s), AuditEvent log parsing incl. the
+  deny-with-successful-tx case. `pnpm --filter @trade-on-my-behalf/sdk test`.
+- End-to-end against a real validator: `pnpm demo` (see README).
