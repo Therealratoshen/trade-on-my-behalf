@@ -31,3 +31,7 @@ keypairs/
 # misc
 coverage/
 .turbo/
+
+# third-party agent skills (installed via `npx skills add`, re-fetchable;
+# colosseum-copilot is Proprietary-licensed so must NOT be distributed)
+.agents/
