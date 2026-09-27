@@ -27,6 +27,7 @@ pnpm-debug.log*
 # solana
 test-ledger/
 keypairs/
+.demo/
 
 # misc
 coverage/

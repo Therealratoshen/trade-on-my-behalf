@@ -11,7 +11,8 @@
     "lint": "pnpm -r lint",
     "anchor:build": "anchor build",
     "anchor:test": "anchor test",
-    "devnet:demo": "bash scripts/devnet-demo.sh"
+    "demo": "bash scripts/demo.sh local",
+    "devnet:demo": "bash scripts/demo.sh devnet"
   },
   "engines": {
     "node": ">=20"
