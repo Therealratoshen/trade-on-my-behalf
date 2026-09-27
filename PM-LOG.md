@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Snapshot (last updated 2026-09-27 15:36 WIB)
+## 1. Snapshot (last updated 2026-09-27 22:10 WIB)
 
 | Field | Value |
 |---|---|
@@ -14,12 +14,12 @@
 | Wedge | Personal time-poor retail perps agent with on-chain policy gates (SAS model: Specialist, Algorithm, Skill) |
 | Cluster | v1-c9 "Solana DEX and Trading" (323 projects, 23 winners) |
 | Verdict (D5) | Partial gap. Closest analogs: `infty.trade` (AI pricing AMM), `armor-wallet` (AI wallet + trading, no perps, no on-chain policy), `mercantill` (on-chain policy, no perps), `solmind`/`pot-bot`/`debonk` TG bots (no policy layer). |
-| Build state | Kernel done (D8.5+). SDK + webapp + venue adapter empty (D9 = load-bearing gate). |
+| Build state | Kernel done (6/6 LiteSVM). **SDK done** — `@trade-on-my-behalf/sdk` v0.1.0, 8/8 smoke tests. Venue adapter + agent runtime + dashboard still empty (D10 gap, see R20). **GitHub repo PUBLIC** — https://github.com/Therealratoshen/trade-on-my-behalf |
 | Branch | `main` |
-| Last commit | `9d284ae D9' Doc-correctness sweep: fix reason-code naming drift in 8 docs` |
+| Last commit | `ed0677f README quickstart: add skills re-install block + localnet test note` — **pushed to public GitHub** |
 | Days to deadline | **15** (Oct 12, 2026 11:59 pm PT) |
-| Commits | 14 |
-| Sol at risk | Tests done (6/6 LiteSVM); **venue adapter, SDK, and webapp all empty**. D9 has nothing to ship. |
+| Commits | 34 (all pushed to origin/main) |
+| Sol at risk | Tests done (6/6 LiteSVM), SDK done (8/8). **Venue adapter + agent runtime + webapp still empty** — the D10 load-bearing gap (R20). Devnet demo blocked on 0 SOL (R3 partial: keypair file exists, balance empty, faucet throttled — use https://faucet.solana.com). |
 | On-chain program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`, 209 KB, 4 instructions, 8 reason codes |
 | On-chain deployed? | **No** — devnet keypair not yet generated (R3 open). |
 | Honest security claim | *"I cannot break your rules — within the as-stored caps"* (qualifier added D8.5+; see [SUBMISSION.md](SUBMISSION.md) §"Security claim" + [docs/security-model.md](docs/security-model.md)) |
@@ -64,6 +64,7 @@
 | 13 | 2026-09-27 | **Doc-correctness sweep committed (9d284ae).** Public-facing docs had 6+ reason-code references using `REASON_LEVERAGE_EXCEEDED` / `REASON_DRAWDOWN_TRIPPED` while the Rust source uses `REASON_LEVERAGE_CAP` / `REASON_DRAWDOWN_KILLSWITCH`. All public docs (`docs/onchain-program.md`, `docs/agent-runtime.md`, `docs/control-surface.md`, `docs/skills-and-algorithms.md`, `docs/testing-plan.md`, `docs/user-tests.md`, `design-thinking/five-stages.md`, `design-thinking/pitch-script.md`) now use the canonical Rust names. The historical BRD review (`docs/brd-reviews/2026-09-26-audit.md`) keeps the old names as evidence of the drift that was caught. | A judge who reads both `onchain-program.md` and `state/mod.rs` should see the same constant names. Single source of truth = Rust. | commit `9d284ae` |
 | 14 | 2026-09-27 | **Whats-missing tracker added (docs/whats-missing.md).** Internal-facing doc that lists every gap between v1-as-spec'd and v1-as-shipped, with mitigation per gap. Surfaced so the founder can prioritize D9 without re-deriving the gap list from scratch each session. | PM-LOG §5 already had the risks; an explicit "what's not built yet" doc is faster to scan than re-reading 6+ specs. | docs/whats-missing.md |
 | 15 | 2026-09-27 | **Trader lifecycle & edge cases catalog added (docs/trader-lifecycle-edge-cases.md).** 14 lifecycle stages, ~140 edge cases with on-chain / off-chain / runtime / out-of-scope framing per case. Each row is a potential D11 tester ticket or D10+ hardening queue item. Augments the implied BRD with the trader-lifecycle view that was missing. | Founder feedback: "how is the prd and define further based on edge case and many more from traders lifecycle and how they do." Real perps traders use Telegram bots + spreadsheets + mental stops; the gap to TOMB must be legible. | docs/trader-lifecycle-edge-cases.md |
+| 16 | 2026-09-27 | **Repo made public on GitHub** — https://github.com/Therealratoshen/trade-on-my-behalf. Before pushing: secret scan clean (no PAT in worktree or history, no keypairs tracked, deploy keypair git-ignored); stopped tracking `.agents/skills/` (83 files) because `colosseum-copilot` is Proprietary-licensed and the Helius skills have no license — both are re-installable via the README quickstart. Pushed over HTTPS with the `gh` credential helper (the SSH key on this machine is a deploy key without access). | Founder call: push once documentation is clear. The SUBMISSION.md repo URL was 404 until this push. | commit `ed0677f`, remote SHA = local SHA |
 
 ## 4. Open questions
 
@@ -96,7 +97,8 @@
 | R14 | **D10+ tightening-timelock on `update_policy`** — stolen `owner` key can loosen every cap today | medium | high | Queue as D10+ per `docs/security-model.md` §"Scenario 1". Honest-v2 framing if time runs out. |
 | R15 | **D10+ CPI-wrapper or PDA-bound memo** — Anchor program does not CPI the venue; SDK constructs follow-through | medium | high | Queue as D10+ per `docs/security-model.md` §"Scenario 4". Honest-v2 framing if time runs out. |
 | R16 | **D10+ document "what kills an open position"** — venue liquidation only; the on-chain gate has no concept of an open position | low | medium | Add to `docs/security-model.md` + `docs/agent-runtime.md` §"Concurrency model" |
-| R17 | **Empty packages block D9 ship** — `packages/sdk/src`, `packages/agent/src`, `apps/dashboard/` are all `.gitkeep`-only as of D8.5 | **certain** | blocker | D9 is the load-bearing gate; **start D9 today**; use the SDK skeleton from `docs/sdk-api.md` §"Entry point" |
+| R17 | ~~**Empty packages block D9 ship**~~ **PARTLY RESOLVED D9** — `packages/sdk` shipped (v0.1.0, 8/8 smoke tests, commit `9a6d38e`). `packages/agent/src` and `apps/dashboard/` still empty; tracked as R20. | — | — | SDK half closed 2026-09-27 |
+| R20 | **Venue adapter + agent runtime unbuilt** — `packages/venues/` does not exist; `packages/agent/src/` is empty. The SDK can authorize a spend on-chain, but nothing yet turns an approved intent into a Jupiter Perps / Drift transaction. The devnet demo (and all 3 receipts in `docs/demo-receipts.md`) depend on this. | **certain** | blocker | D10 first task: create `packages/venues/` with a `VenueAdapter` interface + Jupiter Perps adapter; wire `packages/agent` runtime to call `sdk.authorizeSpend` then the adapter. Fallback: demo the on-chain approve/deny receipts without a real venue fill. |
 | R18 | ~~**Vendor pubkey TBD** — `docs/venues.md` §"Vendor pubkey mapping" lists Jupiter / Drift / Zeta pubkeys as `TBD`.~~ **RESOLVED D9'** — Jupiter Perps mainnet program id confirmed at `PERPHjGBqRHArX4DySjwM6UJHiR3sSCatuycCChK1as` (via Solscan IDL link); Drift v2 confirmed at `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` (same on mainnet + devnet); Zeta discontinued May 2025 (pivoted to Bullet), removed from v1. Devnet Jupiter Perps program id is resolved at boot from the on-chain IDL, never hardcoded. See `docs/venues.md` §"Vendor pubkey mapping". | certain | resolved | resolution captured 2026-09-27 15:40 WIB; `docs/venues.md` rewritten |
 | R19 | **D11 outside-dev testers not lined up** — recruiting is the longest-lead D9-D11 task | high | blocker | DM 5–10 Solana devs now (BRD review open Q #4); capture names + handles in PM-LOG §6 |
 
@@ -104,7 +106,7 @@
 
 | # | Task | Why | Where |
 |---|---|---|---|
-| U1 | Generate fresh `~/.config/solana/id.json` + airdrop SOL on devnet | Required for anchor deploy D7 | shell |
+| U1 | ~~Generate `~/.config/solana/id.json`~~ (file exists) — **fund it with devnet SOL**: balance is 0 and `solana airdrop` is throttled. Use https://faucet.solana.com (paste `solana address`, request 2 SOL). | Required for `anchor deploy` + devnet demo | browser |
 | U2 | Obtain Helius API key + `export HELIUS_API_KEY=...` | Per `docs/mcp-setup.md` | dashboard.helius.dev |
 | U3 | Obtain Jupiter API key + `export JUPITER_API_KEY=...` | Per `docs/venues.md` | portal.jup.ag |
 | U4 | Register team on colosseum.com/worldsfair; claim Solana track | Required before deadline | browser |
