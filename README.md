@@ -104,6 +104,7 @@ If you have **5 minutes** and want the picture:
 1. [docs/architecture.md](docs/architecture.md) — system diagram and end-to-end data flow.
 2. [docs/onchain-program.md](docs/onchain-program.md) — the Anchor `Policy` PDA, every instruction, every `AuditEvent` field.
 3. [docs/sdk-api.md](docs/sdk-api.md) — `withTrader(wallet, rules)` plus a copy-pasteable 5-line example.
+4. [docs/design-system.md](docs/design-system.md) — the visual language, and why colour only ever means "the kernel decided".
 
 If you are **a judge** with **15 minutes**, walk this path:
 
@@ -173,8 +174,8 @@ scripts/render-demo.mjs        turns a `pnpm demo` capture into artifacts/demo-r
 artifacts/                       demo capture: transcript, rendered receipts page, PNGs
 docs/                          architecture, onchain-program, sdk-api,
                                agent-runtime, venues, control-surface,
-                               audit-and-receipts, testing-plan,
-                               security-model, user-tests,
+                               design-system, audit-and-receipts,
+                               testing-plan, security-model, user-tests,
                                trader-lifecycle-edge-cases,
                                gtm-and-submission, onboarding, roadmap,
                                mcp-setup, research/, dimension-map,

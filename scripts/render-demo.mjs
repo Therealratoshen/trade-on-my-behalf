@@ -91,48 +91,51 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Trade On My Behalf — demo receipts</title>
 <style>
+  /* Mirrors the token palette in apps/dashboard/app/globals.css. If you
+     change one, change the other — they are the same product surface. */
   :root {
-    --bg:#0b0d12; --panel:#12151d; --line:#1e2430; --fg:#e6e9ef;
-    --dim:#8b93a7; --allow:#3ddc97; --deny:#ff5c7a; --accent:#7aa2f7;
-    --receipt:#c792ea; --clamp:#ffcc66; --pnl:#89ddff;
+    --bg:#08090c; --bg-inset:#0c0f14; --panel:#101319; --panel-2:#161a22;
+    --line:#232833; --line-soft:#1a1e27;
+    --fg:#e6e9ef; --fg-dim:#8b93a4; --fg-faint:#5b6373;
+    --ok:#3ddc97; --ok-fg:#a6f0cf; --no:#ff5c72; --no-fg:#ffb3be;
+    --warn:#ffc857; --accent:#6f8bff; --receipt:#c98ff0; --pnl:#89ddff;
   }
   * { box-sizing:border-box; }
   body {
     margin:0; background:var(--bg); color:var(--fg);
-    font:15px/1.65 ui-sans-serif,-apple-system,"SF Pro Text",system-ui,sans-serif;
+    font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   }
-  .wrap { max-width:940px; margin:0 auto; padding:48px 28px 72px; }
-  h1 { font-size:30px; margin:0 0 6px; letter-spacing:-.02em; }
-  .sub { color:var(--dim); margin:0 0 4px; }
+  .wrap { max-width:940px; margin:0 auto; padding:40px 24px 64px; }
+  h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.01em; }
+  .sub { color:var(--fg-dim); margin:0 0 4px; }
   .claim {
-    border-left:3px solid var(--allow); padding:12px 18px; margin:26px 0 34px;
-    background:var(--panel); border-radius:0 8px 8px 0; font-size:17px;
+    border-left:3px solid var(--ok); padding:12px 18px; margin:24px 0 32px;
+    background:var(--panel); border-radius:0 8px 8px 0; font-size:15px;
   }
-  .claim b { color:var(--allow); }
-  .meta { color:var(--dim); font-size:13px; margin-bottom:34px; }
-  .meta code { background:var(--panel); padding:2px 6px; border-radius:4px; }
-  .step { background:var(--panel); border:1px solid var(--line); border-radius:10px;
-          margin-bottom:16px; overflow:hidden; }
-  .step h2 { font-size:14px; margin:0; padding:12px 18px; border-bottom:1px solid var(--line);
-             color:var(--accent); font-weight:600; letter-spacing:.01em; }
-  .step pre { margin:0; padding:14px 18px; overflow-x:auto;
-              font:13px/1.7 ui-monospace,"SF Mono",Menlo,monospace; }
+  .claim b { color:var(--ok-fg); }
+  .meta { color:var(--fg-dim); font-size:12px; margin-bottom:32px; }
+  .meta code, .step pre { font-family:var(--mono,ui-monospace,SFMono-Regular,Menlo,monospace); }
+  .meta code { background:var(--bg-inset); padding:2px 6px; border-radius:4px; }
+  .step { background:var(--panel); border:1px solid var(--line-soft); border-radius:10px;
+          margin-bottom:12px; overflow:hidden; }
+  .step h2 { font-size:12px; margin:0; padding:11px 16px; border-bottom:1px solid var(--line-soft);
+             color:var(--accent); font-weight:600; }
+  .step pre { margin:0; padding:14px 16px; overflow-x:auto; font-size:12px; line-height:1.7; }
   .l { white-space:pre; }
-  .l.allow { color:var(--allow); font-weight:600; }
-  .l.deny  { color:var(--deny); font-weight:600; }
+  .l.allow { color:var(--ok); font-weight:600; }
+  .l.deny  { color:var(--no); font-weight:600; }
   .l.receipt { color:var(--receipt); }
   .l.receipt a { color:var(--receipt); }
-  .l.clamp { color:var(--clamp); }
+  .l.clamp { color:var(--warn); }
   .l.pnl { color:var(--pnl); }
-  .l.plain { color:var(--fg); }
   a { color:var(--accent); }
-  .final { border-color:var(--allow); }
-  .final h2 { color:var(--allow); }
-  footer { color:var(--dim); font-size:12px; margin-top:40px; text-align:center; }
+  .final { border-color:var(--line); }
+  .final h2 { color:var(--ok); }
+  footer { color:var(--fg-faint); font-size:11px; margin-top:32px; text-align:center; }
+  footer code { font-family:var(--mono,ui-monospace,SFMono-Regular,Menlo,monospace); }
   /* ?only=final screenshots just the closing policy block */
   body.only-final .step:not(.final), body.only-final header, body.only-final footer { display:none; }
-  body.only-final { background:var(--bg); }
-  body.only-final .wrap { padding-top:28px; }
+  body.only-final .wrap { padding-top:24px; }
 </style>
 </head>
 <body>

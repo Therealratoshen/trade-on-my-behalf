@@ -1,17 +1,64 @@
+/*
+ * Design tokens
+ * --------------
+ * Every colour and step in the app resolves to a token here. If a rule
+ * needs a new value, add a token — do not inline a hex. The 9 ad-hoc
+ * hexes that used to live in the rules below have been folded in, and
+ * their names say what they are for.
+ *
+ * The same palette is mirrored in scripts/render-demo.mjs for the
+ * standalone receipts page. Change both or neither.
+ */
 :root {
+  /* surfaces, darkest to lightest */
   --bg: #08090c;
+  --bg-inset: #0c0f14; /* code blocks, table zebra, wells */
   --panel: #101319;
-  --panel-2: #161a22;
+  --panel-2: #161a22; /* nested cards, table header */
+  --panel-hover: #14171f; /* table row hover */
+  --badge-bg: #1b1f28; /* muted pill background */
+
+  /* lines */
   --line: #232833;
   --line-soft: #1a1e27;
+  --line-strong: #1b202a; /* focused / selected border */
+  --line-focus: #3a4356; /* keyboard focus ring */
+
+  /* text */
   --fg: #e6e9ef;
   --fg-dim: #8b93a4;
   --fg-faint: #5b6373;
+  --fg-on-accent: #06070a; /* text on a filled accent button */
+
+  /* semantic */
   --ok: #3ddc97;
+  --ok-fg: #a6f0cf; /* approved text on a 7%-alpha ok wash */
   --no: #ff5c72;
+  --no-fg: #ffb3be; /* denied text on an 8%-alpha no wash */
   --warn: #ffc857;
   --accent: #6f8bff;
+  --accent-hover: #8399ff; /* filled button on hover */
+
+  /* spacing — 4px base */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s7: 32px;
+  --s8: 40px;
+
+  /* type scale */
+  --t-xs: 10px;
+  --t-sm: 11px;
+  --t-base: 13px;
+  --t-md: 14px;
+  --t-lg: 16px;
+  --t-xl: 20px;
+
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 * {
@@ -145,7 +192,7 @@ td {
   white-space: nowrap;
 }
 tbody tr:hover {
-  background: #14171f;
+  background: var(--panel-hover);
 }
 td.num {
   text-align: right;
@@ -180,7 +227,7 @@ td.wrap {
   font-weight: 500;
 }
 .badge.mute {
-  background: #1b1f28;
+  background: var(--badge-bg);
   color: var(--fg-dim);
   border: 1px solid var(--line);
   font-weight: 500;
@@ -216,7 +263,7 @@ td.wrap {
 .empty code,
 code.cmd {
   font-family: var(--mono);
-  background: #0c0f14;
+  background: var(--bg-inset);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 1px 6px;
@@ -246,8 +293,8 @@ button.btn {
   cursor: pointer;
 }
 button.btn:hover:not(:disabled) {
-  border-color: #3a4356;
-  background: #1b202a;
+  border-color: var(--line-focus);
+  background: var(--line-strong);
 }
 button.btn:disabled {
   opacity: 0.45;
@@ -256,12 +303,12 @@ button.btn:disabled {
 button.btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #06070a;
+  color: var(--fg-on-accent);
   font-weight: 650;
 }
 button.btn.primary:hover:not(:disabled) {
-  background: #8399ff;
-  border-color: #8399ff;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 button.btn.ghost {
   background: transparent;
@@ -284,7 +331,7 @@ button.linkish {
 }
 button.linkish:hover {
   color: var(--fg);
-  border-color: #3a4356;
+  border-color: var(--line-focus);
 }
 
 .copyrow {
@@ -296,7 +343,7 @@ button.linkish:hover {
 .copyrow .val {
   font-family: var(--mono);
   font-size: 12px;
-  background: #0c0f14;
+  background: var(--bg-inset);
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 5px 9px;
@@ -321,7 +368,7 @@ button.linkish:hover {
   font: inherit;
   font-family: var(--mono);
   font-size: 14px;
-  background: #0c0f14;
+  background: var(--bg-inset);
   color: var(--fg);
   border: 1px solid var(--line);
   border-radius: 5px;
@@ -354,7 +401,7 @@ button.linkish:hover {
 .toolbar select {
   font: inherit;
   font-size: 12px;
-  background: #0c0f14;
+  background: var(--bg-inset);
   color: var(--fg);
   border: 1px solid var(--line);
   border-radius: 5px;
@@ -423,7 +470,7 @@ button.linkish:hover {
 .err {
   border: 1px solid rgba(255, 92, 114, 0.35);
   background: rgba(255, 92, 114, 0.08);
-  color: #ffb3be;
+  color: var(--no-fg);
   border-radius: 6px;
   padding: 8px 11px;
   font-size: 12px;
@@ -434,7 +481,7 @@ button.linkish:hover {
 .ok-note {
   border: 1px solid rgba(61, 220, 151, 0.3);
   background: rgba(61, 220, 151, 0.07);
-  color: #a6f0cf;
+  color: var(--ok-fg);
   border-radius: 6px;
   padding: 8px 11px;
   font-size: 12px;
@@ -489,7 +536,7 @@ button.linkish:hover {
   opacity: 1;
 }
 .wallet-slot .wallet-adapter-button:not([disabled]):hover {
-  background: #8399ff;
+  background: var(--accent-hover);
 }
 .wallet-slot .wallet-adapter-modal-wrapper,
 .wallet-slot .wallet-adapter-modal {
