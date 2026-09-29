@@ -12,6 +12,20 @@ enforced at the wallet's signing layer by an Anchor program.
 Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsfair)
 (Solana track).
 
+```bash
+pnpm install && pnpm demo     # no SOL, no setup, ~90s
+```
+
+![The nine-step demo: policy created, trade approved, agent tries 20x and is denied, size cap denies, drawdown kill-switch trips, compromised key is rejected](artifacts/demo-receipts.png)
+
+That is real output from `pnpm demo`. Every `receipt` line is an on-chain
+transaction, every `reason_code` was written by the Anchor program, and the
+last one is a compromised agent key being refused. The HTML version with live
+links is at [`artifacts/demo-receipts.html`](artifacts/demo-receipts.html) and
+the raw transcript is in [`artifacts/demo-run.txt`](artifacts/demo-run.txt).
+
+![The control surface: connect wallet, read-only policy, audit log, positions, and a rule editor with no approve button](artifacts/dashboard.png)
+
 ## Why this and not another perps bot
 
 - **The pain is mine.** I'm the first user. I can describe setups but
@@ -155,6 +169,8 @@ packages/sdk/                  @trade-on-my-behalf/sdk: typed wrapper over the p
 packages/agent/                runtime, off-chain evaluator, Jupiter Perps adapter (paper), `tomb` CLI
 apps/dashboard/                @trade-on-my-behalf/dashboard: Next.js 15 webapp (viewer + rule editor)
 scripts/demo.sh                end-to-end demo: `pnpm demo` (local) / `pnpm devnet:demo`
+scripts/render-demo.mjs        turns a `pnpm demo` capture into artifacts/demo-receipts.html
+artifacts/                       demo capture: transcript, rendered receipts page, PNGs
 docs/                          architecture, onchain-program, sdk-api,
                                agent-runtime, venues, control-surface,
                                audit-and-receipts, testing-plan,
@@ -163,7 +179,7 @@ docs/                          architecture, onchain-program, sdk-api,
                                gtm-and-submission, onboarding, roadmap,
                                mcp-setup, research/, dimension-map,
                                oss-precedent
-design-thinking/               founder voice: why I'm building this
+design-thinking/               founder voice: why I'm building this, pitch-script.md (timed 2:30)
 CONTRIBUTING.md                how to run, test, and propose a rule
 PM-LOG.md                      single-page PM dashboard
 SPEC.md / GTM.md / SUBMISSION.md

@@ -1,121 +1,158 @@
-# Pitch script — 8 slides
+# Pitch script — 2:30, recorded D13
 
-> Founder voice. ≤40 words per slide. Total ~2 min 30 sec.
-> Recorded D13 (2026-10-04). Unlisted YouTube.
+> Rewritten 2026-09-30 against the **actual** shipped build, not the D6
+> theory. Every number below is a real on-chain value from
+> `artifacts/demo-run.txt` (13-step `pnpm demo` capture, 2026-09-30 02:01 WIB).
+> Voice is the founder's; timings are for the read, not a hard cut.
 >
-> **v1 control surface = webapp, not Telegram.** See
-> `docs/control-surface.md` for the full design.
+> Previous version was the D6 8-slide plan in this file. It assumed a
+> terminal-only demo and a policy that could not be edited. Both changed.
+
+## The one line
+
+> **"Trade on your own signals, with your own rules, on-chain — even when
+> you're not watching. And I can show you the kernel enforcing it."**
+
+Lead with the *kernel enforcing it*. That is the thing nobody else in the
+cluster has, and it is the thing a judge can verify in nine steps.
 
 ---
 
-**Slide 1 — "Trade On My Behalf."**
+## 0:00–0:18 — The problem
 
-> Software that watches the market for me, executes trades I would have
-> taken, and physically cannot break the rules I set. Built on Solana.
-> Built for the Crypto World's Fair Hackathon 2026.
+> Every perps bot on Solana takes whatever signal it gets. Twenty-four
+> seven. No exceptions. The problem isn't that they're wrong — it's that
+> they don't know *your* rules. Mine is: fifty dollars a trade, five times
+> leverage, twenty-five percent drawdown and I'm done. No bot knows that.
+> So I either watch the screen or I don't run the bot.
 
-(34 words)
+**Visual:** terminal, one line of `tomb` help text. Nothing else.
 
----
-
-**Slide 2 — "I have a setup. I want it to run."**
-
-> I'm a retail trader. Crypto since 2021. I held SOL through both
-> cycles. I have a setup — RSI dip below 30 + 1h trend up, long
-> with 3x. I can't sit in front of charts because I run a non-crypto
-> job. The setup's gone before I get there.
-
-(46 words)
+**Do not** open with architecture. The problem is 18 seconds.
 
 ---
 
-**Slide 3 — "I tried two AI bots last year."**
+## 0:18–0:45 — The wedge
 
-> Both oversize'd. They traded things I never would. I lost $340
-> total before I stopped. The bots ran on servers I didn't control,
-> with API keys I gave them. Mental caps didn't work either —
-> willpower isn't a rule. AI can't replace my research. What I
-> needed was discipline.
+> So I put the rules on chain. There's an Anchor program. You set your
+> limits once, and then every single trade has to pass through it before it
+> touches a position. The agent can ask. The program decides. And whatever
+> it decides — allow *or* deny — it writes an audit event on chain that I
+> can point at afterwards.
 
-(43 words)
+**Visual:** the Policy PDA diagram, `docs/architecture.md`.
 
----
-
-**Slide 4 — "The kernel enforces. The skill decides. The runtime samples."**
-
-> Three layers. The skill is my setup — RSI dip, trend, my rules.
-> The runtime samples the market and feeds it to the skill. The
-> kernel enforces my algorithm — max leverage, daily loss cap,
-> drawdown kill. If a trade would break a rule, the kernel refuses.
-> No approve button. The rule fires anyway.
-
-(50 words — trim "RSI dip, trend, my rules" if pressed)
+**The line that matters:** the deny receipt *is* the product. Most bots
+have no deny, because there's nothing to deny against.
 
 ---
 
-**Slide 5 — "The rules are code. Not willpower."**
+## 0:45–1:50 — The demo (this is the body)
 
-> Anchor `treasury` policy program. Per-trade size cap. Per-day loss
-> cap. Leverage cap. Drawdown kill-switch. Every decision — approve
-> or deny — emits an `AuditEvent` on-chain. The webapp shows every
-> decision, with the rule inputs and the slot number.
+Cut to the terminal. `artifacts/demo-receipts.png` is the exact output.
 
-(43 words)
+**0:45 — policy created.** *$50/trade, $150/day, 5× max, 25% kill-switch.*
+
+> The owner sets the rules. That's one transaction.
+
+**0:52 — a good trade goes through.** *$40 at 3×, approved.*
+
+> A trade inside the rules. It passes, and the venue fills it.
+
+**1:02 — the agent tries something stupid, politely.** *$500 at 20×.*
+
+> Here's the interesting part. My own agent asked for five hundred dollars
+> at twenty times. But the runtime is well-behaved — it clamps to my caps
+> before it ever hits the chain. Fifty dollars, five times. Approved.
+
+**1:14 — the agent tries something stupid, not politely.** *20× raw.*
+
+> Now what happens if the runtime is compromised, or buggy, or just wrong?
+> I send it twenty times, unclamped. It doesn't matter. The chain says no.
+
+> `DENIED  REASON_LEVERAGE_CAP  slot 17`
+
+**1:24 — the size cap, same way.** *$80 raw.*
+
+> Same story on size. Eighty dollars against a fifty dollar cap.
+
+> `DENIED  REASON_PER_TX_CAP  slot 20`
+
+**1:34 — the kill-switch.** *Prices crash, equity 1000 → 909.78.*
+
+> I simulate a crash. Both positions lose their collateral. Equity drops
+> to nine hundred and ten. And the next trade — a small, innocent ten
+> dollar one —
+
+> `DENIED  REASON_DRAWDOWN_KILLSWITCH  slot 25`
+
+**1:45 — the one that should worry you most.** *Compromised agent key.*
+
+> Last one. What if the agent's own key is stolen? It tries to loosen my
+> policy. It can't.
+
+> `Unauthorized. Error Number: 6005.`
+
+**Beat.** Let that sit for one second. This is the answer to "what if the
+thing you're trusting turns against you".
 
 ---
 
-**Slide 6 — "The rule fired while I slept."**
+## 1:50–2:12 — The webapp
 
-> Demo: a trade proposed at 5x leverage. My cap is 1x. The on-chain
-> gate denied it. `AuditEvent { approved: false, reason_code: 6,
-> slot: 312_450_922 }` lands in the webapp's audit log. I never
-> tapped anything. The rule, not my willpower, made the call.
+Cut to `artifacts/dashboard.png`. Scroll the four panels.
 
-(46 words)
+> That's the terminal. Here's the part you'd actually use. Connect a
+> wallet, see the rules it's bound by, see every decision the kernel has
+> made, see the positions. And change the rules — that goes through the
+> same program.
 
----
-
-**Slide 7 — "Same kernel, three buyers."**
-
-> The retail trader I'm building for. The prop-firm operator who
-> wants per-strategy wallets (Propr / HyroTrader / Solana Funded /
-> DojiFunded already ship the firm-level version — we ship the per-
-> trader version). The influencer-signal follower with a per-follower
-> cap. One Anchor program, three personas.
-
-(46 words)
+**Point out, out loud:**
+- "There's no approve button. Not by omission — by design. The kernel
+  decides. The webapp shows you what it decided."
+- "The only thing it can write is the policy, and the program checks the
+  signature on that."
 
 ---
 
-**Slide 8 — "I built this because I needed it."**
+## 2:12–2:30 — The honest claim + close
 
-> If you trade and can't watch charts, the wedge is yours. If you're
-> a prop firm tired of spreadsheets, the kernel is yours. Submit by
-> Oct 12. Demo at `scripts/devnet-demo.sh`. Pitch by Filbert.
+> Here's the claim, and I want to be precise about it. **"I cannot break
+> your rules — within the as-stored caps."**
+>
+> The qualifier is real. If someone steals the *owner* key, they can
+> currently loosen the caps. That's a known gap and it's the first thing
+> on my hardening list. What the program does defend, right now, is the
+> envelope at the values you stored — and it defends it on chain, not in
+> my runtime, which I can turn off and the rules still hold.
+>
+> Everything you just saw is reproducible with `pnpm demo`. No devnet SOL,
+> no setup. It's in the repo. I'm solo. Thanks.
 
-(38 words)
+**Do not** claim more than that sentence. The honest version is more
+persuasive than the over-promise — an engineer judging this cluster will
+check, and the two carve-outs are already written up in
+`docs/security-model.md`.
 
 ---
 
-## Read-through notes
+## Cut list (if you're over time)
 
-- **Slide 4** is the new centerpiece. The line *"No approve button.
-  The rule fires anyway"* is the sharpest version of the wedge.
-  Don't soften it.
-- **Slide 6** references the **webapp**, not Telegram. The demo
-  flow: CLI pushes an over-leveraged intent → kernel denies →
-  AuditEvent emits → webapp lights up with the red row.
-- **Slide 7** keeps Propr / HyroTrader / Solana Funded /
-  DojiFunded. Don't drop these — they're proof the prop-firm
-  wedge is real, and judges verify names.
-- **Slide 8** is the close. Short. Concrete. Submit date.
+| Cut | Saves | Cost |
+|---|---|---|
+| Step 3 (the polite clamp) | 12 s | Small — it's a nice beat but not load-bearing |
+| The webapp segment | 22 s | **Do not cut.** It's the only visual break from a terminal |
+| The honest-claim qualifier | 12 s | **Do not cut.** Cutting it turns a precise claim into a lie |
 
-## What this script is NOT
+**Never cut:** steps 4, 5, 8, 9. Those four are the proof.
 
-- No framework names (no "feeling arc", no "Plutchik", no "HMW").
-- No Telegram (cut to v3).
-- No "validation against external sources" sidebar.
-- No persona labels (no "Persona A / B / C" headers).
+---
 
-If a slide starts feeling like workshop output, rewrite it from
-the founder's chat quotes.
+## Recording checklist
+
+- [ ] Terminal font size bumped so `reason_code` is legible on a phone
+- [ ] Paste the policy PDA on screen during step 1 so it's verifiable later
+- [ ] `artifacts/demo-receipts.png` open in a second tab for the still frames
+- [ ] Export audio separately — the terminal audio is noise, cut it
+- [ ] Unlisted YouTube, not public
+- [ ] Check the claim slide reads the qualifier out loud, not just on screen

@@ -6,7 +6,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import useSWR from 'swr';
 
 import { CLUSTER } from '@/lib/cluster';
-import { AuditFeed, fetchPolicy, makeProgram, type AdapterWallet } from '@/lib/trader';
+import { AuditFeed, fetchPolicy, makeProgram, samePolicySnapshot, stableKey, type AdapterWallet } from '@/lib/trader';
 import type { PositionsResponse } from '@/app/api/positions/route';
 
 import { AuditPanel } from './AuditPanel';
@@ -82,9 +82,9 @@ export function Dashboard() {
     mutate: refreshPolicy,
   } = useSWR(policyKey, () => fetchPolicy(connection, agent!), {
     refreshInterval: POLICY_POLL_MS,
-    // Always repaint: the decoded object holds PublicKey/BN instances that a
-    // structural compare would rather not reason about.
-    compare: () => false,
+    // Compare a serialisation: the decoded policy holds PublicKey/BN
+    // instances, and "always repaint" would spin the render loop.
+    compare: samePolicySnapshot,
     revalidateOnFocus: true,
   });
 
@@ -99,7 +99,9 @@ export function Dashboard() {
     mutate: refreshAudit,
   } = useSWR(auditKey, () => auditFeed!.poll(pda!), {
     refreshInterval: AUDIT_POLL_MS,
-    compare: () => false,
+    // Same reasoning as the policy: compare a serialisation, never "always
+    // different".
+    compare: (a, b) => stableKey(a) === stableKey(b),
     keepPreviousData: false,
   });
 
@@ -107,7 +109,7 @@ export function Dashboard() {
   const { data: positions, error: positionsError, isLoading: positionsLoading } = useSWR(
     '/api/positions',
     () => fetchPositions('/api/positions'),
-    { refreshInterval: POSITIONS_POLL_MS, compare: () => false },
+    { refreshInterval: POSITIONS_POLL_MS, compare: (a, b) => stableKey(a) === stableKey(b) },
   );
 
   const policy = snapshot?.policy ?? null;

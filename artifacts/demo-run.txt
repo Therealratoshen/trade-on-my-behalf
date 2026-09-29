@@ -1,0 +1,83 @@
+
+> trade-on-my-behalf@0.1.0 demo /Users/filberthenrico/Solana project for world fair
+> bash scripts/demo.sh local
+
+
+[1m== Build[0m
+  program + SDK built
+
+[1m== Start local validator with the program preloaded[0m
+  validator up at http://127.0.0.1:8899
+
+[1m== Fresh agent key (the hot key the runtime holds; owner key stays with the user)[0m
+mavis-trash: moved to trash: '/Users/filberthenrico/Solana project for world fair/.demo/paper-local.json'
+  agent L1xxA5tYKd38Qsm2JoXkYLgF9ZJivDYNWsGSw6bpMa4 (funded for tx fees only)
+
+[1m== 1. Owner sets the rules on-chain: $50/trade, $150/day, max 5x, 25% drawdown kill-switch[0m
+policy created  9Y9BkthH9ySPoQP4z4ZxHyJmpxCqCxYeLttec7HP9M9m
+receipt  https://explorer.solana.com/tx/5UhQC8Zf9rYHoHRUDdge1SDFjM14wMVfhWksKw7Nrrf77JCBaDrJvUXdGuVcFvKpNgEX93SwR3eWq15pVSfbsFYX?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+
+[1m== 2. In-policy trade: long SOL, $40 at 3x  → expect APPROVED + paper fill[0m
+intent   long SOL-PERP  collateral $40.00  leverage 3x
+peak     new equity high recorded on-chain  https://explorer.solana.com/tx/HuoCiKXjc3FLTy1XYJgRWs6JEgf1HUXC5f19ofAEPrktfCyLgSxPEMxQsS9e1M7Lvsy7YGpSHDWN6WcGB9NMDgN?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+equity   $1000.00 (paper account)
+chain    APPROVED REASON_OK  slot 12
+receipt  https://explorer.solana.com/tx/5vbV6R14C54hKVsGhHr21idjXz1r7EntPbckDVgp8wmeXVs5mYa8j6QKDAHCkiAdM7qB2JN2gtXp6p3Tk3o78pvp?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+fill     paper-b21a2f44 @ $119.09  fee $0.07  (paper — simulated at live Jupiter price)
+
+[1m== 3. Oversized signal ($500 at 20x), well-behaved agent clamps it → expect APPROVED at $50 / 5x[0m
+intent   short ETH-PERP  collateral $50.00  leverage 5x
+clamped  collateral 500 -> 50 (per-trade cap)
+clamped  leverage 20x -> 5x (leverage cap)
+equity   $999.93 (paper account)
+chain    APPROVED REASON_OK  slot 14
+receipt  https://explorer.solana.com/tx/4jmj5FbcVhH4AbxcppwkrRyNywodWKEVkXDQPt1zuGzZ8iqRtUrntQqW6p36sfGPNSiyemuxaBSS9HdJrY4WzcFW?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+fill     paper-b4320ab5 @ $2693.19  fee $0.15  (paper — simulated at live Jupiter price)
+
+[1m== 4. Misbehaving agent sends 20x unclamped → expect DENIED REASON_LEVERAGE_CAP[0m
+intent   long SOL-PERP  collateral $30.00  leverage 20x
+equity   $999.78 (paper account)
+chain    DENIED   REASON_LEVERAGE_CAP  slot 17
+receipt  https://explorer.solana.com/tx/5UMQiWfudu94BvfKBo77MEW5u8oLYKGEeT4d3rjteQepJHgt6h3k7nMx6rXcvzhM7k7DX7KkyHAfsc3582gpDZjS?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+
+[1m== 5. Misbehaving agent sends $80 unclamped → expect DENIED REASON_PER_TX_CAP[0m
+intent   long SOL-PERP  collateral $80.00  leverage 2x
+equity   $999.78 (paper account)
+chain    DENIED   REASON_PER_TX_CAP  slot 20
+receipt  https://explorer.solana.com/tx/5oQKocrXMrw8ira948jMmZXdHcj722YJJrptE3qpUzDy268S5YJRpL3wXWBtm7SsZ5Hrab1DMcHDCgpQey1PYYXn?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+
+[1m== 6. Owner tightens the kill-switch to 5%[0m
+policy updated  9Y9BkthH9ySPoQP4z4ZxHyJmpxCqCxYeLttec7HP9M9m
+receipt  https://explorer.solana.com/tx/Y5XBoh6YxXUrAR1Ak4QgbZJ1cq5rbLSG7EMXbwRJ971Kh2XG3jJY5i8KwV22XWY5EStFsvw2p1e2osaRDWckHSU?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+
+[1m== 7. Market crash (simulated prices): both open positions lose their collateral[0m
+paper-b21a2f44  long SOL-PERP  collateral $40.00 x3  entry $119.09  mark $1.00  uPnL $-40.00
+paper-b4320ab5  short ETH-PERP  collateral $50.00 x5  entry $2693.19  mark $1000000.00  uPnL $-50.00
+equity $909.78
+
+[1m== 8. Next trade after the crash → expect DENIED REASON_DRAWDOWN_KILLSWITCH[0m
+intent   long SOL-PERP  collateral $10.00  leverage 2x
+equity   $909.78 (paper account)
+chain    DENIED   REASON_DRAWDOWN_KILLSWITCH  slot 25
+receipt  https://explorer.solana.com/tx/6is5VMBt2TMyxY3Ktiu77qF6czzdZ3q1Z9NrirnX4qvKwtk9ej8ZLownqnRLMKv1SXmUAFHPqbRA37BdAL1LKno?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899
+
+[1m== 9. Compromised agent key tries to loosen its own policy → expect Unauthorized[0m
+error: AnchorError thrown in programs/treasury/src/instructions/update_policy.rs:27. Error Code: Unauthorized. Error Number: 6005. Error Message: unauthorized signer for this policy.
+
+[1m== Final on-chain policy[0m
+policy                 9Y9BkthH9ySPoQP4z4ZxHyJmpxCqCxYeLttec7HP9M9m
+owner                  FUAQ3An62EAmHyhNZiyNfc197MT9FBXcDNnrqCjEwro1
+agent                  L1xxA5tYKd38Qsm2JoXkYLgF9ZJivDYNWsGSw6bpMa4
+vendors                PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu
+perTxCapUsd            50
+perDayCapUsd           150
+daySpentUsd            90
+maxLeverage            5
+killSwitchDrawdownPct  5
+peakEquityUsd          1000
+paperEquityUsd         999.78
+venue                  jupiter-perps (paper)
+
+Done. Every "receipt" link above is an on-chain transaction on local.
+mavis-trash: moved to trash: '/var/folders/6s/959wwlyd4md4pccc7dsdyv9r0000gn/T/tmp.lzgD677s3B'
+scripts/demo.sh: line 117: 22083 Terminated: 15          solana-test-validator --reset --quiet --ledger "$LEDGER" --bpf-program "$PROGRAM_ID" "$SO" > "$DEMO_DIR/validator.log" 2>&1

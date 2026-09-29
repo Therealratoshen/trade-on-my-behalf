@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trade On My Behalf — demo receipts</title>
+<style>
+  :root {
+    --bg:#0b0d12; --panel:#12151d; --line:#1e2430; --fg:#e6e9ef;
+    --dim:#8b93a7; --allow:#3ddc97; --deny:#ff5c7a; --accent:#7aa2f7;
+    --receipt:#c792ea; --clamp:#ffcc66; --pnl:#89ddff;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.65 ui-sans-serif,-apple-system,"SF Pro Text",system-ui,sans-serif;
+  }
+  .wrap { max-width:940px; margin:0 auto; padding:48px 28px 72px; }
+  h1 { font-size:30px; margin:0 0 6px; letter-spacing:-.02em; }
+  .sub { color:var(--dim); margin:0 0 4px; }
+  .claim {
+    border-left:3px solid var(--allow); padding:12px 18px; margin:26px 0 34px;
+    background:var(--panel); border-radius:0 8px 8px 0; font-size:17px;
+  }
+  .claim b { color:var(--allow); }
+  .meta { color:var(--dim); font-size:13px; margin-bottom:34px; }
+  .meta code { background:var(--panel); padding:2px 6px; border-radius:4px; }
+  .step { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+          margin-bottom:16px; overflow:hidden; }
+  .step h2 { font-size:14px; margin:0; padding:12px 18px; border-bottom:1px solid var(--line);
+             color:var(--accent); font-weight:600; letter-spacing:.01em; }
+  .step pre { margin:0; padding:14px 18px; overflow-x:auto;
+              font:13px/1.7 ui-monospace,"SF Mono",Menlo,monospace; }
+  .l { white-space:pre; }
+  .l.allow { color:var(--allow); font-weight:600; }
+  .l.deny  { color:var(--deny); font-weight:600; }
+  .l.receipt { color:var(--receipt); }
+  .l.receipt a { color:var(--receipt); }
+  .l.clamp { color:var(--clamp); }
+  .l.pnl { color:var(--pnl); }
+  .l.plain { color:var(--fg); }
+  a { color:var(--accent); }
+  .final { border-color:var(--allow); }
+  .final h2 { color:var(--allow); }
+  footer { color:var(--dim); font-size:12px; margin-top:40px; text-align:center; }
+  /* ?only=final screenshots just the closing policy block */
+  body.only-final .step:not(.final), body.only-final header, body.only-final footer { display:none; }
+  body.only-final { background:var(--bg); }
+  body.only-final .wrap { padding-top:28px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+   <header>
+    <h1>Trade On My Behalf</h1>
+    <p class="sub">On-chain risk-gated perps agent — every decision the kernel made, in order.</p>
+
+    <div class="claim">
+      <b>&ldquo;I cannot break your rules — within the as-stored caps.&rdquo;</b><br>
+      The program, the policy, the audit events, and the reason codes below are real
+      on-chain state. Only the fill is simulated.
+    </div>
+
+    <p class="meta">
+      Captured from <code>pnpm demo</code> — a throwaway <code>solana-test-validator</code>
+      with the program preloaded. No devnet SOL required.
+      Program <code>4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph</code>.
+    </p>
+
+    
+    <section class="step">
+      <h2>Build</h2>
+      <pre><div class="l plain">program + SDK built</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>Start local validator with the program preloaded</h2>
+      <pre><div class="l plain">validator up at http://127.0.0.1:8899</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>Fresh agent key (the hot key the runtime holds; owner key stays with the user)</h2>
+      <pre><div class="l plain">agent L1xxA5tYKd38Qsm2JoXkYLgF9ZJivDYNWsGSw6bpMa4 (funded for tx fees only)</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>1. Owner sets the rules on-chain: $50/trade, $150/day, max 5x, 25% drawdown kill-switch</h2>
+      <pre><div class="l allow">policy created  9Y9BkthH9ySPoQP4z4ZxHyJmpxCqCxYeLttec7HP9M9m</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/5UhQC8Zf9rYHoHRUDdge1SDFjM14wMVfhWksKw7Nrrf77JCBaDrJvUXdGuVcFvKpNgEX93SwR3eWq15pVSfbsFYX?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/5UhQC8Zf9rYHoHRUDdge1SDFjM14wMVfhWksKw7Nrrf77JCBaDrJvUXdGuVcFvKpNgEX93SwR3eWq15pVSfbsFYX</a></div></pre>
+    </section>
+
+    <section class="step">
+      <h2>2. In-policy trade: long SOL, $40 at 3x  → expect APPROVED + paper fill</h2>
+      <pre><div class="l plain">intent   long SOL-PERP  collateral $40.00  leverage 3x</div>
+<div class="l plain">peak     new equity high recorded on-chain  <a href="https://explorer.solana.com/tx/HuoCiKXjc3FLTy1XYJgRWs6JEgf1HUXC5f19ofAEPrktfCyLgSxPEMxQsS9e1M7Lvsy7YGpSHDWN6WcGB9NMDgN?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/HuoCiKXjc3FLTy1XYJgRWs6JEgf1HUXC5f19ofAEPrktfCyLgSxPEMxQsS9e1M7Lvsy7YGpSHDWN6WcGB9NMDgN</a></div>
+<div class="l pnl">equity   $1000.00 (paper account)</div>
+<div class="l allow">chain    APPROVED REASON_OK  slot 12</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/5vbV6R14C54hKVsGhHr21idjXz1r7EntPbckDVgp8wmeXVs5mYa8j6QKDAHCkiAdM7qB2JN2gtXp6p3Tk3o78pvp?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/5vbV6R14C54hKVsGhHr21idjXz1r7EntPbckDVgp8wmeXVs5mYa8j6QKDAHCkiAdM7qB2JN2gtXp6p3Tk3o78pvp</a></div>
+<div class="l plain">fill     paper-b21a2f44 @ $119.09  fee $0.07  (paper — simulated at live Jupiter price)</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>3. Oversized signal ($500 at 20x), well-behaved agent clamps it → expect APPROVED at $50 / 5x</h2>
+      <pre><div class="l plain">intent   short ETH-PERP  collateral $50.00  leverage 5x</div>
+<div class="l clamp">clamped  collateral 500 -&gt; 50 (per-trade cap)</div>
+<div class="l clamp">clamped  leverage 20x -&gt; 5x (leverage cap)</div>
+<div class="l pnl">equity   $999.93 (paper account)</div>
+<div class="l allow">chain    APPROVED REASON_OK  slot 14</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/4jmj5FbcVhH4AbxcppwkrRyNywodWKEVkXDQPt1zuGzZ8iqRtUrntQqW6p36sfGPNSiyemuxaBSS9HdJrY4WzcFW?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/4jmj5FbcVhH4AbxcppwkrRyNywodWKEVkXDQPt1zuGzZ8iqRtUrntQqW6p36sfGPNSiyemuxaBSS9HdJrY4WzcFW</a></div>
+<div class="l plain">fill     paper-b4320ab5 @ $2693.19  fee $0.15  (paper — simulated at live Jupiter price)</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>4. Misbehaving agent sends 20x unclamped → expect DENIED REASON_LEVERAGE_CAP</h2>
+      <pre><div class="l plain">intent   long SOL-PERP  collateral $30.00  leverage 20x</div>
+<div class="l pnl">equity   $999.78 (paper account)</div>
+<div class="l deny">chain    DENIED   REASON_LEVERAGE_CAP  slot 17</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/5UMQiWfudu94BvfKBo77MEW5u8oLYKGEeT4d3rjteQepJHgt6h3k7nMx6rXcvzhM7k7DX7KkyHAfsc3582gpDZjS?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/5UMQiWfudu94BvfKBo77MEW5u8oLYKGEeT4d3rjteQepJHgt6h3k7nMx6rXcvzhM7k7DX7KkyHAfsc3582gpDZjS</a></div></pre>
+    </section>
+
+    <section class="step">
+      <h2>5. Misbehaving agent sends $80 unclamped → expect DENIED REASON_PER_TX_CAP</h2>
+      <pre><div class="l plain">intent   long SOL-PERP  collateral $80.00  leverage 2x</div>
+<div class="l pnl">equity   $999.78 (paper account)</div>
+<div class="l deny">chain    DENIED   REASON_PER_TX_CAP  slot 20</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/5oQKocrXMrw8ira948jMmZXdHcj722YJJrptE3qpUzDy268S5YJRpL3wXWBtm7SsZ5Hrab1DMcHDCgpQey1PYYXn?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/5oQKocrXMrw8ira948jMmZXdHcj722YJJrptE3qpUzDy268S5YJRpL3wXWBtm7SsZ5Hrab1DMcHDCgpQey1PYYXn</a></div></pre>
+    </section>
+
+    <section class="step">
+      <h2>6. Owner tightens the kill-switch to 5%</h2>
+      <pre><div class="l allow">policy updated  9Y9BkthH9ySPoQP4z4ZxHyJmpxCqCxYeLttec7HP9M9m</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/Y5XBoh6YxXUrAR1Ak4QgbZJ1cq5rbLSG7EMXbwRJ971Kh2XG3jJY5i8KwV22XWY5EStFsvw2p1e2osaRDWckHSU?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/Y5XBoh6YxXUrAR1Ak4QgbZJ1cq5rbLSG7EMXbwRJ971Kh2XG3jJY5i8KwV22XWY5EStFsvw2p1e2osaRDWckHSU</a></div></pre>
+    </section>
+
+    <section class="step">
+      <h2>7. Market crash (simulated prices): both open positions lose their collateral</h2>
+      <pre><div class="l plain">paper-b21a2f44  long SOL-PERP  collateral $40.00 x3  entry $119.09  mark $1.00  uPnL $-40.00</div>
+<div class="l plain">paper-b4320ab5  short ETH-PERP  collateral $50.00 x5  entry $2693.19  mark $1000000.00  uPnL $-50.00</div>
+<div class="l pnl">equity $909.78</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>8. Next trade after the crash → expect DENIED REASON_DRAWDOWN_KILLSWITCH</h2>
+      <pre><div class="l plain">intent   long SOL-PERP  collateral $10.00  leverage 2x</div>
+<div class="l pnl">equity   $909.78 (paper account)</div>
+<div class="l deny">chain    DENIED   REASON_DRAWDOWN_KILLSWITCH  slot 25</div>
+<div class="l receipt">receipt  <a href="https://explorer.solana.com/tx/6is5VMBt2TMyxY3Ktiu77qF6czzdZ3q1Z9NrirnX4qvKwtk9ej8ZLownqnRLMKv1SXmUAFHPqbRA37BdAL1LKno?cluster=custom&amp;customUrl=http%3A%2F%2F127.0.0.1%3A8899" target="_blank" rel="noopener">https://explorer.solana.com/tx/6is5VMBt2TMyxY3Ktiu77qF6czzdZ3q1Z9NrirnX4qvKwtk9ej8ZLownqnRLMKv1SXmUAFHPqbRA37BdAL1LKno</a></div></pre>
+    </section>
+
+    <section class="step">
+      <h2>9. Compromised agent key tries to loosen its own policy → expect Unauthorized</h2>
+      <pre><div class="l deny">error: AnchorError thrown in programs/treasury/src/instructions/update_policy.rs:27. Error Code: Unauthorized. Error Number: 6005. Error Message: unauthorized signer for this policy.</div></pre>
+    </section>
+
+    <section class="step">
+      <h2>Final on-chain policy</h2>
+      <pre><div class="l plain">policy                 9Y9BkthH9ySPoQP4z4ZxHyJmpxCqCxYeLttec7HP9M9m</div>
+<div class="l plain">owner                  FUAQ3An62EAmHyhNZiyNfc197MT9FBXcDNnrqCjEwro1</div>
+<div class="l plain">agent                  L1xxA5tYKd38Qsm2JoXkYLgF9ZJivDYNWsGSw6bpMa4</div>
+<div class="l plain">vendors                PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu</div>
+<div class="l plain">perTxCapUsd            50</div>
+<div class="l plain">perDayCapUsd           150</div>
+<div class="l plain">daySpentUsd            90</div>
+<div class="l plain">maxLeverage            5</div>
+<div class="l plain">killSwitchDrawdownPct  5</div>
+<div class="l plain">peakEquityUsd          1000</div>
+<div class="l plain">paperEquityUsd         999.78</div>
+<div class="l plain">venue                  jupiter-perps (paper)</div>
+<div class="l plain">Done. Every "receipt" link above is an on-chain transaction on local.</div></pre>
+    </section>
+   </header>
+
+    <footer>
+      Reproduce with <code>pnpm demo</code> · full transcripts in
+      <code>docs/demo-receipts.md</code> · rebuild this page with
+      <code>node scripts/render-demo.mjs</code>
+    </footer>
+  </div>
+<script>
+  // ?only=final renders just the closing policy block (for a second image).
+  if (new URLSearchParams(location.search).get('only') === 'final') {
+    document.body.classList.add('only-final');
+  }
+</script>
+</body>
+</html>

@@ -199,3 +199,36 @@ export async function updatePolicy(
 }
 
 export type { Transaction, VersionedTransaction };
+
+// ---------------------------------------------------------------------------
+// SWR comparison
+// ---------------------------------------------------------------------------
+
+/**
+ * A stable string for anything a panel renders.
+ *
+ * `decodePolicy` returns live `PublicKey` and `BN` instances, which SWR's
+ * default deep-equal cannot compare reliably. The fix is *not* to disable
+ * comparison — `compare: () => false` tells SWR "never equal", which
+ * re-renders on every pass and loops forever. Compare a serialisation
+ * instead: equal string means nothing moved on chain, so no repaint.
+ */
+export function stableKey(value: unknown): string {
+  return JSON.stringify(value, (_k, v) => {
+    if (v === null || v === undefined) return v;
+    if (typeof v === 'bigint') return `${v}n`;
+    if (typeof v === 'object') {
+      const anyV = v as { toBase58?: () => string; toString?: () => string };
+      if (typeof anyV.toBase58 === 'function') return anyV.toBase58();
+      if (typeof anyV.toString === 'function' && anyV.toString !== Object.prototype.toString) {
+        return anyV.toString();
+      }
+    }
+    return v;
+  });
+}
+
+/** SWR `compare` for a policy snapshot: equal means "the rules did not move". */
+export function samePolicySnapshot(a: unknown, b: unknown): boolean {
+  return stableKey(a) === stableKey(b);
+}
