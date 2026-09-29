@@ -37,7 +37,7 @@ list, the spec assumes it ships.
 | **`packages/agent`** — runtime + evaluator + classifier + `tomb` CLI | ✅ D10 | 16/16 offline tests. Off-chain evaluator lives in `packages/agent/src/evaluator.ts` (the empty `packages/policy-engine` was removed). |
 | **Jupiter Perps adapter** | ✅ **paper mode** D10 | `packages/agent/src/venue/jupiter-perps.ts`. Fills simulated at the live Jupiter price with the 6 bps fee; the on-chain gate is real. **Live mode not built** (Jupiter Perps is mainnet-only). |
 | **`scripts/demo.sh`** runs end-to-end | ✅ local · ⏳ devnet | `pnpm demo` runs the 9-step story on a local validator in ~20 s. `pnpm devnet:demo` needs ~4 devnet SOL (U1). |
-| **`apps/dashboard/`** — Next.js webapp | ❌ empty | Design in `docs/control-surface.md`. `tomb watch` is the interim live audit feed. |
+| **`apps/dashboard/`** — Next.js webapp | 🔨 building | Design in `docs/control-surface.md`. Interim live audit feed is `tomb watch`. |
 
 ---
 
@@ -45,12 +45,12 @@ list, the spec assumes it ships.
 
 | Item | State | Notes |
 |---|---|---|
-| Devnet keypair funded (R3) | ❌ | Keypair exists, 0 SOL. Needs ~4 SOL from https://faucet.solana.com (program rent ~1.54 SOL + same-size deploy buffer, refunded). |
-| Program deployed to devnet | ❌ | Depends on R3; `pnpm devnet:demo` deploys automatically. |
-| Vendor pubkeys resolved (Jupiter Perps program id) | ✅ mainnet · devnet resolves at boot | PM-LOG §5 R18 — Jupiter Perps mainnet `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu`; Drift v2 `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH`. Zeta discontinued May 2025 (pivoted to Bullet), removed from v1. See `docs/venues.md` §"Vendor pubkey mapping". |
-| Surfpool integration test (`s01_full_flow`) | ❌ | `docs/testing-plan.md` Tier 2 |
-| Helius API key | ❌ | PM-LOG §6 U2 |
-| Jupiter API key | ❌ | PM-LOG §6 U3 |
+| Devnet keypair funded (R3) | ⬜ optional | Keypair exists, 0 SOL. **Not required for the demo** — `pnpm demo` uses a local validator (decision 20). Only needed for Solscan-public receipts. Cheapest route: faucet a throwaway keypair, transfer 4 SOL across. |
+| Program deployed to devnet | ⬜ optional | `pnpm devnet:demo` deploys automatically once funded. |
+| Vendor pubkeys resolved (Jupiter Perps program id) | ✅ mainnet · devnet resolves at boot | PM-LOG §5 R18 — Jupiter Perps mainnet `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` (verified executable); Drift v2 `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH`. Zeta discontinued May 2025 (pivoted to Bullet), removed from v1. See `docs/venues.md` §"Vendor pubkey mapping". |
+| Surfpool integration test (`s01_full_flow`) | ❌ | `docs/testing-plan.md` Tier 2. **Cut** — the local-validator demo covers the same path with a real validator. |
+| Helius API key | ⬜ optional | PM-LOG §6 U2. The demo falls back to direct RPC; Helius only speeds up audit-log indexing. |
+| Jupiter API key | ⬜ optional | PM-LOG §6 U3. The paper venue reads the public price endpoint; a key is only needed for live order placement (out of v1 scope). |
 
 ---
 

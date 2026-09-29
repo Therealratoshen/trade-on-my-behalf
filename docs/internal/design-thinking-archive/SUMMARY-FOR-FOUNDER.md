@@ -152,7 +152,7 @@ What I'd push back on if I were a real BRD reviewer:
 
 ### "What are the pain points or missing studs?"
 
-Already captured in [`docs/research/dimension-map.md`](../docs/research/dimension-map.md),
+Already captured in [`docs/research/dimension-map.md`](../../../docs/research/dimension-map.md),
 but the design-thinking pass adds:
 
 - **Pain point we have *no* answer for** — the founder's
@@ -230,13 +230,13 @@ needed (low cost; high alignment).
 
 ## Cross-references
 
-- **Why this works on the judges' criteria** → [`SPEC.md`](../SPEC.md)
+- **Why this works on the judges' criteria** → [`SPEC.md`]../../../SPEC.md
   §"Tech stack" + `04-prototype.md` Slide 7 — both deliver the
   wedge one-liner.
-- **Why this is a real gap** → [`../docs/research/dimension-map.md`](../docs/research/dimension-map.md).
-- **Why performance-fee is the v1 price** → [`../GTM.md`](../GTM.md) §"Pricing model (evidence-led)".
-- **Why TG DM is the control surface** → [`../docs/control-surface.md`](../docs/control-surface.md).
-- **Why the on-chain gate is the kernel** → [`../docs/onchain-program.md`](../docs/onchain-program.md).
+- **Why this is a real gap** → [`../docs/research/dimension-map.md`](../../../docs/research/dimension-map.md).
+- **Why performance-fee is the v1 price** → [`../GTM.md`]../../../GTM.md §"Pricing model (evidence-led)".
+- **Why TG DM is the control surface** → [`../docs/control-surface.md`](../../../docs/control-surface.md).
+- **Why the on-chain gate is the kernel** → [`../docs/onchain-program.md`](../../../docs/onchain-program.md).
 
 ---
 

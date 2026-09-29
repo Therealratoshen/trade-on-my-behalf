@@ -1,0 +1,38 @@
+{
+  "name": "@trade-on-my-behalf/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Trade On My Behalf control surface: read-mostly viewer + rule editor. The kernel decides; this shows the receipts.",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/wallet-adapter-base": "^0.9.28",
+    "@solana/wallet-adapter-phantom": "^0.9.30",
+    "@solana/wallet-adapter-react": "^0.15.40",
+    "@solana/wallet-adapter-react-ui": "^0.9.40",
+    "@solana/web3.js": "^1.95.3",
+    "@trade-on-my-behalf/agent": "workspace:*",
+    "@trade-on-my-behalf/sdk": "workspace:*",
+    "bn.js": "^5.2.1",
+    "buffer": "^6.0.3",
+    "next": "^15.5.26",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "swr": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.6",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

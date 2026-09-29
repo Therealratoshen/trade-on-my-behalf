@@ -1,0 +1,77 @@
+name: Bug or edge case
+description: Report a bug, an unexpected kernel decision, or a missing edge case
+labels: ["needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks — this is a hackathon build and outside-dev findings are used
+        directly to harden the security model. If your case is not in
+        [docs/trader-lifecycle-edge-cases.md](https://github.com/Therealratoshen/trade-on-my-behalf/blob/main/docs/trader-lifecycle-edge-cases.md),
+        that is a real gap.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did and what the kernel decided.
+      placeholder: |
+        Set maxLeverage to 1x, then pushed a 5x intent.
+        Expected: DENIED with REASON_LEVERAGE_CAP (6).
+        Got: APPROVED.
+    validations:
+      required: true
+
+  - type: textarea
+    id: intent
+    attributes:
+      label: The trade intent (if applicable)
+      description: The intent you pushed, verbatim.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: reason-code
+    attributes:
+      label: reason_code observed
+      description: From the AuditEvent, if the kernel denied. 0=OK, 1=vendor, 2=per-tx cap, 3=daily cap, 4=expired, 6=leverage cap, 7=drawdown kill-switch.
+    validations:
+      required: false
+
+  - type: input
+    id: signature
+    attributes:
+      label: Transaction signature
+      description: Lets us pull the exact on-chain state.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: agreement
+    attributes:
+      label: Did the off-chain preflight agree with the chain?
+      options:
+        - Yes, both denied
+        - Yes, both approved
+        - No — off-chain approved, chain denied
+        - No — off-chain denied, chain approved
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Commands, or the steps if you used the webapp.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true

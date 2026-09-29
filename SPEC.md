@@ -187,7 +187,7 @@ Weekly 1-min update videos:
 - D6: How does the trader fund its treasury PDA — user transfer pre-trade?
 - D7: Insurance fund exposure on Kill-Switch vs liquidation delay.
 - ~~D9: Telegram/Slack control surface — open-source bot vs Paywalled via AgentBazaar?~~ **Closed D8.5+** — webapp is v1 control surface (Phantom Connect or Trust Wallet + viewer + rule editor). Telegram bot moved to v3, never. See `docs/control-surface.md`.
-- **D10+ hardening queue** — tracked in [PM-LOG.md §5 R14–R16](../PM-LOG.md) (the canonical surface for risks and follow-ups, not this spec doc). The three items, named here for cross-reference:
+- **D10+ hardening queue** — tracked in [PM-LOG.md §5 R14–R16](PM-LOG.md) (the canonical surface for risks and follow-ups, not this spec doc). The three items, named here for cross-reference:
   - **R14** — **tighten-timelock** on `update_policy` so a stolen `owner` key cannot loosen caps within the policy's TTL window. The current `update_policy` accepts loosening — flagged in `docs/security-model.md` §"Scenario 1".
   - **R15** — **CPI-wrapper or PDA-bound memo** so `authorize_spend` becomes the *authoritative* enforcer of "venue CPI actually targets the whitelisted program." Current defense is SDK-trust — flagged in `docs/security-model.md` §"Scenario 4`.
   - **R16** — document "what kills an open position" — venue liquidation only; the on-chain gate does not see venue-side state. Flagged in `docs/security-model.md` §"Scenario 2".

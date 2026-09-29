@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Snapshot (last updated 2026-09-27 23:10 WIB)
+## 1. Snapshot (last updated 2026-09-29 21:55 WIB)
 
 | Field | Value |
 |---|---|
@@ -14,14 +14,16 @@
 | Wedge | Personal time-poor retail perps agent with on-chain policy gates (SAS model: Specialist, Algorithm, Skill) |
 | Cluster | v1-c9 "Solana DEX and Trading" (323 projects, 23 winners) |
 | Verdict (D5) | Partial gap. Closest analogs: `infty.trade` (AI pricing AMM), `armor-wallet` (AI wallet + trading, no perps, no on-chain policy), `mercantill` (on-chain policy, no perps), `solmind`/`pot-bot`/`debonk` TG bots (no policy layer). |
-| Build state | **Program** hardened D10 (signer check, rolling daily reset), 12/12 localnet tests. **SDK** fixed D10 (decodes real AuditEvents), 11/11. **Agent runtime + `tomb` CLI + Jupiter Perps adapter (paper mode)** shipped D10, 16/16. `pnpm demo` runs the full 9-step story end-to-end on a local validator. Dashboard still empty. Repo public. |
+| Build state | **Program** hardened D10 (signer check, rolling daily reset), 12/12 localnet tests. **SDK** fixed D10 (decodes real AuditEvents), 11/11. **Agent runtime + `tomb` CLI + Jupiter Perps adapter (paper mode)** shipped D10, 16/16. **`pnpm demo` runs the full 9-step story on a local validator** — verified 9/9 on 2026-09-29. **Dashboard building.** Repo public, topics set, CI green-on-push. |
 | Branch | `main` |
-| Last commit | see `git log -1` — D10 build pushed to public GitHub |
-| Days to deadline | **15** (Oct 12, 2026 11:59 pm PT) |
-| Commits | all pushed to origin/main |
-| Sol at risk | Devnet demo blocked **only** on devnet SOL (U1: ~4 SOL). Venue is paper-only — the submission and README say so. Dashboard not started (R21). |
+| Last commit | see `git log -1` |
+| Days to deadline | **13** (Oct 12, 2026 11:59 pm PT) |
+| Commits | 22, all pushed to origin/main |
+| Tests | **48 green** — 12 program + 11 SDK + 16 agent (+ 8 SDK PDA tests inside the 11) |
+| Sol at risk | **Nothing blocking the demo.** Devnet SOL is optional (see decision 20 + R3). Only the fill is simulated (paper venue, stated plainly). |
 | On-chain program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`, 217 KB, 4 instructions, 8 reason codes |
-| On-chain deployed? | **No** — local validator only. `pnpm devnet:demo` deploys once the owner key has ~4 devnet SOL. |
+| On-chain deployed? | Local validator only. `pnpm devnet:demo` deploys if the owner key is ever funded. |
+| Demo path | `pnpm demo` — no SOL, no network, ~90 s, 9 real on-chain transactions |
 | Honest security claim | *"I cannot break your rules — within the as-stored caps"* (qualifier added D8.5+; see [SUBMISSION.md](SUBMISSION.md) §"Security claim" + [docs/security-model.md](docs/security-model.md)) |
 
 ## 2. Day-progress ledger
@@ -69,6 +71,9 @@
 | 17 | 2026-09-27 | **Jupiter Perps ships in paper mode for v1.** Fills simulated at the live Jupiter oracle price (`lite-api.jup.ag/price/v3`) with the 6 bps fee; every fill gated by a real on-chain `authorize_spend`. | Jupiter Perps is mainnet-only and its position-request flow is multi-day work; the wedge is the on-chain gate, which is fully real. Saying "paper" everywhere beats a half-working live path. | `packages/agent/src/venue/jupiter-perps.ts`, SUBMISSION.md scope line |
 | 18 | 2026-09-27 | **Every intent goes on-chain, denies included.** Off-chain evaluator is a preflight diagnostic; a disagreement flags the receipt and the chain wins. | The public deny receipt is the product. Resolves a contradiction in `docs/agent-runtime.md` (D6 draft skipped the tx on off-chain deny). | `packages/agent/src/runtime.ts` |
 | 19 | 2026-09-27 | **Program + SDK security fixes before any deploy.** `authorize_spend` and `record_pnl` now require agent-or-owner signer (was: anyone — daily-cap griefing); daily counter resets every 216 000 slots (was: never); `record_pnl` callable by agent (only tightens). SDK decodes the real AuditEvent (was: reported every call approved), decodes u64 little-endian (was: big-endian), wraps Keypair in `Wallet` (was: could not sign). | Found by wiring the runtime to a live validator; each has a regression test. Nothing was deployed, so no migration. | `docs/security-model.md` §"Fixed on D10" |
+| 20 | 2026-09-29 | **Devnet is not a prerequisite for the demo.** `pnpm demo` runs the full 9-step story on a throwaway `solana-test-validator` with the program preloaded. Real program, real policy PDA, real `AuditEvent`s, real reason codes, real explorer links. Only the *fill* is simulated (paper venue at the live Jupiter oracle price, stated plainly in the submission). | Devnet airdrop is hard-blocked at the IP level: `api.devnet.solana.com`, `devnet.rpcpool.com`, and direct JSON-RPC `requestAirdrop` all return `429 — airdrop limit reached today or faucet dry`. `faucet.solana.com` is captcha-gated. Waiting on SOL was costing D9–D10 without changing what a judge sees. Solscan-public URLs are incremental; the kernel deciding is the point. | `scripts/demo.sh`, `docs/demo-receipts.md`, verified 2026-09-29 21:52 WIB — 9/9 steps green |
+| 21 | 2026-09-29 | **Repo hygiene pass before the videos.** 10 GitHub topics set; CI workflow that runs the 48 tests (SDK + agent, and the program against a preloaded local validator); `CONTRIBUTING.md`; a bug-report issue template wired to the edge-case catalog; all dead markdown links fixed (root-relative path bug in `SPEC.md`, depth bug in the archived founder summary). | Hackathon judges score open-source and read the repo front page. Topics drive search. A green checkmark and a CONTRIBUTING are the cheapest credibility signals available. | `.github/workflows/ci.yml`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/bug_report.yml` |
+| 22 | 2026-09-29 | **Program tests are localnet, not LiteSVM.** Earlier notes said "6/6 LiteSVM"; `programs/treasury/tests/treasury.ts` actually uses `AnchorProvider.env()` against a real validator. Corrected in the snapshot. The 12 tests are honest either way — they need a validator, and `scripts/demo.sh` shows how to boot one. | The stale label would have made the CI workflow wrong on first run. | `programs/treasury/tests/treasury.ts`, `scripts/demo.sh` |
 
 ## 4. Open questions
 
@@ -87,7 +92,7 @@
 |---|---|---|---|---|
 | R1 | Helius API key not obtained before D8 | medium | medium | Use pub devnet RPC as fallback; only Helius-boosted features delayed |
 | R2 | Jupiter Perps SDK integration finds unexpected breaking API | medium | high | Pinned SDK version, LiteSVM-tested mock first, Drift as alternate venue already planned |
-| R3 | Devnet deploy fails due to missing `~/.config/solana/id.json` (default points to a Monad keypath) | **certain** | blocker | Generate fresh keypair, copy to `~/.config/solana/id.json`, airdrop SOL, deploy |
+| R3 | ~~Devnet deploy fails due to missing `~/.config/solana/id.json`~~ — keypair now exists at the right path and is airdrop-free; deploy is **not required** for the demo (decision 20). The residual ask is ~4 devnet SOL for Solscan-public receipts. | certain | low | Local validator covers the demo. If Solscan links are wanted: fund the key (U1) or use a throwaway keypair for the faucet (the limit may be per-key, not per-IP), then `pnpm devnet:demo`. |
 | R4 | Anchor tests require pnpm install which compiles TS | medium | low | Use mocha in `tests/` directly, skip next.js dashboard deps initially |
 | R5 | ~~Telegram bot test surface (TDLib) install on macOS is heavy~~ — closed D8.5+ (Telegram bot cut to v3, never) | — | — | — |
 | R6 | User test D11 surfaces a showstopper | medium | high | Buffer day D16 absorbs fix + re-record |
@@ -112,7 +117,7 @@
 
 | # | Task | Why | Where |
 |---|---|---|---|
-| U1 | **Fund the owner key with ~4 devnet SOL** at https://faucet.solana.com (paste the output of `solana address`; two requests if capped at 2). Program rent ~1.54 SOL + same-size deploy buffer (refunded) + agent fees. Then run `pnpm devnet:demo` and paste the three receipt links into `docs/demo-receipts.md`. | Required for devnet deploy + the 3 Solscan receipts | browser + 1 command |
+| U1 | *(Downgraded from blocker → optional.)* **Devnet SOL (~4) for Solscan-public receipts.** The demo does not need it — `pnpm demo` runs the full 9-step story on a local validator. Only if you want the three receipts in `docs/demo-receipts.md` to resolve on a public explorer. Fastest route: generate a throwaway keypair (`solana-keygen new -o /tmp/faucet.json`), claim at https://faucet.solana.com to *that* address (the faucet limit may be per-key, not per-IP), then `solana transfer 4 <OWNER_PUBKEY> --keypair /tmp/faucet.json --url devnet --allow-unfunded-recipient`. | Nice-to-have, not required for the demo or the submission | browser + 3 commands |
 | U2 | Obtain Helius API key + `export HELIUS_API_KEY=...` | Per `docs/mcp-setup.md` | dashboard.helius.dev |
 | U3 | Obtain Jupiter API key + `export JUPITER_API_KEY=...` | Per `docs/venues.md` | portal.jup.ag |
 | U4 | Register team on colosseum.com/worldsfair; claim Solana track | Required before deadline | browser |
