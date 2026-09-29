@@ -37,7 +37,7 @@ list, the spec assumes it ships.
 | **`packages/agent`** — runtime + evaluator + classifier + `tomb` CLI | ✅ D10 | 16/16 offline tests. Off-chain evaluator lives in `packages/agent/src/evaluator.ts` (the empty `packages/policy-engine` was removed). |
 | **Jupiter Perps adapter** | ✅ **paper mode** D10 | `packages/agent/src/venue/jupiter-perps.ts`. Fills simulated at the live Jupiter price with the 6 bps fee; the on-chain gate is real. **Live mode not built** (Jupiter Perps is mainnet-only). |
 | **`scripts/demo.sh`** runs end-to-end | ✅ local · ⏳ devnet | `pnpm demo` runs the 9-step story on a local validator in ~20 s. `pnpm devnet:demo` needs ~4 devnet SOL (U1). |
-| **`apps/dashboard/`** — Next.js webapp | 🔨 building | Design in `docs/control-surface.md`. Interim live audit feed is `tomb watch`. |
+| **`apps/dashboard/`** — Next.js 15 webapp | ✅ D10 | 5 panels per `docs/control-surface.md`: connect, view policy, view audit log, view positions, edit policy. Read-mostly; no approve/deny button by design. Builds clean, serves 200, positions API reads the live paper state. |
 
 ---
 

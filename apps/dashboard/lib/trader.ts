@@ -14,14 +14,8 @@
  * metas are identical to `packages/sdk/src/withTrader.ts`; keep them in sync.
  */
 
-import {
-  AnchorProvider,
-  BN,
-  Program,
-  type AnchorWallet,
-  type Idl,
-} from '@coral-xyz/anchor';
-import { Connection, PublicKey, type Transaction } from '@solana/web3.js';
+import { AnchorProvider, BN, Program, type Idl, type Wallet as AnchorKeypairWallet } from '@coral-xyz/anchor';
+import { Connection, PublicKey, type Transaction, type VersionedTransaction } from '@solana/web3.js';
 import {
   decodePolicy,
   derivePolicyPda,
@@ -46,8 +40,23 @@ export function makeConnection(endpoint: string): Connection {
   return new Connection(endpoint, COMMITMENT);
 }
 
-export function makeProgram(connection: Connection, wallet: AnchorWallet): Program {
-  const provider = new AnchorProvider(connection, wallet, {
+/**
+ * What `AnchorProvider` actually needs from a signer: a pubkey and the two
+ * signing calls. Phantom's wallet adapter satisfies it; Anchor's own `Wallet`
+ * type does not describe it (that type is a Node `Keypair` wrapper).
+ */
+export interface AdapterWallet {
+  publicKey: PublicKey;
+  signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T>;
+  signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]>;
+  signMessage(msg: Uint8Array): Promise<Uint8Array>;
+}
+
+export function makeProgram(connection: Connection, wallet: AdapterWallet): Program {
+  // `AnchorProvider` only touches `publicKey` / `signTransaction` /
+  // `signAllTransactions` on the object it is handed; its `Wallet` type is the
+  // Node-keypair wrapper, which is exactly what a browser must not use.
+  const provider = new AnchorProvider(connection, wallet as unknown as AnchorKeypairWallet, {
     commitment: COMMITMENT,
     preflightCommitment: COMMITMENT,
   });
@@ -189,5 +198,4 @@ export async function updatePolicy(
   return { signature };
 }
 
-/** Type re-export so the Phantom adapter can be dropped in without a cast. */
-export type { AnchorWallet, Transaction };
+export type { Transaction, VersionedTransaction };

@@ -1,4 +1,4 @@
-import { clusterApiUrl } from '@solana/web3.js';
+import { clusterApiUrl, type Cluster } from '@solana/web3.js';
 import { TREASURY_PROGRAM_ID } from '@trade-on-my-behalf/sdk';
 
 export type ClusterId = 'devnet' | 'localnet' | 'testnet' | 'mainnet-beta';
@@ -6,20 +6,21 @@ export type ClusterId = 'devnet' | 'localnet' | 'testnet' | 'mainnet-beta';
 /** Read at build time by Next's inliner — never fetched. */
 export const CLUSTER: ClusterId = (process.env.NEXT_PUBLIC_CLUSTER as ClusterId) || 'devnet';
 
-export const RPC_ENDPOINT: string = process.env.NEXT_PUBLIC_RPC_URL || clusterApiUrl(CLUSTER);
+export const RPC_ENDPOINT: string =
+  process.env.NEXT_PUBLIC_RPC_URL || clusterApiUrl(CLUSTER as Cluster);
 
 export const PROGRAM_ID = TREASURY_PROGRAM_ID;
 
 const EXPLORER_BASE: Record<ClusterId, string> = {
   devnet: 'https://explorer.solana.com',
-  mainnet-beta: 'https://explorer.solana.com',
+  'mainnet-beta': 'https://explorer.solana.com',
   testnet: 'https://explorer.solana.com',
   localnet: 'https://explorer.solana.com',
 };
 
 const EXPLORER_CLUSTER: Record<ClusterId, string> = {
   devnet: 'devnet',
-  mainnet-beta: '',
+  'mainnet-beta': '',
   testnet: 'testnet',
   localnet: 'localnet',
 };

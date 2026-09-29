@@ -128,6 +128,9 @@ pnpm demo
 
 # 4. same story on devnet (needs ~4 devnet SOL from https://faucet.solana.com)
 pnpm devnet:demo
+
+# 5. the webapp (control surface: view policy, audit log, positions; edit rules)
+pnpm --filter @trade-on-my-behalf/dashboard dev   # http://localhost:3000
 ```
 
 `pnpm demo` creates a policy ($50/trade, $150/day, 5x, 25% kill-switch),
@@ -135,6 +138,11 @@ then shows: an approved trade, an oversized signal clamped to the caps,
 two rule-breaking intents denied on-chain, the owner tightening the
 kill-switch, a simulated crash tripping it, and the agent key failing
 to loosen its own policy. Every step prints an explorer receipt link.
+
+The webapp is a **viewer + rule editor**, not an action requester. It
+has no approve/deny button by design — the kernel decides, the webapp
+shows the receipts. Run `pnpm demo` first so the audit log and positions
+panels have data to render.
 
 See `SPEC.md` for the frozen scope and `docs/copilot-verdict.md` for the idea's
 evidence-backed gap classification.
@@ -145,16 +153,18 @@ evidence-backed gap classification.
 programs/treasury/             Anchor program: per-agent policy engine
 packages/sdk/                  @trade-on-my-behalf/sdk: typed wrapper over the program
 packages/agent/                runtime, off-chain evaluator, Jupiter Perps adapter (paper), `tomb` CLI
-apps/dashboard/                Next.js webapp (not built yet) — see docs/control-surface.md
+apps/dashboard/                @trade-on-my-behalf/dashboard: Next.js 15 webapp (viewer + rule editor)
 scripts/demo.sh                end-to-end demo: `pnpm demo` (local) / `pnpm devnet:demo`
 docs/                          architecture, onchain-program, sdk-api,
                                agent-runtime, venues, control-surface,
                                audit-and-receipts, testing-plan,
                                security-model, user-tests,
+                               trader-lifecycle-edge-cases,
                                gtm-and-submission, onboarding, roadmap,
                                mcp-setup, research/, dimension-map,
                                oss-precedent
 design-thinking/               founder voice: why I'm building this
+CONTRIBUTING.md                how to run, test, and propose a rule
 PM-LOG.md                      single-page PM dashboard
 SPEC.md / GTM.md / SUBMISSION.md
 ```

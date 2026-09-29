@@ -18,7 +18,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** Mirrors `Position` in packages/agent/src/venue/index.ts. */
-interface PaperPosition {
+export interface PaperPosition {
   venuePositionId: string;
   market: string;
   side: 'long' | 'short';
@@ -46,36 +46,38 @@ export interface PositionsResponse {
   positions: PaperPosition[];
 }
 
+/** What the route can answer: a projection, or a reason it has none. */
+export type PositionsPayload =
+  | PositionsResponse
+  | { ok: false; reason: string; positions: PaperPosition[] };
+
+function unavailable(reason: string): NextResponse<PositionsPayload> {
+  return NextResponse.json({ ok: false, reason, positions: [] }, { status: 200 });
+}
+
 /** Walk up from cwd looking for the paper state the demo writes. */
-function resolveStatePath(): { path: string | null; reason: string | null } {
+function resolveStatePath(): string | null {
   const fromEnv = process.env.TOMB_PAPER_STATE;
-  if (fromEnv) return { path: resolve(fromEnv), reason: null };
+  if (fromEnv) return resolve(fromEnv);
 
   let dir = process.cwd();
   for (let i = 0; i < 6; i += 1) {
     for (const name of ['paper-local.json', 'paper-devnet.json']) {
       const p = join(dir, '.demo', name);
-      if (existsSync(p)) return { path: p, reason: null };
+      if (existsSync(p)) return p;
     }
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return { path: null, reason: 'no .demo/paper-*.json found — run `pnpm demo` first' };
+  return null;
 }
 
 export async function GET() {
-  const { path, reason } = resolveStatePath();
+  const path = resolveStatePath();
 
   if (!path) {
-    return NextResponse.json(
-      {
-        ok: false,
-        reason,
-        positions: [],
-      } satisfies Partial<PositionsResponse> & { ok: false; reason: string },
-      { status: 200 },
-    );
+    return unavailable('no .demo/paper-*.json found — run `pnpm demo` first');
   }
 
   const {
@@ -83,17 +85,13 @@ export async function GET() {
     JupiterPerpsPaperVenue,
     JupiterPriceFeed,
     StaticPriceFeed,
-    JUPITER_PERPS_PROGRAM_ID,
   } = await import('@trade-on-my-behalf/agent');
 
   const store = new FileStore(path);
   // Bailing before the constructor keeps this route from creating a file.
   const state = store.load();
   if (!state) {
-    return NextResponse.json(
-      { ok: false, reason: `${path} is empty or unreadable`, positions: [] } as const,
-      { status: 200 },
-    );
+    return unavailable(`${path} is empty or unreadable`);
   }
 
   const positions: PaperPosition[] = [];
@@ -126,10 +124,7 @@ export async function GET() {
       positions.push(...(await venue.listPositions()));
       equityUsd = await venue.equityUsd();
     } catch {
-      return NextResponse.json(
-        { ok: false, reason: `venue adapter failed: ${priceError}`, positions: [] } as const,
-        { status: 200 },
-      );
+      return unavailable(`venue adapter failed: ${priceError}`);
     }
   }
 
