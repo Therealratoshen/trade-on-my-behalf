@@ -1,4 +1,4 @@
-# Trade On My Behalf
+# Terading
 
 > A Solana devnet-first perps terminal in development, with an existing on-chain policy demo and **simulated** Jupiter positions.
 
