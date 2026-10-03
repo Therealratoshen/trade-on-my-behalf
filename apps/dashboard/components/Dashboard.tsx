@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -134,6 +135,10 @@ export function Dashboard() {
           it is bound by and the receipts it has produced. There is no approve button here, by design.
         </p>
         <div className="tagline">“The kernel decides. The webapp shows you what it decided.”</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+          <Link href="/paper-practice">Open paper practice →</Link>
+          <span className="faint mono" style={{ fontSize: 10 }}>FICTIONAL FIXTURES · LOCAL ONLY · NO ORDERS</span>
+        </div>
       </header>
 
       <ConnectPanel />
