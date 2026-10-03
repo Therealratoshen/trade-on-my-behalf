@@ -5,7 +5,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AnchorProvider, BN, Idl, Program, Wallet } from "@coral-xyz/anchor";
+import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
+import BN from 'bn.js';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 
 import { decodePolicy, parseAuditEvents, TREASURY_IDL, TREASURY_PROGRAM_ID } from '../src/index.js';
