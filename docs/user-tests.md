@@ -23,7 +23,7 @@ before D12.
 
 ## Test 1 — Solana-native dev
 
-> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no policy was configured and no trade was attempted.
+> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no actual policy configuration or trade attempt is recorded.
 
 | Field | Value |
 |---|---|
@@ -48,7 +48,7 @@ approves, that is a kernel bug.
 
 ## Test 2 — Cross-venue trader
 
-> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no policy was configured and no trade was attempted.
+> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no actual policy configuration or trade attempt is recorded.
 
 | Field | Value |
 |---|---|
@@ -74,7 +74,7 @@ approves, the vendor whitelist is broken — kernel bug.
 
 ## Test 3 — Kill-switch stress
 
-> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no policy was configured and no trade was attempted.
+> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no actual policy configuration or trade attempt is recorded.
 
 | Field | Value |
 |---|---|
@@ -104,9 +104,9 @@ under-water trade approves, the kill-switch is broken — kernel bug.
 ## Planned notes for judges (not observed outcomes)
 
 - **A deny is the product working, not failing.** Read the reason code first.
-- **A timeout means the tester's phone wasn't reachable in 60 s.** That's also working as designed. The persona's complaint about being-at-work is the use case.
+- **A timeout, if actually observed, means the runtime did not reach the tester's phone in 60 s.** No timeout was observed in these unrun tests.
 - **`reason_code` is the canonical output of `authorize_spend`.** Codes 0..7 are defined in [`programs/treasury/programs/treasury/src/state/mod.rs`](../programs/treasury/programs/treasury/src/state/mod.rs). Code 99 is the runtime-local timeout code (off-chain only).
-- **Slot numbers are real.** Verifiable on Solscan.
+- **Verify every recorded slot against its real signature on Solscan.** No signature or slot is recorded in this file today.
 - **`policy.vendors` is a 32-byte Pubkey check** — see [security-model.md §"Scenario 4"](security-model.md) for the SDK-trust caveat that applies to the follow-through CPI.
 
 ## What to look for
