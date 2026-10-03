@@ -36,7 +36,7 @@ Legacy incorrectly owned PDAs cannot be reclaimed by this patch. Use a fresh age
 
 Run `cargo test --locked --lib -p treasury` in `programs/treasury`, build SDK/agent, and run their Node tests. Native Anchor `idl-build` output was used to regenerate the SDK interface without deploying.
 
-The Anchor integration suite includes real transaction tests for unsigned-agent rejection/rollback and exact-maximum charging followed by overflow denial. Those require an ephemeral local validator and an SBF build; native unit tests do not replace them. Do not run the demo script just to validate this PR: its devnet mode can deploy and fund accounts.
+The Anchor integration suite includes real transaction tests for unsigned-agent rejection/rollback and exact-maximum charging followed by overflow denial. All 14 tests passed against an isolated local validator with the actual SBF build; see [validation evidence](local-validator-validation.md). Native unit tests do not replace these transaction tests. Do not run the demo script just to validate this PR: its devnet mode can deploy and fund accounts.
 
 Before any devnet upgrade, obtain explicit approval, verify upgrade authority, run the full local-validator suite and review existing policy ownership. Before funded venue execution, independently audit the design.
 

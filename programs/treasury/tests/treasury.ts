@@ -45,7 +45,7 @@ describe("treasury", () => {
         opts.maxLeverageBps ?? 0,
         opts.killPct ?? 0,
       )
-      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey })
+      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey, systemProgram: anchor.web3.SystemProgram.programId })
       .signers([agent])
       .rpc(RPC_OPTS);
     return { agent, vendor, pda };
@@ -107,16 +107,20 @@ describe("treasury", () => {
     const pda = policyPdaFor(agent.publicKey);
     const ix = await program.methods.createPolicy(
       [], new BN(1), new BN(1), new BN(1000), 100, 0,
-    ).accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey }).instruction();
+    ).accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey, systemProgram: anchor.web3.SystemProgram.programId }).instruction();
     ix.keys.find(k => k.pubkey.equals(agent.publicKey))!.isSigner = false;
-    let rejected = false;
-    try {
-      await provider.sendAndConfirm(new anchor.web3.Transaction().add(ix), [], RPC_OPTS);
-    } catch (error) {
-      rejected = true;
-      assert.match(String(error), /AccountNotSigner|3010/);
-    }
-    assert.isTrue(rejected, "unsigned-agent initialization must be rejected");
+    // Submit to the ledger, not only the client's preflight simulator.
+    const latest = await provider.connection.getLatestBlockhash("confirmed");
+    const tx = new anchor.web3.Transaction({ ...latest, feePayer: owner.publicKey }).add(ix);
+    const signed = await owner.signTransaction(tx);
+    const signature = await provider.connection.sendRawTransaction(signed.serialize(), { skipPreflight: true });
+    const confirmation = await provider.connection.confirmTransaction({ ...latest, signature }, "confirmed");
+    assert.deepEqual(confirmation.value.err, { InstructionError: [0, { Custom: 3010 }] });
+    const recorded = await provider.connection.getTransaction(signature, {
+      commitment: "confirmed", maxSupportedTransactionVersion: 0,
+    });
+    assert.isNotNull(recorded, "failed transaction must actually be recorded on the local ledger");
+    assert.match((recorded?.meta?.logMessages ?? []).join("\n"), /AccountNotSigner|3010/);
     assert.isNull(await provider.connection.getAccountInfo(pda), "failed initialization must roll back");
   });
 
@@ -125,7 +129,7 @@ describe("treasury", () => {
     const agent = anchor.web3.Keypair.generate(), vendor = anchor.web3.Keypair.generate();
     const pda = policyPdaFor(agent.publicKey);
     await program.methods.createPolicy([vendor.publicKey], maximum, maximum, new BN(1000000), 0, 0)
-      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey }).signers([agent]).rpc(RPC_OPTS);
+      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey, systemProgram: anchor.web3.SystemProgram.programId }).signers([agent]).rpc(RPC_OPTS);
     const first = await program.methods.authorizeSpend(vendor.publicKey, maximum, new BN(1), 100, new BN(0))
       .accounts({ policy: pda, authority: owner.publicKey }).rpc(RPC_OPTS);
     assert.isTrue((await auditsOf(first))[0].approved);
