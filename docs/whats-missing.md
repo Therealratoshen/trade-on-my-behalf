@@ -124,4 +124,47 @@ for "what is built" — the code wins for "what is true."
 
 ---
 
-Last updated: 2026-09-27 23:00 WIB (D10).
+Last updated: 2026-10-03 WIB. Existing implementation-status rows above remain the 2026-09-27 snapshot and need code re-verification.
+
+    ## Product-management review — recommended gap section (2026-10-03)
+
+    **Review basis:** [SPEC.md](../SPEC.md), [README.md](../README.md), [user-tests.md](user-tests.md), [agent-runtime.md](agent-runtime.md), and the Anchor authorization/runtime flow. This is a product review, not a test run.
+
+    **PM recommendation:** Treat the current milestone as a paper-trading demo. Do not describe v1 as live, unattended trading or claim that venue execution is unbypassably enforced. Track demo acceptance separately from live-trading readiness. The implementation-status rows above are the 2026-09-27 snapshot; verify them against the current branch before treating them as current.
+
+    Priority meanings: **P0** = resolve before claiming demo acceptance; **P1** = required before a live-money release; **P2** = clarity or operational hardening that should be scheduled before broader use.
+
+    ### Demo acceptance gates
+
+    | Priority | Gap | Recommendation and acceptance criteria |
+    |---|---|---|
+    | P0 | Leverage acceptance case contradicts its configured policy. Test 1 in user-tests.md sets a 100 bps (1x) cap but expects a 300 bps (3x) trade to approve. | Correct the rule or expected outcome. Given a 100 bps cap, a trade at or below 100 bps approves and a trade above 100 bps is denied with the leverage reason code. Keep the test inputs, expected result, and policy units consistent. |
+    | P0 | User-test evidence is not complete in the committed document. Tester, signature, slot, latency, and reaction fields remain placeholders; the gap tracker also reports testers were not lined up. | Run the three planned tests and record actual outcomes and evidence, or mark them not run. Do not treat sample rows as completed validation. For devnet claims, include real transaction links; for local-only tests, label the cluster clearly. |
+    | P0 | The PRD calls the daily limit a loss limit, but the program counts approved spend/collateral and does not calculate net daily PnL. | Decide the v1 contract. If the behavior is a spend budget, use spend terminology consistently in SPEC.md, UI, SDK, tests, and docs. If it must be a loss limit, define the PnL source/window and implement tests showing losses—not trade size—consume the limit. |
+    | P0 | Project status is inconsistent: README marks the dashboard unbuilt, while the gap tracker and later commit describe it as shipped; the roadmap milestones also need reconciliation. | Make README, this tracker, roadmap, and user-test status agree with the branch. Each completed item should link to code or test evidence; incomplete work should remain visibly open. |
+    | P1 | An approval consumes the on-chain daily counter before the venue call. If the venue call fails, the runtime records an error but does not reverse or reconcile that counter. | Decide whether approved-but-unfilled intents intentionally consume budget. Add a forced venue-failure test. The result must be visible to the user and the documented counter behavior must match the implementation. |
+
+    ### Live-trading readiness — explicitly outside the paper-demo gate
+
+    | Priority | Gap | Recommendation and acceptance criteria |
+    |---|---|---|
+    | P1 | Policy approval is not atomically bound to a venue order. The program records a decision; the runtime performs the separate venue action. | Before live funds, define an on-chain execution design that binds approval to venue, market, amount, leverage, and a non-replayable intent. Test that an unapproved or altered order cannot execute. If that cannot be delivered, narrow the security claim and state the remaining trusted components explicitly. |
+    | P1 | Drawdown uses current equity supplied by the runtime, and the kill-switch denies new authorizations rather than closing existing positions. | Specify the trusted equity source, stale-data behavior, and whether “kill” means stop new entries or close positions. Fail closed when required risk data is unavailable. Test threshold crossing and document what happens to every open position. |
+    | P1 | Live execution and unattended signal monitoring are not implemented; the current Jupiter adapter is paper mode and samplers are planned. | Keep these out of demo acceptance. For a live product, define the supported signal contract, always-on runtime/restart behavior, live venue adapter, order confirmation/reconciliation, and a user-visible pause/disable path. Acceptance requires end-to-end tests against the intended deployment environment, not only a local paper fill. |
+    | P1 | Owner policy updates can loosen caps; this is already identified as a hardening risk. | Decide whether a delay, multisig, or another recovery/control mechanism is required before live use. Keep the current limitation visible until the mitigation is implemented and tested. |
+    | P2 | The target audience spans individual traders, prop teams, and signal followers, while the first release and test plan focus on one demo path. | Select one launch persona and validate its workflow first. Keep other audiences as later opportunities unless their requirements change the policy model or control surface. |
+
+    ### PRD recommendations
+
+    1. Add a current version, status, owner, last-reviewed date, and short changelog to SPEC.md. Label historical/pivoted sections and identify one current v1 scope section as authoritative.
+    2. Give each v1 requirement a testable acceptance criterion and link it to an implementation/test. Define measurable targets for decision correctness, audit visibility latency, and recovery from failed transactions before claiming them as success metrics.
+    3. Keep non-goals explicit: live execution, Drift, automated samplers, and broader team/copy-trading workflows should not silently enter demo scope.
+    4. Re-rank this section at each milestone. Only move an item to DONE when code and evidence satisfy its stated acceptance criteria; update the README and roadmap in the same change.
+
+    ### Recommended sequence
+
+    1. Fix the leverage test and decide spend-cap versus loss-cap semantics.
+    2. Complete or explicitly defer the outside-user tests; reconcile README, tracker, and roadmap status.
+    3. Test and document approved-but-unfilled behavior in the paper demo.
+    4. Only after the demo gate is honest and repeatable, scope the separate live-readiness work: execution binding, trustworthy risk inputs, position shutdown behavior, and the live runtime.
+    
