@@ -1,9 +1,8 @@
 # Demo Receipts — Solscan-Verifiable Proof
 
-> **Status:** Placeholder as of D8.5+ (2026-09-27 15:36 WIB).
-> Receipts filled D10–D14 from real on-chain transactions.
-> Every claim in [SUBMISSION.md](../SUBMISSION.md) and [README.md](../README.md)
-> is downstream of these receipts.
+> **Status (2026-10-03 WIB): NOT CAPTURED.** No verified public devnet transaction signatures or slots are recorded. The sections below are capture templates: policy/trade inputs are planned, outcomes and reason codes are expected, and the tester/signature/PDA placeholders are not evidence.
+>
+> PM-LOG decision 20 records a 9/9 local-validator demo run on 2026-09-29. That historical local run is not a Solscan-verifiable devnet receipt and does not satisfy the three outside-dev tests.
 
 The headline *"I cannot break your rules — within the as-stored
 caps"* is only as strong as the receipts that back it. This file
@@ -32,8 +31,7 @@ For each demo trade:
    `authorize_spend` instruction, plus the parsed `AuditEvent` payload.
 4. Solscan URL: `https://solscan.io/tx/<signature>?cluster=devnet`.
 
-The runtime mirrors the `AuditEvent` to the webapp via SWR; the
-webapp shows the row within ~2 s of slot confirmation.
+The runtime is intended to mirror the `AuditEvent` to the webapp via SWR. The ~2 s visibility figure is an unverified target here; no user-test latency was measured.
 
 ---
 
@@ -41,21 +39,19 @@ webapp shows the row within ~2 s of slot confirmation.
 
 | Field | Value |
 |---|---|
-| Tester | founder (devnet, single-user policy) |
-| Rule | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 0` (disabled) |
-| Trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
-| Outcome | approved |
-| Reason code | 0 (`REASON_OK`) |
-| Slot | _filled at D10 — Solana slot number, integer_ |
-| Signature | _filled at D10 — base58 transaction signature, 88 chars_ |
-| Solscan | `https://solscan.io/tx/<SIG>?cluster=devnet` |
-| Anchor program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph` |
-| Policy PDA | _filled at D10 — `[b"policy", agent_pubkey]`_ |
-| Captured via | `pnpm --filter @trade-on-my-behalf/agent dev` then runtime pushes a TradeIntent at the configured rule; `subscribeAudit()` callback prints the parsed `AuditEvent` payload |
+| Tester ID | NOT RUN — no participant session was recorded. |
+| Planned policy (not configured) | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 0` (disabled) |
+| Planned trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
+| Expected outcome (not observed) | approved |
+| Expected reason code (not observed) | 0 (`REASON_OK`) |
+| Slot | NOT CAPTURED — no verified transaction signature. |
+| Signature | NOT CAPTURED — no verified devnet transaction. |
+| Solscan | NOT AVAILABLE — no real signature recorded. |
+| Expected Anchor program (not verified) | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph` |
+| Policy PDA | NOT CAPTURED — no verified policy transaction. |
+| Capture method | Planned only; no receipt was captured. |
 
-**What this proves:** A policy-compliant trade passes the gate and
-the follow-through CPI lands. The headline reads true for the
-happy path.
+**Evidence a future verified receipt would provide:** A compliant trade with reason code `0` would show the approve path. No public devnet receipt is currently recorded for this case.
 
 **Capture script (one-liner):**
 
@@ -72,26 +68,21 @@ solscan="https://solscan.io/tx/${sig}?cluster=devnet"
 
 | Field | Value |
 |---|---|
-| Tester | outside-dev #1 (Solana-native dev) — _name filled at D11_ |
-| Rule | `maxLeverage: 100` bps (1× cap) · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 0` |
-| Trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
-| Outcome | denied |
-| Reason code | 6 (`REASON_LEVERAGE_CAP`) |
-| Slot | _filled at D11_ |
-| Signature | _filled at D11_ |
-| Solscan | `https://solscan.io/tx/<SIG>?cluster=devnet` |
-| Anchor program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph` |
-| Policy PDA | _filled at D11_ |
-| Captured via | tester pushed the over-leveraged intent via webapp's "test intent" form (or `curl` to the runtime's `/intent` endpoint); webapp's audit-log panel light up red within ~2 s of slot confirmation |
+| Tester ID | NOT RUN — no participant session was recorded. |
+| Planned policy (not configured) | `maxLeverage: 100` bps (1× cap) · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 0` |
+| Planned trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
+| Expected outcome (not observed) | denied |
+| Expected reason code (not observed) | 6 (`REASON_LEVERAGE_CAP`) |
+| Slot | NOT CAPTURED — no verified transaction signature. |
+| Signature | NOT CAPTURED — no verified devnet transaction. |
+| Solscan | NOT AVAILABLE — no real signature recorded. |
+| Expected Anchor program (not verified) | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph` |
+| Policy PDA | NOT CAPTURED — no verified policy transaction. |
+| Capture method | Planned only; no receipt was captured. |
 
-**What this proves:** A leverage-busting trade is denied *by the
-on-chain gate*, not by the runtime. The `AuditEvent` carries
-`approved: false, reason_code: 6`, verifiable on Solscan. The
-headline reads true for the leverage envelope.
+**Evidence a future verified receipt would provide:** A trade above the stored leverage cap with `approved: false` and reason code `6` would show the leverage gate. No public devnet receipt is currently recorded for this case.
 
-**This is the red-row moment of the demo.** The runtime pushes the
-intent; the kernel denies; the webapp lights up within ~2 s; the
-user (and the judge) see the `reason_code: 6` and the slot number.
+**Expected demo flow (not observed):** If run, the intent should be denied by the kernel and shown in the webapp with reason code `6` and a real slot. No such user interaction or receipt is recorded here.
 
 **Capture script (one-liner):**
 
@@ -108,25 +99,21 @@ solana transaction-history --signature <SIG> --url devnet | jq '.slot, .transact
 
 | Field | Value |
 |---|---|
-| Tester | outside-dev #3 (kill-switch stress) — _name filled at D11_ |
-| Rule | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 25` (25 %) |
-| Setup | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
-| Trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps (1×) · `implied_current_equity_usdc: 700` |
-| Outcome | denied |
-| Reason code | 7 (`REASON_DRAWDOWN_KILLSWITCH`) |
-| Threshold math | `1000 × (10_000 − 2_500) / 10_000 = 750` ; `700 < 750` ⇒ KILL |
-| Slot | _filled at D11_ |
-| Signature | _filled at D11_ |
-| Solscan | `https://solscan.io/tx/<SIG>?cluster=devnet` |
-| Anchor program | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph` |
-| Policy PDA | _filled at D11_ |
-| Captured via | tester pushed the under-water intent; webapp's audit-log row lit up with `approved: false, reason_code: 7` and the threshold math visible in the row detail |
+| Tester ID | NOT RUN — no participant session was recorded. |
+| Planned policy (not configured) | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 25` (25 %) |
+| Planned setup (not executed) | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
+| Planned trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps (1×) · `implied_current_equity_usdc: 700` |
+| Expected outcome (not observed) | denied |
+| Expected reason code (not observed) | 7 (`REASON_DRAWDOWN_KILLSWITCH`) |
+| Expected threshold math (not observed) | `1000 × (10_000 − 2_500) / 10_000 = 750` ; `700 < 750` ⇒ KILL |
+| Slot | NOT CAPTURED — no verified transaction signature. |
+| Signature | NOT CAPTURED — no verified devnet transaction. |
+| Solscan | NOT AVAILABLE — no real signature recorded. |
+| Expected Anchor program (not verified) | `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph` |
+| Policy PDA | NOT CAPTURED — no verified policy transaction. |
+| Capture method | Planned only; no receipt was captured. |
 
-**What this proves:** The on-chain kill-switch fires at the
-as-stored `peak_equity_usdc` watermark. The `record_pnl` instruction
-is the *only* path that mutates `peak_equity_usdc`, and it is
-monotonic (`max(peak, new)`). The headline reads true for the
-drawdown envelope.
+**Evidence a future verified receipt would provide:** A trade below the drawdown threshold with reason code `7` would show the kill-switch path. No public devnet receipt is currently recorded for this case.
 
 **Why the implied value is `700` here:** the runtime reports
 current equity from off-chain venue reconciliation. The runtime is
@@ -147,6 +134,9 @@ solana account <PDA> --url devnet | jq '.data | from_base64 | {peak_equity_usdc,
 ---
 
 ## How judges verify
+
+No signatures are recorded yet, so these steps cannot currently verify a public receipt. Use them only after actual transaction evidence is added.
+
 
 1. Open the Solscan link for each receipt.
 2. Confirm the program id is `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`.
@@ -172,9 +162,4 @@ solana account <PDA> --url devnet | jq '.data | from_base64 | {peak_equity_usdc,
 
 ## Update cadence
 
-- D10: Receipt 1 (Approve) added.
-- D11: Receipts 2 + 3 (Leverage deny + Drawdown deny) added.
-- D14: Receipt 4 (Drift-fallback deny, if Drift adapter ships)
-  added as stretch.
-- D15: Receipt table finalised. Solscan URLs cross-checked by the
-  outside-person link check (see [gtm-and-submission.md §10](gtm-and-submission.md)).
+No public devnet receipts were captured as of 2026-10-03 WIB. When a receipt is actually captured, add its real signature, slot, parsed event, and a verified Solscan URL; record the actual capture date. Do not mark a target date as a completed receipt.
