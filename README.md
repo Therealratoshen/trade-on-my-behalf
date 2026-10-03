@@ -10,11 +10,15 @@ The program checks caller-supplied authorization fields. It does **not** custody
 
 ## Current scope and blockers
 
-The requested product is one devnet perpetual-trading workspace: wallet connection, default SOL-PERP chart, trade ticket, risk visibility, account-scoped positions and receipts. Chart/ticket, real devnet adapter, enforced execution authority, durable recovery and scoped paper storage are **not implemented**.
+The requested product is one devnet perpetual-trading workspace: wallet connection, default SOL-PERP chart, trade ticket, risk visibility, account-scoped positions and receipts. Live chart/ticket, real devnet adapter, enforced execution authority, durable recovery and scoped paper storage are **not implemented**.
 
 The configured Treasury address was absent in the 2026-10-03 devnet observation. The Jupiter address was not executable there. Legacy Drift/current Velocity programs existed, but a usable market/faucet/order/close path was not verified. [Devnet readiness](docs/devnet-readiness.md) records the exact boundary.
 
 All product signing/deposits/trades must remain devnet with test assets; local validators are permitted for tests. The current code still needs an end-to-end network guard.
+
+## Paper-practice UI boundary
+
+The dashboard links to a `/paper-practice` concept route with synthetic market, candle, depth and budget fixtures. Its scenario preview, risk calculations and manually entered close observations are local UI state only. The page code has no market-data or venue API client, wallet-signature call, or chain/order submission path; it does not save positions or fills or report PnL. It is not a live chart/ticket or an execution adapter.
 
 ## Read the current requirements
 
