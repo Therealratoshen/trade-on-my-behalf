@@ -91,6 +91,10 @@ test('SDK signing checks actual chain identity, including localhost mainnet prox
   await assertDevnetWrite(local, true);
   await assert.rejects(assertDevnetWrite({ ...local, getGenesisHash: async () => '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp' }, true), /signing/);
   await assert.rejects(assertDevnetWrite({ ...local, getGenesisHash: async () => '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z' }, true), /signing/);
+  await assert.rejects(assertDevnetWrite({ ...local, getGenesisHash: async () => '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d' }, true), /signing/);
+  await assert.rejects(assertDevnetWrite({ ...local, getGenesisHash: async () => '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY' }, true), /signing/);
+  await assert.rejects(assertDevnetWrite({ ...local, getGenesisHash: async () => 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1' }, true), /signing/);
+  assert.equal(DEVNET_GENESIS_HASH, 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG');
   await assert.rejects(assertDevnetWrite({ ...local, rpcEndpoint: 'https://remote-validator.example' }, true), /signing/);
 });
 

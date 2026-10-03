@@ -18,7 +18,8 @@ export function assertPolicyBinding(
   if (!policy.owner.equals(expectedOwner)) throw new Error('Policy owner does not match the expected owner. Refusing this policy.');
 }
 
-export const DEVNET_GENESIS_HASH = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
+// Full getGenesisHash RPC value, not the shortened Wallet Standard chain ID.
+export const DEVNET_GENESIS_HASH = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
 
 /** All SDK wallet writes are devnet-only, even if a URL is mislabeled. */
 export async function assertDevnetWrite(
@@ -28,8 +29,9 @@ export async function assertDevnetWrite(
   if (genesis === DEVNET_GENESIS_HASH) return;
   // Explicit, loopback-only local regression testing. A mainnet/testnet proxy
   // on localhost must still be rejected; a URL label alone is not chain identity.
-  const publicNetwork = genesis === '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
-    || genesis === '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z';
+  const publicNetwork = genesis.startsWith('5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp')
+    || genesis.startsWith('4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z')
+    || genesis.startsWith('EtWTRABZaYq6iMfeYKouRu166VU2xqa1');
   if (allowLocalValidator && !publicNetwork && connection.rpcEndpoint) {
     const endpoint = new URL(connection.rpcEndpoint);
     if (['http:', 'https:'].includes(endpoint.protocol)

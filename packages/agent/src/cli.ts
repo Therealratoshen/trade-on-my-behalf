@@ -267,7 +267,7 @@ async function main(argv: string[]): Promise<number> {
     case 'resolve-venue': {
       const venueName = pos[0] ?? 'jupiter-perps';
       if (venueName !== 'jupiter-perps') throw new Error(`unknown venue ${venueName}; v1 supports jupiter-perps`);
-      const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
+      const url = str(flags, 'url', process.env.RPC_URL ?? 'https://api.devnet.solana.com');
       const info = await new Connection(url, 'confirmed').getAccountInfo(JUPITER_PERPS_PROGRAM_ID);
       const live = info?.executable === true;
       console.log(JUPITER_PERPS_PROGRAM_ID.toBase58());

@@ -15,6 +15,7 @@ export { assertPolicyBinding, assertDevnetWrite, registrationSigners, DEVNET_GEN
  *   connection,
  *   wallet: agentKeypair,
  *   policy: agentPubkey,
+ *   expectedOwner: ownerKeypair.publicKey,
  * });
  * ```
  */
