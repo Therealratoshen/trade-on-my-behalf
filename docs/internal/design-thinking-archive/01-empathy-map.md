@@ -1,5 +1,8 @@
 # 01 — Empathy Maps
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../../PRD.md); technical contracts: [TRD](../../../TRD.md); test status: [testing plan](../../../docs/testing-plan.md).
+
+
 > Stage 1 of the design-thinking pass.
 > Two personas: (a) the founder (primary; the user whose pain
 > birthed the product), (b) the prop-trading firm operator (adjacent;

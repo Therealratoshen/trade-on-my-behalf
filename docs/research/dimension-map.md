@@ -1,5 +1,8 @@
 # Dimension Map — why 'everyone is doing the same thing' is mostly not true
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../PRD.md); technical contracts: [TRD](../../TRD.md); test status: [testing plan](../../docs/testing-plan.md).
+
+
 Pulled from `docs/research/copilot-perp-deepdive-{01,03,04}.json`,
 `docs/copilot-verdict.md`, and `docs/research/copilot-bizmodel-{01,02}.json`.
 Each project is scored on 5 dimensions of our wedge.

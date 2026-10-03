@@ -1,5 +1,8 @@
 # Perps Deep Dive — log
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../PRD.md); technical contracts: [TRD](../../TRD.md); test status: [testing plan](../../docs/testing-plan.md).
+
+
 > Last run: 2026-09-26 16:36 WIB (10 min after user said "it can be used").
 
 ## What ran

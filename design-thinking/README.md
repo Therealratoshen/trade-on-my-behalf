@@ -1,5 +1,15 @@
 # Why I'm building this
 
+## Current product direction — 2026-10-03
+
+Preserve the founder's original problem and quotes below as qualitative context. Current scope is the [devnet perps terminal](../PRD.md): wallet, selected market chart, trade preview, risk policy and truthful position/receipt states. The existing implementation is a policy viewer/editor with paper positions; chart/ticket and real devnet venue execution are not built.
+
+[Three outside-developer sessions](../docs/user-tests.md) are NOT RUN; reactions and latency are not collected. Earlier judge/demo/recording expectations below are planning history, not observations. Use the [current pitch script](pitch-script.md) and [submission evidence ledger](../SUBMISSION.md).
+
+---
+
+## Retained historical draft/log — superseded where inconsistent
+
 > Founder voice. Not a framework. Not a workshop output. Just why I'm
 > doing this and what I'm shipping.
 

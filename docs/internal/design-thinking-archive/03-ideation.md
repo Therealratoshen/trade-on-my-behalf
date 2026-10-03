@@ -1,5 +1,8 @@
 # 03 — Ideation
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../../PRD.md); technical contracts: [TRD](../../../TRD.md); test status: [testing plan](../../../docs/testing-plan.md).
+
+
 > Stage 3 of the design-thinking pass.
 > 12+ raw ideas brainstormed across the top 3 HMWs from
 > `02-problem-statement.md`; 4–6 shortlist across the

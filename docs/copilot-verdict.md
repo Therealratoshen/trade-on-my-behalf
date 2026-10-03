@@ -1,5 +1,8 @@
 # Copilot Deep Dive Verdict — D2 (HISTORICAL — superseded by D3' pivot)
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../PRD.md); technical contracts: [TRD](../TRD.md); test status: [testing plan](../docs/testing-plan.md).
+
+
 > **READ ME FIRST.** This document is the **D2** research verdict
 > captured on 2026-09-26. It described the **pre-pivot** idea
 > (*"open-source policy SDK + Web2 bridge via Litecoin"*) and

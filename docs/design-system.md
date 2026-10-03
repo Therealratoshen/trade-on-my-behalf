@@ -1,5 +1,7 @@
 # Design system
 
+> **Updated 2026-10-03:** existing palette/tokens remain source-backed; the SOL-PERP chart/ticket terminal is a required design target, not implemented UI. [PRD](../PRD.md), [control surface](control-surface.md) and [E2E plan](e2e-testing.md) define current scope. No CSS or application code changed in this documentation update.
+
 > The visual language for **Trade On My Behalf**. Two surfaces ship today:
 > `apps/dashboard` (the control surface) and `artifacts/demo-receipts.html`
 > (the static receipts page a judge reads without running anything). They
@@ -12,13 +14,11 @@
 
 ## The principle
 
-**The chain is the authority, so the UI is quiet.** Colour carries one
-meaning and one meaning only: *this is a decision the kernel made.* Nothing
-is decorative. If it is not telling you what the program decided, it is
-grey.
+**State and provenance must be explicit.** Reserve green for a verified on-chain approval, red for a policy denial and amber for runtime clamping. Existing interaction accent tokens may indicate links/focus, never approval, profit or a filled order. Local preflight is an estimate, not a kernel verdict.
 
-That is why the palette is small, why there is no gradient, and why there is
-no colour that isn't `--ok`, `--no`, or `--warn`.
+Use the existing dark surfaces, typography and spacing for a focused trading-terminal identity. Wallet connection, selected market, long/short controls, bullish candles and transaction confirmation do not inherit policy-decision colors. Always include textual state labels.
+
+Show separate policy/network and position/execution modes: today's Jupiter positions are PAPER, even if a policy transaction is on devnet.
 
 ---
 
@@ -91,8 +91,7 @@ console.log(drift.length?'DRIFT: '+drift.join(' '):'clean — every colour is a 
 "
 ```
 
-It currently reports `clean — every colour is a token` (21 tokens, 21
-distinct values). It found 9 orphans before the first consolidation.
+The 2026-09-30 consolidation historically reported clean token usage. That command was not rerun in this documentation update; run it after actual visual changes before claiming a fresh result.
 
 ---
 
@@ -161,7 +160,7 @@ Five panels, all the same skeleton:
 
 ### Verdict badge
 
-The only saturated element in the app. Two variants:
+Policy decision colors are reserved for verdict badges; interaction accents are not verdicts. Two variants:
 
 | State | Text | Background |
 |---|---|---|
@@ -180,7 +179,7 @@ instruction. Copy for all three is in `components/ui.tsx`.
 
 Before a wallet connects, panels 2 and 5 say *"Connect a wallet to read this
 policy"* — they do not render as broken, and they do not imply the policy is
-missing. It exists; the page just cannot see it yet.
+missing. Do not claim a policy exists until the correct agent PDA is successfully fetched.
 
 ---
 
@@ -189,15 +188,24 @@ missing. It exists; the page just cannot see it yet.
 | Not present | Why |
 |---|---|
 | An approve / deny button | The kernel decides. A button would imply the user can override it, which would be a lie about the product. |
-| P&L charts | Not the wedge. A chart implies a product about analytics; the wedge is about enforcement. |
+| P&L analytics dashboard | Deferred. A selected-market price chart is now required; it is not verified PnL or an executable quote. |
 | Gradients, glass, shadows | A dark, flat surface keeps attention on the verdict colour. Depth would compete with it. |
-| Loading spinners on chain reads | Reads are 2-second polls. A spinner flashes and lies about latency. Show the previous value and the poll interval instead. |
-| Colour as brand | There is no brand colour. The colour means a verdict. |
+| Unlabelled stale chain reads | Show initial loading separately; retained values need their last-success time and explicit stale/error state. A poll interval is not a latency measurement. |
+| Decision colour as decoration | Trading branding uses neutral hierarchy/type and the existing interaction accent; never imply approval, denial or clamping decoratively. |
 
 ---
+
+## Target terminal components — proposed
+
+Replace equal-weight viewer panels with a market workspace, source/time-labelled chart, validated trade ticket, adjacent policy/risk view, and account-scoped positions/orders/receipts. Retain the existing token values; no new palette is adopted by this document.
+
+Chart movement must not look like kernel approval/denial; use a neutral line/candle treatment with signs/text and an accessible price/table alternative. Label reference versus execution estimate, source/timeframe and staleness. Block confirmation when required quote/policy/risk data is missing.
+
+Keyboard focus, visible labels, exact units, responsive critical controls, wallet-switch cleanup and distinct denial/transport/venue states are acceptance requirements in [E2E cases](e2e-testing.md). A submit or wallet-signature control is not an override of the kernel.
 
 ## Change log
 
 | Date | Change |
 |---|---|
+| 2026-10-03 | Documentation-only scope revision for chart/ticket terminal, truthful modes, state provenance and accessibility. Implementation still pending. |
 | 2026-09-30 | First pass. Folded 9 ad-hoc hexes into `:root` as named tokens; added the 4px spacing scale and the 6-size type scale; aligned the receipts page palette to the dashboard's. |

@@ -1,5 +1,17 @@
 # PM Log — Solana World Fair 2026
 
+## Current checkpoint — 2026-10-03 WIB
+
+Documentation reconciled with source and static engineering/UX reviews. [PRD](PRD.md), [TRD](TRD.md), [unit scenarios](docs/unit-testing.md) and [E2E scenarios](docs/e2e-testing.md) are current authorities. This is a documentation update, not a runtime fix, deploy or test run.
+
+Read-only devnet observation: Treasury absent at configured address; Jupiter vendor account non-executable; legacy Drift and current Velocity executable, but real market/faucet/order/close path unverified. Selection OPEN. Chart/ticket, policy-bound authority, authenticated equity, durable retry/reconciliation and paper-account isolation remain blockers.
+
+Defined source cases: 12 Anchor/validator, 11 SDK, 17 agent. No tests rerun here; no browser suite/CI test workflow checked in. Three human sessions NOT RUN; public-devnet receipts NOT CAPTURED. Historical September demo reports below remain dated engineering reports, not current public-devnet evidence.
+
+---
+
+## Retained historical draft/log — superseded where inconsistent
+
 > Living project-management surface. Updated at every meaningful change.
 > Canonical reference: [`docs/roadmap.md`](docs/roadmap.md) for the day-by-day
 > plan. This file tracks *state*, *blockers*, *decisions*, and *risk*.

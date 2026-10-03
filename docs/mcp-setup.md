@@ -1,5 +1,8 @@
 # MCP Servers — setup plan (D1 stub)
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../PRD.md); technical contracts: [TRD](../TRD.md); test status: [testing plan](../docs/testing-plan.md).
+
+
 > MCP servers must be installed via Cursor Settings > MCP, not by guessing
 > `npx` package names. This doc lists what we want and how to verify each.
 

@@ -1,5 +1,8 @@
 # OSS Precedent Search — path (c) verification
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../PRD.md); technical contracts: [TRD](../TRD.md); test status: [testing plan](../docs/testing-plan.md).
+
+
 > One-page summary of `docs/research/copilot-oss-{01..04}.json`.
 > Headline question: does any open-source project on Solana combine
 > wallet-level policy + perps venue + Telegram control? (Three layers

@@ -1,5 +1,8 @@
 # Design Thinking — Consolidated Summary (for the founder)
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../../PRD.md); technical contracts: [TRD](../../../TRD.md); test status: [testing plan](../../../docs/testing-plan.md).
+
+
 > One-page read-down of the 5-stage design-thinking pass that
 > landed at commit `d5e7ed8`. Source artifacts are linked.
 > Generated after the founder asked for a single review.

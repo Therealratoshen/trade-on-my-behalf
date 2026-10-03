@@ -1,5 +1,17 @@
 # SPEC — Trade On My Behalf (pivot from Agent Treasury SDK, frozen D3')
 
+## Current scope — 2026-10-03
+
+[PRD.md](PRD.md) is the canonical product requirements document; [TRD.md](TRD.md) is the technical contract. The older frozen specification below is retained as product/research history and is superseded where it differs.
+
+Current target: one Solana **devnet** perps terminal with wallet, default SOL-PERP chart, trade ticket, policy visibility and scoped positions/receipts. Current implementation is policy authorization plus Jupiter **paper** fills and a viewer/rule editor. No live venue adapter, custody-bound execution, verified equity, chart/ticket or browser E2E suite is implemented.
+
+The cap is approved collateral in a 216,000-slot interval, not a maximum daily-loss guarantee. Three outside-user sessions remain NOT RUN. See [testing status](docs/testing-plan.md) and [devnet readiness](docs/devnet-readiness.md).
+
+---
+
+## Retained historical draft/log — superseded where inconsistent
+
 > Pivot effective Sep 26 16:07 PT. Treasury program from D4 becomes the
 > **risk-gate kernel** of the larger product. LTC-bridge dropped (saves D8-D9).
 > Re-validates after next Copilot Deep Dive lands.

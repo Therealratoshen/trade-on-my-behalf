@@ -1,5 +1,15 @@
 # GTM — Trade On My Behalf
 
+## Current positioning — 2026-10-03
+
+The product target is the focused devnet perps terminal in [PRD](PRD.md), not a paid live-execution service already shipped. Present source-backed policy decisions and clearly simulated positions; do not market profit guarantees, a daily-loss ceiling or unbypassable wallet-wide execution. [SUBMISSION.md](SUBMISSION.md) is the evidence/claim authority.
+
+The open-source/hosted-service and pricing ideas below are retained proposals. No customer demand, paid integration, revenue or launch result is newly verified by this documentation update. Real devnet execution, account isolation and test evidence precede monetization claims.
+
+---
+
+## Retained historical draft/log — superseded where inconsistent
+
 > Frozen for D6. Final pass on D15. Form-mirror at `docs/gtm-and-submission.md`.
 >
 > Pricing decision evidence last refreshed D6 (commit `dcc6e91` — pending).

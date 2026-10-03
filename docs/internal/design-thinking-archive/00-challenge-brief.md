@@ -1,5 +1,8 @@
 # 00 — Challenge Brief
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../../PRD.md); technical contracts: [TRD](../../../TRD.md); test status: [testing plan](../../../docs/testing-plan.md).
+
+
 > Stage 0 of the design-thinking pass for **Trade On My Behalf**.
 > Saved D6 (2026-09-26). One artifact per stage; do not advance until
 > the previous stage exists, even rough.

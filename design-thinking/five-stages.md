@@ -1,5 +1,17 @@
 # Design thinking — five stages
 
+## Current design checkpoint — 2026-10-03
+
+This is a design process, not completed user research. The founder's source statements remain context; no new external empathy interviews or usability sessions were conducted.
+
+The current problem definition and target are in [PRD](../PRD.md). Proposed prototype: one SOL-PERP terminal with explicit wallet/agent/account, source-labelled chart, preview, policy verdict, order lifecycle and scoped positions. Current chart/ticket/real adapter are missing. Static UX review found shared paper data, separate-owner/agent lookup, stale-data and uncertain-transaction states that must be resolved.
+
+Use [control-surface requirements](../docs/control-surface.md), [design system](../docs/design-system.md) and [E2E cases](../docs/e2e-testing.md). Three human sessions are NOT RUN; previous five-stage plans below are historical drafts, not validated outcomes.
+
+---
+
+## Retained historical draft/log — superseded where inconsistent
+
 > **Honest disclosure first.** I never saw the Apple Design Thinking
 > Batch 3 board. I cannot read live Miro canvases through fetch,
 > API, or screenshot. This document applies the publicly-known Stanford

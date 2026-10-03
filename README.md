@@ -1,191 +1,62 @@
 # Trade On My Behalf
 
-> An on-chain risk-gated perps agent for time-poor Solana traders.
+> A Solana devnet-first perps terminal in development, with an existing on-chain policy demo and **simulated** Jupiter positions.
 
-I can see a setup in the market — a trend forming, an RSI dipping, a
-news-driven move — and I know what the right trade is. I don't have the
-time to sit in front of charts waiting for it. So I'm building software
-that watches the market for me, executes trades I would have taken, and
-**physically cannot break the rules I set**, because the rules are
-enforced at the wallet's signing layer by an Anchor program.
+## What exists today
 
-Built for the [Crypto World's Fair Hackathon 2026](https://colosseum.com/worldsfair)
-(Solana track).
+An Anchor policy program, TypeScript SDK, classifier/evaluator/runtime, `tomb` CLI and Next.js wallet/policy/audit viewer with owner-signed policy edits. The Jupiter adapter is **paper only**: it uses a spot reference-price feed and a simplified fee/PnL model; no order reaches Jupiter.
 
-```bash
-pnpm install && pnpm demo     # no SOL, no setup, ~90s
-```
+The program checks caller-supplied authorization fields. It does **not** custody funds or bind a separate venue action. Current drawdown compares runtime-supplied equity, not verified venue equity. Do not interpret a policy approval as a fill or an unbypassable wallet-wide trading guarantee.
 
-![The nine-step demo: policy created, trade approved, agent tries 20x and is denied, size cap denies, drawdown kill-switch trips, compromised key is rejected](artifacts/demo-receipts.png)
+## Current scope and blockers
 
-That is real output from `pnpm demo`. Every `receipt` line is an on-chain
-transaction, every `reason_code` was written by the Anchor program, and the
-last one is a compromised agent key being refused. The HTML version with live
-links is at [`artifacts/demo-receipts.html`](artifacts/demo-receipts.html) and
-the raw transcript is in [`artifacts/demo-run.txt`](artifacts/demo-run.txt).
+The requested product is one devnet perpetual-trading workspace: wallet connection, default SOL-PERP chart, trade ticket, risk visibility, account-scoped positions and receipts. Chart/ticket, real devnet adapter, enforced execution authority, durable recovery and scoped paper storage are **not implemented**.
 
-![The control surface: connect wallet, read-only policy, audit log, positions, and a rule editor with no approve button](artifacts/dashboard.png)
+The configured Treasury address was absent in the 2026-10-03 devnet observation. The Jupiter address was not executable there. Legacy Drift/current Velocity programs existed, but a usable market/faucet/order/close path was not verified. [Devnet readiness](docs/devnet-readiness.md) records the exact boundary.
 
-## Why this and not another perps bot
+All product signing/deposits/trades must remain devnet with test assets; local validators are permitted for tests. The current code still needs an end-to-end network guard.
 
-- **The pain is mine.** I'm the first user. I can describe setups but
-  cannot watch charts. Existing perps bots solve a different problem:
-  they're 24/7 *signal executors*. None of them lets you write down your
-  own setup, your budget, and your kill-switch, and have those rules
-  enforced at the signing layer.
-- **Rules are checked on-chain.** Every trade the agent wants to make
-  is first sent to an Anchor program that approves or denies it against
-  the caps you set, and records the decision publicly — denials included.
-  A buggy or hijacked agent key cannot loosen the caps (tested).
-- **Composable, honestly scoped.** v1 targets Jupiter Perps, in
-  **paper mode**: fills are simulated at the live Jupiter price, while
-  the approve/deny decision is a real on-chain transaction. Live order
-  placement, Drift, and signal samplers are next — see
-  [docs/whats-missing.md](docs/whats-missing.md).
+## Read the current requirements
 
-## Status
+- [PRD.md](PRD.md): product scope, roles, requirements and release gates.
+- [TRD.md](TRD.md): exact current contracts, gaps and target architecture.
+- [Documentation index](docs/documentation-index.md): current versus historical documents.
+- [Architecture](docs/architecture.md) and [security model](docs/security-model.md).
+- [Testing plan](docs/testing-plan.md), [unit cases](docs/unit-testing.md), [E2E cases](docs/e2e-testing.md).
+- [User sessions](docs/user-tests.md) and [receipts](docs/demo-receipts.md): NOT RUN / NOT CAPTURED until evidence exists.
 
-- [x] D1: scaffolding + skills installed (Copilot v1.2.1, Solana dev, Helius {build,jupiter,phantom,svm})
-- [x] D2: Copilot Deep Dive verdict — see [docs/copilot-verdict.md](docs/copilot-verdict.md)
-- [x] D3': **Pivot** — see [SPEC.md](SPEC.md). Now "Trade On My Behalf" (perps agent with on-chain policy gates). Treasury program from D4 becomes the risk-gate kernel.
-- [x] D4: Anchor `treasury` program compiles (203KB .so, IDL generated).
-- [x] D5: Perps-agent Copilot Deep Dive verdict — PARTIAL GAP in v1-c9 — see [SPEC.md](SPEC.md) §"Perps-agent deep dive (D5 — DONE)"
-- [x] D6: 16-doc documentation-first scaffold (see [docs/](docs/))
-- [x] D7: leverage cap + `update_policy` + 3 LiteSVM tests; treasury.so → 209 KB
-- [x] D8: on-chain drawdown kill-switch (`record_pnl` + drawdown check in `authorize_spend` + LiteSVM test); 6/6 tests passing
-- [x] D8.5: webapp-first pivot (Telegram bot → webapp), SAS framing, breach-modeling (4 scenarios), D10+ hardening queue captured
-- [x] D9: SDK `@trade-on-my-behalf/sdk` (`withTrader`)
-- [x] D10: agent runtime + `tomb` CLI + Jupiter Perps adapter (paper mode) + `pnpm demo` end-to-end on a local validator; program hardened (signer check, daily reset); 12 program + 11 SDK + 16 agent tests
-- [ ] D10: devnet deploy — needs ~4 devnet SOL
-- [ ] Next.js dashboard (`apps/dashboard/`) — `tomb watch` is the interim live audit feed
-- [ ] D11: 3 outside-dev user tests (decision gate per [docs/user-tests.md](docs/user-tests.md))
-- [ ] D12: weekly 1-min update #1 (per SPEC §"Iteration cadence")
-- [ ] D13: pitch video (2–3 min) — see [design-thinking/pitch-script.md](design-thinking/pitch-script.md)
-- [ ] D14: demo video (≤3 min) + Drift drawdown extension (stretch)
-- [ ] D15: polish pass + cross-doc consistency
-- [ ] D16: outside-person link check + final read-through
-- [ ] D17: submit by Oct 12 11:59 pm PT (target D16 EOD)
+## Run existing checks
 
-**Critical path:** devnet deploy → D11 user tests → D14 demo video → D16 submit.
-
-## Security claim — honest read (D7 BRD → D8 ship → D8.5 breach-model)
-
-> **Headline (verbatim):** *"I cannot break your rules — **within
-> the as-stored caps**."*
-
-The qualifier is load-bearing. Without it, the claim over-promises
-in two of four breach scenarios — see [docs/security-model.md](docs/security-model.md).
-
-- **On-chain enforced today** (D7): vendor whitelist, per-tx cap,
-  per-day cap, TTL, leverage cap.
-- **On-chain enforced today** (D8): drawdown kill-switch via
-  `record_pnl` + monotonic `peak_equity_usdc` + drawdown check at
-  the top of `authorize_spend`.
-- **Best-effort runtime-supplied** (caveat): the implied-current-
-  equity number is reported by the runtime from off-chain venue
-  reconciliation. Peak is on-chain monotonic; the *delta* is
-  best-effort. A compromised runtime can lie about current
-  equity; the wedge defends the *envelope*, not the *truth*.
-- **Off-chain (runtime) enforced**: signal classification, clamping
-  intents to the caps, paper position and equity tracking.
-- **Honest carve-outs** (per [docs/security-model.md](docs/security-model.md) §"Scenario 1" + §"Scenario 4"):
-  - A **stolen `owner` key** beats every cap *via `update_policy`* — `update_policy` accepts loosening today. Mitigated by adding a **tighten-timelock** (D10+; queued).
-  - The **on-chain gate does not CPI the venue** — the SDK constructs the follow-through CPI. A compromised SDK could lie about the destination program id or the amount. Mitigated by adding a **CPI-wrapper or PDA-bound memo** (D10+; queued).
-  - See [PM-LOG.md](PM-LOG.md) §5 R14–R16 for the full D10+ hardening queue with owners and targets.
-
-The headline is true **for the envelope**: vendor / size / day /
-TTL / leverage / drawdown-envelope at the as-stored policy values.
-For the two carve-outs, see the D10+ queue in PM-LOG §5.
-
-## Reading paths
-
-If you have **5 minutes** and want the picture:
-
-1. [docs/architecture.md](docs/architecture.md) — system diagram and end-to-end data flow.
-2. [docs/onchain-program.md](docs/onchain-program.md) — the Anchor `Policy` PDA, every instruction, every `AuditEvent` field.
-3. [docs/sdk-api.md](docs/sdk-api.md) — `withTrader(wallet, rules)` plus a copy-pasteable 5-line example.
-4. [docs/design-system.md](docs/design-system.md) — the visual language, and why colour only ever means "the kernel decided".
-
-If you are **a judge** with **15 minutes**, walk this path:
-
-1. [docs/onboarding.md](docs/onboarding.md) — clone to devnet demo in 5 steps.
-2. [docs/architecture.md](docs/architecture.md) — what the product does.
-3. [docs/security-model.md](docs/security-model.md) — why the on-chain gate is the only trust anchor.
-4. [docs/user-tests.md](docs/user-tests.md) — three outside-dev test runs on D10-D11.
-5. [docs/roadmap.md](docs/roadmap.md) — what shipped when.
-
-If you are **a developer** cloning the repo:
-
-- [docs/onboarding.md](docs/onboarding.md) is the canonical entry. Five steps.
-- [docs/sdk-api.md](docs/sdk-api.md) is the API surface; the rest of the docs assume you have read it.
-- [docs/testing-plan.md](docs/testing-plan.md) is the testing pyramid and what to run before submitting a PR.
-
-## Quickstart
+See [onboarding](docs/onboarding.md) for prerequisites. These are commands, not newly verified pass claims:
 
 ```bash
-# 1. (optional) install the agent skills this project was built with.
-#    They are tooling instructions, not shipped code — see skills-lock.json:
-npx skills add ColosseumOrg/colosseum-copilot
-npx skills add https://github.com/solana-foundation/solana-dev-skill
-npx skills add helius-labs/core-ai --skill build
-npx skills add helius-labs/core-ai --skill jupiter
-npx skills add helius-labs/core-ai --skill phantom
-npx skills add helius-labs/core-ai --skill svm
-
-# 2. build + test
 pnpm install
-(cd programs/treasury && anchor build && anchor test --provider.cluster localnet)   # 12 passing
-pnpm --filter @trade-on-my-behalf/sdk test     # 11 passing
-pnpm --filter @trade-on-my-behalf/agent test   # 16 passing
-
-# 3. the whole story on a throwaway local validator (no SOL needed, ~20 s)
+pnpm --filter @trade-on-my-behalf/sdk build
+pnpm --filter @trade-on-my-behalf/agent build
+pnpm --filter @trade-on-my-behalf/sdk test
+pnpm --filter @trade-on-my-behalf/agent test
+(cd programs/treasury && anchor build && anchor test --provider.cluster localnet)
+pnpm --filter @trade-on-my-behalf/dashboard dev
 pnpm demo
-
-# 4. same story on devnet (needs ~4 devnet SOL from https://faucet.solana.com)
-pnpm devnet:demo
-
-# 5. the webapp (control surface: view policy, audit log, positions; edit rules)
-pnpm --filter @trade-on-my-behalf/dashboard dev   # http://localhost:3000
 ```
 
-`pnpm demo` creates a policy ($50/trade, $150/day, 5x, 25% kill-switch),
-then shows: an approved trade, an oversized signal clamped to the caps,
-two rule-breaking intents denied on-chain, the owner tightening the
-kill-switch, a simulated crash tripping it, and the agent key failing
-to loosen its own policy. Every step prints an explorer receipt link.
+`pnpm demo` uses a local validator for policy transactions and paper positions. `pnpm devnet:demo` needs deploy tooling/test SOL and still produces paper positions, not Jupiter devnet orders. No browser E2E suite or CI test workflow is checked in at the reviewed revision.
 
-The webapp is a **viewer + rule editor**, not an action requester. It
-has no approve/deny button by design — the kernel decides, the webapp
-shows the receipts. Run `pnpm demo` first so the audit log and positions
-panels have data to render.
+Existing source defines 12 Anchor/validator, 11 SDK and 17 agent test cases. They were not rerun in the 2026-10-03 documentation update. The historical demo assets are not proof of public-devnet execution or completed human tests.
 
-See `SPEC.md` for the frozen scope and `docs/copilot-verdict.md` for the idea's
-evidence-backed gap classification.
+## Budget semantics
 
-## Layout
+The daily cap is an **approved-collateral budget** in a lazy 216,000-slot interval, not a guaranteed daily maximum loss. Fees/funding/notional/old positions are not independently capped. Approved authorization can consume budget even if the later venue step fails. Owner policy edits preserve counters and creation/reset slots.
 
-```
-programs/treasury/             Anchor program: per-agent policy engine
-packages/sdk/                  @trade-on-my-behalf/sdk: typed wrapper over the program
-packages/agent/                runtime, off-chain evaluator, Jupiter Perps adapter (paper), `tomb` CLI
-apps/dashboard/                @trade-on-my-behalf/dashboard: Next.js 15 webapp (viewer + rule editor)
-scripts/demo.sh                end-to-end demo: `pnpm demo` (local) / `pnpm devnet:demo`
-scripts/render-demo.mjs        turns a `pnpm demo` capture into artifacts/demo-receipts.html
-artifacts/                       demo capture: transcript, rendered receipts page, PNGs
-docs/                          architecture, onchain-program, sdk-api,
-                               agent-runtime, venues, control-surface,
-                               design-system, audit-and-receipts,
-                               testing-plan, security-model, user-tests,
-                               trader-lifecycle-edge-cases,
-                               gtm-and-submission, onboarding, roadmap,
-                               mcp-setup, research/, dimension-map,
-                               oss-precedent
-design-thinking/               founder voice: why I'm building this, pitch-script.md (timed 2:30)
-CONTRIBUTING.md                how to run, test, and propose a rule
-PM-LOG.md                      single-page PM dashboard
-SPEC.md / GTM.md / SUBMISSION.md
-```
+## Repository
+
+`programs/treasury` — policy program and validator tests  
+`packages/sdk` — policy SDK  
+`packages/agent` — runtime, CLI and paper venue  
+`apps/dashboard` — viewer and policy editor  
+`scripts/demo.sh` — local/devnet policy + paper demonstration  
+`docs` — current references, testing plans and labelled historical research
 
 ## License
 
-MIT
+MIT. Submission claims must follow [SUBMISSION.md](SUBMISSION.md), not aspirational implementation descriptions.

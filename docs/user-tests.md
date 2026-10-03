@@ -1,127 +1,64 @@
-# User Tests — D11
+# User Tests — Three Planned Outside-Developer Sessions
 
-> **Status (2026-10-03 WIB): NOT RUN.** No outside-developer test sessions, privacy-safe tester IDs, configured policies, attempted trades, observed outcomes, transaction signatures or slots, latency measurements, or participant reactions are recorded. The cases below are planned scenarios; expected results are not observations. Do not claim these tests passed.
->
-> The planned D11 target (Friday, 2026-10-02) has passed. PM-LOG §5 R19 and `docs/whats-missing.md` report that testers were not lined up. The previously recorded local demo is not a substitute for these human devnet tests.
+Updated 2026-10-03. **All three sessions: NOT RUN.** No actual participants, configured policies, attempted trades, observed results, signatures/slots, latency measurements or reactions are recorded. Inputs below are planned fixtures, not observations.
 
-The three tests are designed to exercise each on-chain gate at
-least once:
+The previous target date passed without recorded sessions. Historical local-validator demos do not substitute for these human tests. [Testing plan](testing-plan.md), [PRD](../PRD.md) and [devnet readiness](devnet-readiness.md) are authoritative.
 
-1. **Test 1 — Solana-native dev** exercises the leverage cap and
-   the per-tx cap. Expected outcomes: one approve, one leverage
-   deny.
-2. **Test 2 — Cross-venue trader** exercises the vendor
-   whitelist. Expected outcome: one venue-whitelist deny.
-3. **Test 3 — Kill-switch stress** exercises the drawdown
-   kill-switch. Expected outcome: one drawdown deny.
+## Preconditions
 
-If any test deviates from the expected outcome (e.g. a leverage
-deny is approved), that is a kernel bug — stop, fix, re-test
-before D12.
+Three consenting developers not on the project; privacy-safe IDs assigned when sessions occur. Verified devnet Treasury deployment and matching IDL, test SOL, explicit owner/agent keys, a new isolated policy/paper ledger per session, and visible policy-versus-paper labels.
 
----
+Current trading input is the CLI; browser ticket/chart are not implemented. Use raw authorization/`--raw` where testing an over-limit input: default clamping would turn an over-limit request into a different permitted request.
 
-## Test 1 — Solana-native dev
+For these policy-demo sessions Jupiter is a whitelisted **vendor label** and fills remain simulated. Testing a vendor denial does not submit to that denied venue. Any real-devnet venue tests require the additional gates in [E2E plan](e2e-testing.md).
 
-> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no actual policy configuration or trade attempt is recorded.
+## Session 1 — Leverage and trade-size boundaries
 
-| Field | Value |
+Planned policy: per-trade collateral cap **50**, per-window collateral budget **150**, max requested leverage **300 = 3x**, drawdown **disabled**, adequate TTL. This corrects the earlier impossible “approve 150 against daily budget 60” fixture.
+
+| Planned action | Expected result, not observed |
 |---|---|
-| Tester ID | NOT RUN — no participant session was recorded. |
-| Planned policy (not configured) | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
-| Planned approve trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
-| Expected approve result (not observed) | approved · reason code: `0` (`REASON_OK`) |
-| Planned deny trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
-| Expected deny result (not observed) | denied · reason code: `6` (`REASON_LEVERAGE_CAP`) |
-| Actual approve evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
-| Actual deny evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
-| Solscan approve receipt | NOT AVAILABLE — no transaction signature was recorded. |
-| Solscan deny receipt | NOT AVAILABLE — no transaction signature was recorded. |
-| Webapp latency | NOT MEASURED — no session or audit refresh was observed. |
-| Tester reaction | NOT COLLECTED — no session. |
+| Collateral 40, SOL-PERP long, 3x | Code 0 approved; spent 40; subsequent paper fill if venue step succeeds |
+| Raw collateral 40, 5x | Code 6 denied; spent remains 40; no paper fill |
+| Raw collateral 60, 3x | Code 2 denied; spent remains 40; no paper fill |
 
-**Expected per `testing-plan.md`:** The 3× trade at the cap approves;
-the 5× trade above the cap denies with `reason_code: 6`. If the 5×
-approves, that is a kernel bug.
+Capture the actual configured PDA fields and submitted input, not just CLI flags. Test equal leverage cap explicitly.
 
----
+## Session 2 — Vendor identity denial
 
-## Test 2 — Cross-venue trader
+Planned isolated policy: only Jupiter vendor label whitelisted, per-trade 50, per-window 150, 3x, drawdown disabled.
 
-> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no actual policy configuration or trade attempt is recorded.
-
-| Field | Value |
+| Planned action | Expected result, not observed |
 |---|---|
-| Tester ID | NOT RUN — no participant session was recorded. |
-| Planned policy (not configured) | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$500` · `maxDailyLossUsd`: `$100` · `killSwitchDrawdownPct`: `0` |
-| Planned vendor whitelist (not configured) | Jupiter Perps only (`policy.vendors = [<JUPITER_PERPS_PROGRAM_ID>]`) |
-| Planned approve trade (not attempted) | side: `short` · market: `SOL-PERP` (Jupiter Perps) · sizeUsd: `$400` · lev: `200` bps (2×) |
-| Expected approve result (not observed) | approved · reason code: `0` |
-| Planned deny trade (not attempted) | side: `long` · market: `BTC-PERP` (Drift) — _Drift pubkey NOT in `policy.vendors`_ |
-| Expected deny result (not observed) | denied · reason code: `1` (`REASON_VENDOR_DENIED`) |
-| Actual approve evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
-| Actual deny evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
-| Solscan approve receipt | NOT AVAILABLE — no transaction signature was recorded. |
-| Solscan deny receipt | NOT AVAILABLE — no transaction signature was recorded. |
-| Webapp latency | NOT MEASURED — no session or audit refresh was observed. |
-| Tester reaction | NOT COLLECTED — no session. |
+| Signed authorization for unlisted legacy Drift vendor label, collateral 20, 2x | Code 1 denied; no added spend; no venue instruction or fill |
+| Whitelisted label, collateral 20, 2x | Code 0 approved authorization; any position remains a separately labelled paper simulation |
 
-**Expected per `testing-plan.md`:** The Jupiter Perps trade approves;
-the Drift trade denies with `reason_code: 1`. If the Drift trade
-approves, the vendor whitelist is broken — kernel bug.
+This proves membership checking of supplied labels, **not** atomic venue destination enforcement. Direct bypass/substitution belongs to U15/U16/E17 and cannot pass with today's architecture.
 
----
+## Session 3 — Supplied-equity drawdown comparison
 
-## Test 3 — Kill-switch stress
+Planned isolated policy: per-trade 50, per-window 150, 3x, drawdown **25%**. Explicitly call `record_pnl` with reported peak **1,000** and verify stored peak; creation starts zero and SDK `initialPeakEquityUsd` is not applied.
 
-> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no actual policy configuration or trade attempt is recorded.
-
-| Field | Value |
+| Planned action | Expected result, not observed |
 |---|---|
-| Tester ID | NOT RUN — no participant session was recorded. |
-| Planned policy (not configured) | `maxLeverage`: `500` bps (5× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `25` (25 %) |
-| Planned setup (not executed) | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
-| Planned approve trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 900` |
-| Expected approve result (not observed) | approved · reason code: `0` |
-| Planned drawdown setup (not executed) | runtime reconciles losses; reports `implied_current_equity_usdc: 700` |
-| Planned deny trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 700` |
-| Expected deny result (not observed) | denied · reason code: `7` (`REASON_DRAWDOWN_KILLSWITCH`) |
-| Expected threshold math (not observed) | `1000 × (10_000 − 2_500) / 10_000 = 750` ; `700 < 750` ⇒ KILL |
-| Actual approve evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
-| Actual deny evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
-| Solscan approve receipt | NOT AVAILABLE — no transaction signature was recorded. |
-| Solscan deny receipt | NOT AVAILABLE — no transaction signature was recorded. |
-| Webapp latency | NOT MEASURED — no session or audit refresh was observed. |
-| Tester reaction | NOT COLLECTED — no session. |
+| Collateral 10, 2x, supplied current equity 750 | Threshold equality allowed: code 0 |
+| Collateral 10, 2x, supplied current equity 749 | Code 7 denied; no additional spend or venue attempt |
+| Inspect zero-peak/new policy before initialization | Drawdown is unarmed; UI must not imply protection |
 
-**Expected per `testing-plan.md`:** The above-water trade approves
-with `reason_code: 0`; the under-water trade denies with
-`reason_code: 7` and `day_spent_usdc` is unchanged. If the
-under-water trade approves, the kill-switch is broken — kernel bug.
+These are controlled input-comparison tests, not proof of authenticated market losses or a tamper-proof kill-switch. Record that the equity source is supplied/mock/paper.
 
----
+## Actual outcome register
 
-## Planned notes for judges (not observed outcomes)
+| Session | Tester ID | Actual policy/actions/outcome | Signatures / slots | Audit latency | Reaction | Status |
+|---|---|---|---|---|---|---|
+| 1 | NOT ASSIGNED | NOT OBSERVED | NOT CAPTURED | NOT MEASURED | NOT COLLECTED | NOT RUN |
+| 2 | NOT ASSIGNED | NOT OBSERVED | NOT CAPTURED | NOT MEASURED | NOT COLLECTED | NOT RUN |
+| 3 | NOT ASSIGNED | NOT OBSERVED | NOT CAPTURED | NOT MEASURED | NOT COLLECTED | NOT RUN |
 
-- **A deny is the product working, not failing.** Read the reason code first.
-- **A timeout, if actually observed, means the runtime did not reach the tester's phone in 60 s.** No timeout was observed in these unrun tests.
-- **`reason_code` is the canonical output of `authorize_spend`.** Codes 0..7 are defined in [`programs/treasury/programs/treasury/src/state/mod.rs`](../programs/treasury/programs/treasury/src/state/mod.rs). Code 99 is the runtime-local timeout code (off-chain only).
-- **Verify every recorded slot against its real signature on Solscan.** No signature or slot is recorded in this file today.
-- **`policy.vendors` is a 32-byte Pubkey check** — see [security-model.md §"Scenario 4"](security-model.md) for the SDK-trust caveat that applies to the follow-through CPI.
+## Recording and decision rule
 
-## What to look for
+When a session actually occurs, append source revision/environment/genesis, actual typed inputs and stored policy, exact observed event/reason, resulting usage/position state, signatures/slots, timing method and participant reaction. Report discrepancies as FAIL/BLOCKED with the observed cause; do not edit expectations to hide failures.
 
-- Tester 1's deliberately-over-leveraged trade must deny. Reason code expected: `6` (`REASON_LEVERAGE_CAP`). If approved, that's a bug.
-- Tester 2's venue-whitelist test (if they try an off-whitelist venue) must deny. Reason code expected: `1` (`REASON_VENDOR_DENIED`).
-- Tester 3's repeated losses must trip the kill-switch and the next trade must deny. Reason code expected: `7` (`REASON_DRAWDOWN_KILLSWITCH`).
+Use tester aliases only; no names, handles, private keys or participant wallet addresses in this document. A public signature may be recorded only with consent. Separate confirmation latency from audit visibility latency.
 
-If any of those three things don't happen, the kernel isn't enforcing and the demo isn't ready. Stop and check the Anchor program state.
-
-## How to record a completed test
-
-1. Assign a privacy-safe ID such as `UT-01`; record only a broad tester background with consent. Do not include names, handles, or wallet addresses.
-2. Record the exact policy that was actually configured and every trade that was actually attempted.
-3. Record the observed result and parsed `AuditEvent`. For on-chain runs, verify the program ID and record the real slot, signature, and Solscan link.
-4. Measure audit latency from slot confirmation to the audit row appearing in the webapp, and collect one reaction with consent.
-5. Append the evidence without embellishment. If the result differs from the expected code, stop and investigate before calling the test passed.
-6. Update the status only after the run and its evidence exist. Do not back-date the D11 target or sign off based on a local demo or unit test.
+Do not claim “three tests passed” until all three actual records exist and can be checked. Do not claim a real venue E2E pass from these paper-policy cases.

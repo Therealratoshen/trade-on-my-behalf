@@ -1,4 +1,7 @@
 # Open-source precedent search — Solana wallet policy + perps + TG control
+
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../PRD.md); technical contracts: [TRD](../../TRD.md); test status: [testing plan](../../docs/testing-plan.md).
+
 Colosseum Copilot API, run 2026-09-26. PAT authenticated, scope `colosseum_copilot:read`, skill v1.2.1.
 Raw responses: `/tmp/copilot-oss-01.json` … `/tmp/copilot-oss-04.json`. Hackathon chronology verified via `/status`/`/filters` (Hyperdrive Sep-2023 → Cypherpunk Sep-2025).
 

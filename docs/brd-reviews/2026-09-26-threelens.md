@@ -1,5 +1,8 @@
 # BRD Review — 2026-09-26 17:15 PT (three-lens)
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../PRD.md); technical contracts: [TRD](../../TRD.md); test status: [testing plan](../../docs/testing-plan.md).
+
+
 > Verbatim capture of a three-lens code review done by the user on
 > D6/D7 boundary. Persisted so the open issues can be tracked and
 > the security claim stays honest.

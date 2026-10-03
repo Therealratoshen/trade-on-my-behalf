@@ -1,5 +1,8 @@
 # 02 — Problem Statements + How-Might-We
 
+> **Historical record / planning background — labelled 2026-10-03.** Preserved original contents, not current implementation, runnable instructions, test-pass evidence or a freshly verified venue/event claim. Current product requirements: [PRD](../../../PRD.md); technical contracts: [TRD](../../../TRD.md); test status: [testing plan](../../../docs/testing-plan.md).
+
+
 > Stage 2 of the design-thinking pass.
 > For each persona, a 2–4-sentence Point-of-View problem statement,
 > then 6–10 How-Might-We questions, each tied to (a) a wedge
