@@ -1,4 +1,4 @@
-# Contributing to Trade On My Behalf
+# Contributing to Terading
 
 Updated 2026-10-03. Start with [PRD](PRD.md), [TRD](TRD.md) and the [documentation index](docs/documentation-index.md).
 

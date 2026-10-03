@@ -128,7 +128,7 @@ export function Dashboard() {
   return (
     <div className="shell">
       <header className="masthead">
-        <h1>Trade On My Behalf — Control Surface</h1>
+        <h1>Terading — Control Surface</h1>
         <p>
           A viewer and a rule editor. The on-chain kernel decides every trade; this page shows you the rules
           it is bound by and the receipts it has produced. There is no approve button here, by design.
