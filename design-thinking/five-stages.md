@@ -71,7 +71,7 @@ trader up to $500/day, kill if drawdown > 20%."*
 
 Existing copy-trading bots either give the influencer total custody
 or no cap at all. The wedge: clamp the influencer's intent to a
-per-follower cap, daily-loss cap, and drawdown kill-switch — on
+per-follower cap, daily approved-spend budget, and drawdown kill-switch — on
 the *follower's* wallet.
 
 ---
@@ -194,7 +194,7 @@ Three outside-dev testers. Each runs a 5-line rubric (`docs/user-tests.md`):
 | Field | Value |
 |---|---|
 | Tester | (name + background, 1 line) |
-| Rule | `maxLeverage`: __ bps · `maxPositionUsd`: $__ · `maxDailyLossUsd`: $__ · `killSwitchDrawdownPct`: __% |
+| Rule | `maxLeverage`: __ bps · `maxPositionUsd`: $__ · `dailySpendBudgetUsd`: $__ · `killSwitchDrawdownPct`: __% |
 | Trade | side: long/short · market: __ · sizeUsd: $__ · lev: __x |
 | Outcome | approved / denied / timeout · reason code: __ |
 | Observed | slot: __ · tx sig: __ · `approved`: __ · `reason_code`: __ |

@@ -10,8 +10,8 @@
 ## Definitions
 
 **Algorithm** = the policy gate. The on-chain rules the wallet
-enforces. Examples: vendor whitelist, per-tx size cap, per-day
-loss cap, leverage cap, drawdown kill-switch. The algorithm
+enforces. Examples: vendor whitelist, per-tx size cap, daily
+approved-collateral budget, leverage cap, drawdown kill-switch. The algorithm
 **cannot trade for you**. It can only refuse to trade when the
 skill's intent would breach a rule. The algorithm is the
 *envelope* the specialist chooses to operate inside.
@@ -46,7 +46,7 @@ The flow has four steps:
    This is private code the specialist writes and maintains.
 
 2. **Configure the algorithm once.** "Max 3 trades/day, max
-   $200/position, max $60 daily loss, kill-switch at 15%
+   $200/position, max $60 approved collateral per rolling day, kill-switch at 15%
    drawdown." Stored on-chain in the `Policy` PDA. This is the
    envelope the specialist chooses.
 

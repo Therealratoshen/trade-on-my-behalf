@@ -42,7 +42,7 @@ webapp shows the row within ~2 s of slot confirmation.
 | Field | Value |
 |---|---|
 | Tester | founder (devnet, single-user policy) |
-| Rule | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 0` (disabled) |
+| Rule | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `dailySpendBudgetUsd: $60` · `killSwitchDrawdownPct: 0` (disabled) |
 | Trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
 | Outcome | approved |
 | Reason code | 0 (`REASON_OK`) |
@@ -73,7 +73,7 @@ solscan="https://solscan.io/tx/${sig}?cluster=devnet"
 | Field | Value |
 |---|---|
 | Tester | outside-dev #1 (Solana-native dev) — _name filled at D11_ |
-| Rule | `maxLeverage: 100` bps (1× cap) · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 0` |
+| Rule | `maxLeverage: 100` bps (1× cap) · `maxPositionUsd: $200` · `dailySpendBudgetUsd: $60` · `killSwitchDrawdownPct: 0` |
 | Trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
 | Outcome | denied |
 | Reason code | 6 (`REASON_LEVERAGE_CAP`) |
@@ -109,7 +109,7 @@ solana transaction-history --signature <SIG> --url devnet | jq '.slot, .transact
 | Field | Value |
 |---|---|
 | Tester | outside-dev #3 (kill-switch stress) — _name filled at D11_ |
-| Rule | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `maxDailyLossUsd: $60` · `killSwitchDrawdownPct: 25` (25 %) |
+| Rule | `maxLeverage: 500` bps · `maxPositionUsd: $200` · `dailySpendBudgetUsd: $60` · `killSwitchDrawdownPct: 25` (25 %) |
 | Setup | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
 | Trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps (1×) · `implied_current_equity_usdc: 700` |
 | Outcome | denied |

@@ -16,9 +16,9 @@ import { Field, Panel } from './ui';
 
 /** Panel 2 — the active rules, read straight off the chain. Read-only. */
 export function PolicyPanel({ policy }: { policy: PolicyLike }) {
-  const perDayUsed = microToUsd(policy.per_day_cap_usdc);
+  const dailySpendBudget = microToUsd(policy.per_day_spend_budget_usdc);
   const daySpent = microToUsd(policy.day_spent_usdc);
-  const pctUsed = perDayUsed > 0 ? Math.min(100, (daySpent / perDayUsed) * 100) : 0;
+  const pctUsed = dailySpendBudget > 0 ? Math.min(100, (daySpent / dailySpendBudget) * 100) : 0;
 
   const ttlSlots = Number(policy.ttl_slots.toString());
 
@@ -36,9 +36,9 @@ export function PolicyPanel({ policy }: { policy: PolicyLike }) {
           sub={`${policy.per_tx_cap_usdc.toString()} µUSDC`}
         />
         <Field
-          k="per-day cap"
-          v={fmtUsd(perDayUsed)}
-          sub={`${policy.per_day_cap_usdc.toString()} µUSDC`}
+          k="daily spend budget"
+          v={fmtUsd(dailySpendBudget)}
+          sub="approved collateral per rolling 24h window"
         />
         <Field
           k="kill-switch drawdown"
@@ -46,7 +46,7 @@ export function PolicyPanel({ policy }: { policy: PolicyLike }) {
           sub={policy.kill_switch_drawdown_pct === 0 ? '0 = off' : 'from peak equity'}
         />
         <Field k="ttl" v={`${fmtSlots(ttlSlots)} slots`} sub={`≈ ${fmtSlotsAsDuration(ttlSlots)}`} />
-        <Field k="day spent" v={fmtUsd(daySpent)} sub={`${pctUsed.toFixed(0)}% of the daily cap`} />
+        <Field k="budget used" v={fmtUsd(daySpent)} sub={`${pctUsed.toFixed(0)}% of the daily spend budget`} />
         <Field
           k="peak equity"
           v={fmtUsd(microToUsd(policy.peak_equity_usdc))}

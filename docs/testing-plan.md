@@ -53,6 +53,11 @@ Test cases:
 | `t08_saturating_add` | `day_spent_usdc` near u64::MAX | No panic; spend either fits or fails `REASON_DAILY_CAP`. |
 | `t09_pda_collision` | Two `create_policy` calls with the same `agent` | Second fails (PDA already initialized). |
 
+The agent runtime suite also verifies the daily-budget accounting contract:
+profitable and losing closes leave the approved amount unchanged, denied
+authorizations do not consume budget, and a venue failure after approval
+leaves the amount charged so a retry can be denied.
+
 LiteSVM boots in-process, no validator required, runs in ~200 ms for
 the whole suite. CI runs these on every push.
 

@@ -77,7 +77,7 @@ The qualifier is load-bearing. Without it, the claim over-promises
 in two of four breach scenarios — see [docs/security-model.md](docs/security-model.md).
 
 - **On-chain enforced today** (D7): vendor whitelist, per-tx cap,
-  per-day cap, TTL, leverage cap.
+  daily approved-spend budget, TTL, leverage cap.
 - **On-chain enforced today** (D8): drawdown kill-switch via
   `record_pnl` + monotonic `peak_equity_usdc` + drawdown check at
   the top of `authorize_spend`.

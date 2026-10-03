@@ -61,8 +61,8 @@ export interface Policy {
   vendors: PublicKey[];
   /** Per-transaction cap in USDC micro-units (1e6 = $1). */
   perTxCapUsdc: BN;
-  /** Per-day loss cap in USDC micro-units (1e6 = $1). */
-  perDayCapUsdc: BN;
+  /** Daily approved-spend budget in USDC micro-units (1e6 = $1). */
+  perDaySpendBudgetUsdc: BN;
   /** Policy TTL in slots (~0.4 s/slot). */
   ttlSlots: BN;
   /** Maximum leverage in basis points (10_000 = 100x). D7+. */
@@ -71,7 +71,7 @@ export interface Policy {
   killSwitchDrawdownPct: number;
   /** Highest observed equity in USDC micro-units; monotonic. D8+. */
   peakEquityUsdc: BN;
-  /** Spent USDC micro-units in the current window (resets SLOTS_PER_DAY after lastResetSlot). */
+  /** Approved spend/collateral authorization total in the current window. */
   daySpentUsdc: BN;
   /** Slot the policy was created at. */
   createdAtSlot: BN;
@@ -81,13 +81,17 @@ export interface Policy {
   bump: number;
 }
 
-/** Friendly Rust-style snake_case mirror, used internally. */
+/**
+ * Semantic snake_case policy view used by off-chain consumers. The Anchor
+ * account/IDL retains `per_day_cap_usdc`; this SDK field names its meaning.
+ */
 export interface PolicyLike {
   owner: PublicKey;
   agent: PublicKey;
   vendors: PublicKey[];
   per_tx_cap_usdc: BN | number | bigint;
-  per_day_cap_usdc: BN | number | bigint;
+  per_day_spend_budget_usdc: BN | number | bigint;
+  /** Approved amount_usdc total; profit, loss, and venue outcomes do not alter it. */
   day_spent_usdc: BN | number | bigint;
   ttl_slots: BN | number | bigint;
   created_at_slot: BN | number | bigint;
@@ -141,8 +145,8 @@ export interface CreatePolicyInput {
   vendors: PublicKey[];
   /** Per-tx cap in USD (e.g. 200 = $200). */
   perTxCapUsd: number;
-  /** Per-day loss cap in USD (e.g. 60 = $60). */
-  perDayCapUsd: number;
+  /** Daily approved-spend/collateral budget in USD (e.g. 60 = $60). */
+  perDaySpendBudgetUsd: number;
   /** Policy TTL in slots (~0.4 s/slot). Default 7 days = ~1.5M slots. */
   ttlSlots?: bigint | number;
   /** Max leverage in basis points. 500 = 5x. Default 500. */
@@ -173,7 +177,7 @@ export interface AuthorizeSpendInput {
 export interface UpdatePolicyInput {
   agent: PublicKey;
   perTxCapUsd?: number;
-  perDayCapUsd?: number;
+  perDaySpendBudgetUsd?: number;
   ttlSlots?: bigint | number;
   maxLeverageBps?: number;
   /** Percent (1..=100). 0 = disabled. */

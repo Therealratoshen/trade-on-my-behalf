@@ -24,8 +24,9 @@ and the `AuditEvent` is the proof that the venue call was sanctioned
 by the policy.
 
 For Trade On My Behalf, the same gate is reused to enforce per-trade
-size caps, daily loss caps, leverage limits, and drawdown kill-switches
-on perps positions. **D7 shipped the leverage cap** (`max_leverage_bps`)
+size caps, a daily approved-collateral budget, leverage limits, and
+drawdown kill-switches on perps positions. The daily budget measures
+approved authorization amounts, not realized P&L. **D7 shipped the leverage cap** (`max_leverage_bps`)
 in [`authorize_spend.rs`](../programs/treasury/programs/treasury/src/instructions/authorize_spend.rs).
 **D8 shipped the drawdown kill-switch** (`peak_equity_usdc` monotonic
 watermark + threshold check at the top of `authorize_spend`) via the
@@ -47,8 +48,8 @@ Source: `programs/treasury/programs/treasury/src/state/mod.rs`.
 | `agent` | `Pubkey` | Wallet the policy applies to (used as the PDA seed). |
 | `vendors` | `Vec<Pubkey>` | Whitelisted vendor pubkeys. Max 16 (enforced in `create_policy`). |
 | `per_tx_cap_usdc` | `u64` | Max USDC (6-decimal microunits) per single `authorize_spend`. |
-| `per_day_cap_usdc` | `u64` | Max USDC rolling window; reset via `last_reset_slot` cron. |
-| `day_spent_usdc` | `u64` | Live counter; incremented on each approved spend. |
+| `per_day_cap_usdc` | `u64` | Maximum approved collateral authorization amount in the rolling 216,000-slot window. This Anchor field name is retained for account/IDL compatibility. |
+| `day_spent_usdc` | `u64` | Approved `amount_usdc` total in the current window; incremented when authorization succeeds. |
 | `ttl_slots` | `u64` | Slots the policy lives from `created_at_slot`. |
 | `created_at_slot` | `u64` | Slot at `create_policy`. |
 | `last_reset_slot` | `u64` | Slot when `day_spent_usdc` was last zeroed. |
@@ -116,6 +117,11 @@ Order of operations:
 6. `max_leverage_bps != 0` and `leverage_bps > max_leverage_bps` → `REASON_LEVERAGE_CAP` (6).
 
 Otherwise approved: `day_spent_usdc += amount_usdc`, reason `REASON_OK` (0).
+`amount_usdc` is the collateral/spend authorization amount supplied by the
+runtime. The counter is charged at approval time, before the separate venue
+call. A later profit, loss, or venue failure does not change it; denied
+authorizations do not consume budget. The program does not observe venue fills
+or calculate P&L, and v1 has no refund/reconciliation instruction.
 
 Every branch emits exactly one `AuditEvent` and returns `Ok`, so a deny
 is a successful transaction with `approved = false` in the event.
@@ -162,7 +168,7 @@ Reason codes (constant, frozen):
 | 0 | `REASON_OK` | Approved. |
 | 1 | `REASON_VENDOR_DENIED` | Vendor not whitelisted. |
 | 2 | `REASON_PER_TX_CAP` | Exceeds per-tx cap. |
-| 3 | `REASON_DAILY_CAP` | Exceeds daily cap. |
+| 3 | `REASON_DAILY_CAP` | Exceeds the remaining daily approved-collateral budget. |
 | 4 | `REASON_EXPIRED` | TTL elapsed. |
 | 5 | `REASON_UNKNOWN_VENDOR` | Reserved; not emitted in v1. |
 | 6 | `REASON_LEVERAGE_CAP` | Leverage above `max_leverage_bps`. |

@@ -25,6 +25,7 @@ test('decodePolicy reads u64 fields little-endian', async () => {
     agent,
     vendors: [vendor],
     perTxCapUsdc: new BN(200_000_000),
+    // The Anchor IDL keeps this wire field name for account compatibility.
     perDayCapUsdc: new BN(600_000_000),
     daySpentUsdc: new BN(150_000_000),
     ttlSlots: new BN(1_512_000),
@@ -41,7 +42,7 @@ test('decodePolicy reads u64 fields little-endian', async () => {
   assert.ok(p.agent.equals(agent));
   assert.equal(p.vendors.length, 1);
   assert.equal(p.per_tx_cap_usdc.toString(), '200000000');
-  assert.equal(p.per_day_cap_usdc.toString(), '600000000');
+  assert.equal(p.per_day_spend_budget_usdc.toString(), '600000000');
   assert.equal(p.day_spent_usdc.toString(), '150000000');
   assert.equal(p.created_at_slot.toString(), '123456');
   assert.equal(p.max_leverage_bps, 500);

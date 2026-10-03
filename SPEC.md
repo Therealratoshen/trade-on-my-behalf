@@ -61,11 +61,11 @@ control layer.
 2. As a user, I `pnpm add @trade-on-my-behalf/sdk` (or use the dashboard)
    and configure rules:
    ```ts
-   { venues: ['jupiter-perps','drift'],
-     maxLeverage: 5,
-     maxPositionUsd: 200,
-     maxDailyLossUsd: 60,
-     killSwitchDrawdownPct: 15 }
+    { venues: ['jupiter-perps','drift'],
+      maxLeverageBps: 500,
+      perTxCapUsd: 200,
+      perDaySpendBudgetUsd: 60,
+      killSwitchDrawdownPct: 15 }
    ```
    These rules are enforced **at the signing layer** by the Anchor
    program; no rogue path can bypass them — including a compromised
@@ -172,7 +172,7 @@ Weekly 1-min update videos:
 |---|---|
 | Venue whitelist | `policy.vendors` |
 | Per-trade size cap | `policy.per_tx_cap_usdc` |
-| Per-day loss cap | `policy.per_day_cap_usdc` + decrement on adverse fills |
+| Daily spend budget | `per_day_cap_usdc` limits approved collateral authorizations in the rolling window. Profit/loss do not change it; denials do not consume it; venue failure after approval does. |
 | TTL on policies | `policy.ttl_slots` |
 | Audit event on every decision | `AuditEvent` in state |
 

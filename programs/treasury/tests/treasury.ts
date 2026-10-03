@@ -124,12 +124,17 @@ describe("treasury", () => {
     assert.equal(audit.reasonCode, 1);
   });
 
-  it("denies once the daily cap is used up (REASON_DAILY_CAP=3)", async () => {
+  it("denies once the daily spend budget is used up (REASON_DAILY_CAP=3)", async () => {
     const { vendor, pda } = await createPolicy({ perTx: 1_000_000, perDay: 1_500_000 });
     assert.isTrue((await authorize(pda, vendor.publicKey, 1_000_000, { nonce: 1 })).approved);
     const denied = await authorize(pda, vendor.publicKey, 1_000_000, { nonce: 2 });
     assert.isFalse(denied.approved);
     assert.equal(denied.reasonCode, 3);
+    assert.equal(
+      (await program.account.policy.fetch(pda)).daySpentUsdc.toString(),
+      "1000000",
+      "a denied authorization does not consume the daily spend budget",
+    );
   });
 
   it("denies after the policy TTL elapses (REASON_EXPIRED=4)", async () => {

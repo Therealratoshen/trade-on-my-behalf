@@ -38,7 +38,7 @@ Five panels:
    pubkey. Derives the `Policy` PDA at `[b"policy", wallet_pubkey]`.
    Reads the policy from chain.
 2. **View policy.** Shows the active rules: `maxLeverage`,
-   `maxPositionUsd`, `maxDailyLossUsd`, `killSwitchDrawdownPct`,
+   `maxPositionUsd`, `perDaySpendBudgetUsd`, `killSwitchDrawdownPct`,
    `ttl_slots`, vendor whitelist. Read-only by default; edit
    controls available.
 3. **View audit log.** Lists every `AuditEvent` for this policy:
@@ -49,7 +49,7 @@ Five panels:
    and renders the union. PnL, leverage, notional, mark price,
    opened-at. Read-only — the venue adapter closes positions.
 5. **Edit policy.** Form fields for the mutable policy parameters
-   (`maxLeverage`, `maxPositionUsd`, `maxDailyLossUsd`,
+    (`maxLeverage`, `maxPositionUsd`, `perDaySpendBudgetUsd`,
    `killSwitchDrawdownPct`, `ttl_slots`). Submit triggers an
    `update_policy` instruction signed by the connected wallet.
    Includes a confirm modal showing the deltas before signing.
