@@ -5,18 +5,13 @@
 > PM-LOG decision 20 records a 9/9 local-validator demo run on 2026-09-29. That historical local run is not a Solscan-verifiable devnet receipt and does not satisfy the three outside-dev tests.
 
 The headline *"I cannot break your rules — within the as-stored
-caps"* is only as strong as the receipts that back it. This file
-holds three verifiable receipts that judges (and the founder) can
-point at on Solscan:
+caps"* is only as strong as the receipts that back it. This file is a template for three receipt types that judges (and the founder) can verify on Solscan after actual transactions are captured:
 
-1. **Approve** — an `AuditEvent { approved: true, reason_code: 0 }` for a policy-compliant trade. Proves the happy path works end-to-end.
-2. **Leverage deny** — an `AuditEvent { approved: false, reason_code: 6 }` when `leverage_bps > max_leverage_bps`. Proves the leverage gate fires on-chain.
-3. **Drawdown deny** — an `AuditEvent { approved: false, reason_code: 7 }` when `implied_current_equity_usdc < threshold`. Proves the kill-switch is on-chain.
+1. **Planned approve receipt** — a future `AuditEvent { approved: true, reason_code: 0 }` for a compliant trade would evidence the approve path.
+2. **Planned leverage-deny receipt** — a future `AuditEvent { approved: false, reason_code: 6 }` when `leverage_bps > max_leverage_bps` would evidence the leverage gate.
+3. **Planned drawdown-deny receipt** — a future `AuditEvent { approved: false, reason_code: 7 }` below the drawdown threshold would evidence the kill-switch.
 
-Until these three receipts land, the kernel's claims are
-testable (6/6 LiteSVM tests pass) but not yet *demonstrated on
-devnet*. **The receipts move the claim from "the kernel enforces"
-to "I watched it enforce."**
+Until these three receipts are captured, these scenarios are specified but not demonstrated on public devnet. Local tests and the previously recorded local demo are separate evidence. **A verified receipt would move a claim from "the kernel enforces" to "I watched it enforce."**
 
 ---
 
@@ -149,14 +144,8 @@ No signatures are recorded yet, so these steps cannot currently verify a public 
 
 ## What is *not* a receipt
 
-- The 6/6 LiteSVM tests in `programs/treasury/tests/treasury.ts` —
-  those are unit tests against the kernel. They prove the
-  kernel *would* enforce. The receipts prove the kernel *did*
-  enforce, on a real cluster, with real signatures.
-- The on-chain `treasury.so` artifact size (209 KB) — proves the
-  program compiled. Does not prove it ran.
-- The IDL at `programs/treasury/target/idl/treasury.json` — proves
-  the instruction surface. Does not prove the instructions fired.
+- Local program, SDK, or agent tests exercise their configured test environment. They do not prove a transaction executed on public devnet.
+- A compiled program artifact or IDL shows that code or an instruction surface exists; neither proves the instructions ran on devnet.
 
 ---
 
