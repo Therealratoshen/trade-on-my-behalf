@@ -94,14 +94,15 @@ spins up. CI runs these nightly and on every push to `main`.
 
 ## Tier 3 — Outside-dev user tests
 
+> **Current status (2026-10-03 WIB): NOT RUN.** The D10–D11 target window passed without recorded outside-dev sessions. `docs/user-tests.md` marks all three cases not run; there are no tester IDs, configured policies, attempted trades, observed outcomes, transaction signatures/slots, latency measurements, or reactions. Previous local-demo results are separate engineering evidence and do not count as these user tests or as devnet receipts.
+
+
 Goal: prove the devnet demo script works for a human who has never
 seen the repo. Three outside devs (friends, not on the team) run it
 end-to-end on D10-D11.
 
 Test script: `docs/user-tests.md` (filled by the tester, not us).
-Each test logs the user, the rule they configured, the trade they
-attempted, the outcome, and the `AuditEvent` they observed. The
-results are appended to `docs/user-tests.md` verbatim — no editing.
+Each completed test logs a privacy-safe tester ID (not a name, handle, or wallet address), the exact policy configured, the trades actually attempted, the observed outcome and `AuditEvent`, and available receipt/latency evidence. Append actual results to `docs/user-tests.md` without embellishment. Expected results in that file are assertions, not observations.
 
 ## Coverage targets
 
