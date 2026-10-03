@@ -62,7 +62,7 @@ list, the spec assumes it ships.
 | Item | State | Notes |
 |---|---|---|
 | Three outside-dev test sessions completed | NOT RUN | `docs/user-tests.md` marks all three cases not run as of 2026-10-03 WIB. No privacy-safe tester IDs, configured policies, attempted trades, outcomes, slots/signatures, latency, or reactions are recorded. PM-LOG §5 R19 says testers were not lined up. Recruit three testers and record actual evidence before claiming acceptance. |
-| Devnet demo script runnable end-to-end | ⏳ devnet; local run previously recorded | PM-LOG decision 20 records 9/9 local-validator steps on 2026-09-29; this task did not rerun that demo. No devnet user session or receipt is recorded. The current workspace has no `anchor`, `solana`, `rustc`, or `cargo` executable. |
+| Devnet demo script runnable end-to-end | ⏳ devnet; local run previously recorded | PM-LOG decision 20 records 9/9 local-validator steps on 2026-09-29; this task did not rerun that demo. No devnet user session or receipt is recorded. This task's execution environment lacked `anchor`, `solana`, `rustc`, and `cargo`, so no toolchain-based devnet run was performed here. |
 | Three Solscan-verifiable receipts (Approve / Leverage deny / Drawdown deny) | NOT CAPTURED | `docs/demo-receipts.md` and `docs/user-tests.md` contain templates only: no verified signatures or slots are recorded. Local-validator events are not public Solscan receipts. |
 
 ---
