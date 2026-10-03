@@ -17,9 +17,9 @@ Usage: tomb <command> [flags]
 Commands
   init-policy   Owner creates the on-chain policy for an agent key
                   --owner <keyfile> --agent <keyfile>
-                  [--per-tx 50] [--per-day 150] [--max-leverage 5] [--kill-pct 25] [--ttl-days 7]
+                  [--per-tx 50] [--daily-spend-budget 150] (alias: --per-day) [--max-leverage 5] [--kill-pct 25] [--ttl-days 7]
   update-policy Owner changes caps (only the flags given)        --owner <keyfile> --agent <keyfile>
-                  [--per-tx] [--per-day] [--max-leverage] [--kill-pct] [--ttl-days]
+                  [--per-tx] [--daily-spend-budget] (alias: --per-day) [--max-leverage] [--kill-pct] [--ttl-days]
   status        Print the on-chain policy and paper account      --agent <keyfile>
   trade         Send one intent through the policy gate          --agent <keyfile>
                   --market SOL-PERP --side long --collateral 50 --leverage 3
@@ -160,7 +160,11 @@ async function main(argv: string[]): Promise<number> {
         agent: agentKp.publicKey,
         vendors: [JUPITER_PERPS_PROGRAM_ID],
         perTxCapUsd: num(flags, 'per-tx', 50),
-        perDayCapUsd: num(flags, 'per-day', 150),
+        perDaySpendBudgetUsd: num(
+          flags,
+          flags['daily-spend-budget'] === undefined ? 'per-day' : 'daily-spend-budget',
+          150,
+        ),
         maxLeverageBps: Math.round(num(flags, 'max-leverage', 5) * 100),
         killSwitchDrawdownPct: num(flags, 'kill-pct', 25),
         ttlSlots: Math.round(num(flags, 'ttl-days', 7) * 216_000),
@@ -183,7 +187,7 @@ async function main(argv: string[]): Promise<number> {
       const { signature } = await owner.updatePolicy({
         agent: agentKp.publicKey,
         perTxCapUsd: opt('per-tx'),
-        perDayCapUsd: opt('per-day'),
+        perDaySpendBudgetUsd: opt(flags['daily-spend-budget'] === undefined ? 'per-day' : 'daily-spend-budget'),
         maxLeverageBps: lev === undefined ? undefined : Math.round(lev * 100),
         killSwitchDrawdownPct: opt('kill-pct'),
         ttlSlots: days === undefined ? undefined : Math.round(days * 216_000),
@@ -203,8 +207,8 @@ async function main(argv: string[]): Promise<number> {
         agent: p.agent.toBase58(),
         vendors: p.vendors.map((v) => v.toBase58()),
         perTxCapUsd: m(p.per_tx_cap_usdc),
-        perDayCapUsd: m(p.per_day_cap_usdc),
-        daySpentUsd: m(p.day_spent_usdc),
+        dailySpendBudgetUsd: m(p.per_day_spend_budget_usdc),
+        dailySpendBudgetUsedUsd: m(p.day_spent_usdc),
         maxLeverage: p.max_leverage_bps / 100,
         killSwitchDrawdownPct: p.kill_switch_drawdown_pct,
         peakEquityUsd: m(p.peak_equity_usdc),

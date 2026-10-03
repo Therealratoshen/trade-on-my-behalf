@@ -80,7 +80,7 @@ webapp just shows the receipts.
 
 - **Tester 1 — Solana-native dev.** First time seeing the code. Has
   run a Jupiter Perps position manually. Configures a 3x leverage cap
-  and a $60 daily loss cap. Tests both the approve path and a
+  and a $60 daily spend budget. Tests both the approve path and a
   deliberately-over-leveraged trade that must deny.
 - **Tester 2 — Cross-venue trader.** Has used Drift before. Configures
   two venues. Trades one on each. Watches for a venue-whitelist denial.

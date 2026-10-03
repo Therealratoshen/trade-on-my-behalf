@@ -98,6 +98,10 @@ pub fn handler(
     }
 
     if approved {
+        // The rolling daily budget measures approved collateral authorizations,
+        // not realized P&L or downstream venue fills. It is charged before the
+        // runtime makes its separate venue call; a later venue failure does not
+        // refund this authorization.
         p.day_spent_usdc = p.day_spent_usdc.saturating_add(amount_usdc);
     }
 

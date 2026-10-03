@@ -180,7 +180,7 @@ export function Dashboard() {
           </header>
           <Empty
             title="No policy yet."
-            command="pnpm --filter @trade-on-my-behalf/agent tomb init-policy --owner <owner.json> --agent <agent.json> --per-tx 50 --per-day 150 --max-leverage 5 --kill-pct 25"
+            command="pnpm --filter @trade-on-my-behalf/agent tomb init-policy --owner <owner.json> --agent <agent.json> --per-tx 50 --daily-spend-budget 150 --max-leverage 5 --kill-pct 25"
           >
             No account exists at the PDA above. The kernel has nothing to enforce until you create one — it
             cannot be created from this page, because creating a policy is the one act that must come from

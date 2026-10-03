@@ -18,7 +18,7 @@
  *   agent: agentKeypair.publicKey,
  *   vendors: [JUPITER_PERPS_PROGRAM_ID],
  *   perTxCapUsd: 200,
- *   perDayCapUsd: 600,
+ *   perDaySpendBudgetUsd: 600,
  *   maxLeverageBps: 500,        // 5x
  *   killSwitchDrawdownPct: 25,  // percent, not bps
  * });
@@ -94,7 +94,7 @@ export function decodePolicy(data: Buffer): PolicyLike {
   }
   const u64 = () => { const v = new BN(data.subarray(o, o + 8), 'le'); o += 8; return v; };
   const per_tx_cap_usdc = u64();
-  const per_day_cap_usdc = u64();
+  const per_day_spend_budget_usdc = u64();
   const day_spent_usdc = u64();
   const ttl_slots = u64();
   const created_at_slot = u64();
@@ -105,7 +105,7 @@ export function decodePolicy(data: Buffer): PolicyLike {
   const bump = data.readUInt8(o);
   return {
     owner, agent, vendors,
-    per_tx_cap_usdc, per_day_cap_usdc, day_spent_usdc,
+    per_tx_cap_usdc, per_day_spend_budget_usdc, day_spent_usdc,
     ttl_slots, created_at_slot, last_reset_slot,
     max_leverage_bps, peak_equity_usdc, kill_switch_drawdown_pct, bump,
   };
@@ -232,7 +232,7 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
       .createPolicy(
         input.vendors,
         micro(input.perTxCapUsd),
-        micro(input.perDayCapUsd),
+        micro(input.perDaySpendBudgetUsd),
         new BN((input.ttlSlots ?? 1_512_000).toString()),
         input.maxLeverageBps ?? 500,
         input.killSwitchDrawdownPct ?? 25,
@@ -287,7 +287,7 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
       .updatePolicy(
         input.maxLeverageBps ?? null,
         input.perTxCapUsd === undefined ? null : micro(input.perTxCapUsd),
-        input.perDayCapUsd === undefined ? null : micro(input.perDayCapUsd),
+        input.perDaySpendBudgetUsd === undefined ? null : micro(input.perDaySpendBudgetUsd),
         input.ttlSlots === undefined ? null : new BN(input.ttlSlots.toString()),
         input.killSwitchDrawdownPct ?? null,
       )

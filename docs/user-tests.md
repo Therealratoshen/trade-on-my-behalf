@@ -32,7 +32,7 @@ before D12.
 | Field | Value |
 |---|---|
 | Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
+| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$200` · `dailySpendBudgetUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
 | Approve trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
 | Approve outcome | approved · reason code: `0` (`REASON_OK`) |
 | Deny trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
@@ -55,7 +55,7 @@ approves, that is a kernel bug.
 | Field | Value |
 |---|---|
 | Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$500` · `maxDailyLossUsd`: `$100` · `killSwitchDrawdownPct`: `0` |
+| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$500` · `dailySpendBudgetUsd`: `$100` · `killSwitchDrawdownPct`: `0` |
 | Vendors whitelisted | Jupiter Perps only (`policy.vendors = [<JUPITER_PERPS_PROGRAM_ID>]`) |
 | Approve trade | side: `short` · market: `SOL-PERP` (Jupiter Perps) · sizeUsd: `$400` · lev: `200` bps (2×) |
 | Approve outcome | approved · reason code: `0` |
@@ -79,7 +79,7 @@ approves, the vendor whitelist is broken — kernel bug.
 | Field | Value |
 |---|---|
 | Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `500` bps (5× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `25` (25 %) |
+| Rule | `maxLeverage`: `500` bps (5× cap) · `maxPositionUsd`: `$200` · `dailySpendBudgetUsd`: `$60` · `killSwitchDrawdownPct`: `25` (25 %) |
 | Setup | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
 | Approve trade (above water) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 900` |
 | Approve outcome | approved · reason code: `0` |

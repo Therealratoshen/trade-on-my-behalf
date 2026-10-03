@@ -42,7 +42,9 @@ export function evaluate(policy: PolicyLike, i: EvalInput): Decision {
     return { approved: false, reasonCode: REASON_CODES.VENDOR_DENIED };
   }
   if (amount > big(policy.per_tx_cap_usdc)) return { approved: false, reasonCode: REASON_CODES.PER_TX_CAP };
-  if (daySpent + amount > big(policy.per_day_cap_usdc)) return { approved: false, reasonCode: REASON_CODES.DAILY_CAP };
+  if (daySpent + amount > big(policy.per_day_spend_budget_usdc)) {
+    return { approved: false, reasonCode: REASON_CODES.DAILY_CAP };
+  }
   if (slot - big(policy.created_at_slot) > big(policy.ttl_slots)) return { approved: false, reasonCode: REASON_CODES.EXPIRED };
   if (policy.max_leverage_bps !== 0 && i.leverageBps > policy.max_leverage_bps) {
     return { approved: false, reasonCode: REASON_CODES.LEVERAGE_CAP };

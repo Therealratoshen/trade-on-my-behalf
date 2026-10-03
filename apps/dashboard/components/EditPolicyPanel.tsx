@@ -15,7 +15,7 @@ import { Err, Panel } from './ui';
 interface Draft {
   maxLeverageBps: string;
   perTxCapUsd: string;
-  perDayCapUsd: string;
+  perDaySpendBudgetUsd: string;
   ttlSlots: string;
   killSwitchDrawdownPct: string;
 }
@@ -24,7 +24,7 @@ function draftFrom(p: PolicyLike): Draft {
   return {
     maxLeverageBps: String(p.max_leverage_bps),
     perTxCapUsd: String(microToUsd(p.per_tx_cap_usdc)),
-    perDayCapUsd: String(microToUsd(p.per_day_cap_usdc)),
+    perDaySpendBudgetUsd: String(microToUsd(p.per_day_spend_budget_usdc)),
     ttlSlots: String(Number(p.ttl_slots.toString())),
     killSwitchDrawdownPct: String(p.kill_switch_drawdown_pct),
   };
@@ -76,7 +76,7 @@ export function EditPolicyPanel({
     const current: Record<keyof Draft, string> = {
       maxLeverageBps: String(policy.max_leverage_bps),
       perTxCapUsd: String(microToUsd(policy.per_tx_cap_usdc)),
-      perDayCapUsd: String(microToUsd(policy.per_day_cap_usdc)),
+      perDaySpendBudgetUsd: String(microToUsd(policy.per_day_spend_budget_usdc)),
       ttlSlots: String(Number(policy.ttl_slots.toString())),
       killSwitchDrawdownPct: String(policy.kill_switch_drawdown_pct),
     };
@@ -99,11 +99,11 @@ export function EditPolicyPanel({
         hint: `now ${fmtUsd(microToUsd(policy.per_tx_cap_usdc))}`,
       },
       {
-        key: 'perDayCapUsd',
-        label: 'per-day cap (USD)',
-        current: current.perDayCapUsd,
-        next: draft.perDayCapUsd.trim(),
-        hint: `now ${fmtUsd(microToUsd(policy.per_day_cap_usdc))}`,
+        key: 'perDaySpendBudgetUsd',
+        label: 'daily spend budget (USD)',
+        current: current.perDaySpendBudgetUsd,
+        next: draft.perDaySpendBudgetUsd.trim(),
+        hint: `now ${fmtUsd(microToUsd(policy.per_day_spend_budget_usdc))}`,
       },
       {
         key: 'ttlSlots',
@@ -136,9 +136,9 @@ export function EditPolicyPanel({
           if (v < 0) throw new Error('per-tx cap cannot be negative');
           out.perTxCapUsd = v;
           break;
-        case 'perDayCapUsd':
-          if (v < 0) throw new Error('per-day cap cannot be negative');
-          out.perDayCapUsd = v;
+        case 'perDaySpendBudgetUsd':
+          if (v < 0) throw new Error('daily spend budget cannot be negative');
+          out.perDaySpendBudgetUsd = v;
           break;
         case 'ttlSlots':
           if (!Number.isInteger(v) || v <= 0) throw new Error('TTL must be a whole number of slots > 0');
@@ -197,7 +197,7 @@ export function EditPolicyPanel({
           [
             ['maxLeverageBps', 'Max leverage (bps)'],
             ['perTxCapUsd', 'Per-tx cap (USD)'],
-            ['perDayCapUsd', 'Per-day cap (USD)'],
+            ['perDaySpendBudgetUsd', 'Daily spend budget (USD)'],
             ['ttlSlots', 'TTL (slots)'],
             ['killSwitchDrawdownPct', 'Kill-switch drawdown (%)'],
           ] as const
@@ -217,8 +217,8 @@ export function EditPolicyPanel({
                 ? `on-chain ${policy.max_leverage_bps} · ${fmtLeverageBps(policy.max_leverage_bps)}`
                 : key === 'perTxCapUsd'
                   ? `on-chain ${fmtUsd(microToUsd(policy.per_tx_cap_usdc))}`
-                  : key === 'perDayCapUsd'
-                    ? `on-chain ${fmtUsd(microToUsd(policy.per_day_cap_usdc))}`
+                  : key === 'perDaySpendBudgetUsd'
+                    ? `on-chain ${fmtUsd(microToUsd(policy.per_day_spend_budget_usdc))}`
                     : key === 'ttlSlots'
                       ? `on-chain ${fmtSlots(Number(policy.ttl_slots.toString()))}`
                       : `on-chain ${policy.kill_switch_drawdown_pct}`}

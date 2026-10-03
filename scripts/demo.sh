@@ -84,7 +84,7 @@ tomb()  { (cd "$REPO_ROOT/packages/agent" && pnpm -s tomb "$@"); }
 agent() { tomb "$@" --agent "$AGENT_KEY" --paper-state "$PAPER" || true; }
 
 say "1. Owner sets the rules on-chain: \$50/trade, \$150/day, max 5x, 25% drawdown kill-switch"
-tomb init-policy --owner "$OWNER_KEY" --agent "$AGENT_KEY" --per-tx 50 --per-day 150 --max-leverage 5 --kill-pct 25
+tomb init-policy --owner "$OWNER_KEY" --agent "$AGENT_KEY" --per-tx 50 --daily-spend-budget 150 --max-leverage 5 --kill-pct 25
 
 say "2. In-policy trade: long SOL, \$40 at 3x  → expect APPROVED + paper fill"
 agent trade --market SOL-PERP --side long --collateral 40 --leverage 3 --rationale "demo: in policy"

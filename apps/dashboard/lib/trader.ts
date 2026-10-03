@@ -189,7 +189,7 @@ export async function updatePolicy(
     .updatePolicy(
       input.maxLeverageBps ?? null,
       input.perTxCapUsd === undefined ? null : micro(input.perTxCapUsd),
-      input.perDayCapUsd === undefined ? null : micro(input.perDayCapUsd),
+      input.perDaySpendBudgetUsd === undefined ? null : micro(input.perDaySpendBudgetUsd),
       input.ttlSlots === undefined ? null : new BN(input.ttlSlots.toString()),
       input.killSwitchDrawdownPct ?? null,
     )

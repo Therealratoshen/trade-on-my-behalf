@@ -87,8 +87,10 @@ below 1x are dropped before any transaction.
 ## CLI
 
 ```text
-tomb init-policy   --owner <key> --agent <key> [--per-tx 50] [--per-day 150] [--max-leverage 5] [--kill-pct 25] [--ttl-days 7]
-tomb update-policy --owner <key> --agent <key> [--per-tx] [--per-day] [--max-leverage] [--kill-pct] [--ttl-days]
+tomb init-policy   --owner <key> --agent <key> [--per-tx 50] [--daily-spend-budget 150] [--max-leverage 5] [--kill-pct 25] [--ttl-days 7]
+tomb update-policy --owner <key> --agent <key> [--per-tx] [--daily-spend-budget] [--max-leverage] [--kill-pct] [--ttl-days]
+
+The legacy `--per-day` option remains an alias for `--daily-spend-budget`.
 tomb trade         --agent <key> --market SOL-PERP --side long --collateral 40 --leverage 3 [--raw]
 tomb positions     --agent <key>
 tomb close         --agent <key> --id <positionId>

@@ -34,7 +34,7 @@ await owner.ensurePolicy({
   agent: agentKeypair.publicKey,
   vendors: [JUPITER_PERPS],
   perTxCapUsd: 50,
-  perDayCapUsd: 150,
+  perDaySpendBudgetUsd: 150,
   maxLeverageBps: 500,        // 5x
   killSwitchDrawdownPct: 25,  // percent (1..=100), NOT bps
 });

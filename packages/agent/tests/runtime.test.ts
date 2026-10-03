@@ -52,7 +52,7 @@ class FakeChain implements TraderLike {
 function policy(): PolicyLike {
   return {
     owner: PublicKey.unique(), agent: PublicKey.unique(), vendors: [JUPITER_PERPS_PROGRAM_ID],
-    per_tx_cap_usdc: new BN(50_000_000), per_day_cap_usdc: new BN(150_000_000), day_spent_usdc: new BN(0),
+    per_tx_cap_usdc: new BN(50_000_000), per_day_spend_budget_usdc: new BN(150_000_000), day_spent_usdc: new BN(0),
     ttl_slots: new BN(1_000_000), created_at_slot: new BN(9_000), last_reset_slot: new BN(9_000),
     max_leverage_bps: 500, peak_equity_usdc: new BN(0), kill_switch_drawdown_pct: 25, bump: 255,
   };
@@ -89,6 +89,7 @@ test('raw over-leveraged intent reaches the chain and is denied; no position ope
   assert.equal(r.audit?.approved, false);
   assert.equal(r.audit?.reasonCode, 6);
   assert.equal(r.fill, undefined);
+  assert.equal(chain.policy.day_spent_usdc.toString(), '0', 'denied authorization does not consume budget');
   assert.equal((await venue.listPositions()).length, 0);
 });
 
@@ -102,16 +103,60 @@ test('clamped intent is cut to the caps and approved', async () => {
   assert.equal(chain.authorizeCalls[0].amountUsd, 50);
 });
 
-test('a full wipe-out of one day of positions stays inside the daily cap', async () => {
-  const { prices, venue, runtime } = setup();
+test('losses do not replenish the daily spend budget', async () => {
+  const { chain, prices, venue, runtime } = setup();
   for (let i = 0; i < 3; i++) {
     assert.equal((await runtime.handle({ ...sig, collateralUsd: 50, leverageBps: 500 })).audit?.approved, true);
   }
   prices.set('SOL-PERP', 1); // every long loses its full collateral
   const equity = await venue.equityUsd();
   assert.ok(equity > 849 && equity < 850, `equity ${equity}: $150 collateral lost plus fees`);
+  assert.equal(chain.policy.day_spent_usdc.toString(), '150000000', 'approved collateral remains charged after losses');
   const r = await runtime.handle(sig);
   assert.equal(r.audit?.reasonCode, 3, '$150/day cap binds before the 25% kill-switch ($750 floor)');
+  assert.equal(chain.policy.day_spent_usdc.toString(), '150000000', 'the denied authorization adds nothing');
+});
+
+test('profit does not reduce the daily spend budget after a position closes', async () => {
+  const { chain, prices, runtime } = setup();
+  const opened = await runtime.handle(sig);
+  assert.equal(opened.audit?.approved, true);
+  assert.ok(opened.fill);
+
+  prices.set('SOL-PERP', 110);
+  const closed = await runtime.close(opened.fill!.venuePositionId);
+  assert.ok(closed.fill.realizedPnlUsd > 0, 'the paper trade should close profitably');
+  assert.equal(chain.policy.day_spent_usdc.toString(), '40000000', 'profit does not refund authorized collateral');
+});
+
+test('loss does not change the daily spend budget after a position closes', async () => {
+  const { chain, prices, runtime } = setup();
+  const opened = await runtime.handle(sig);
+  assert.ok(opened.fill);
+
+  prices.set('SOL-PERP', 90);
+  const closed = await runtime.close(opened.fill!.venuePositionId);
+  assert.ok(closed.fill.realizedPnlUsd < 0, 'the paper trade should close at a loss');
+  assert.equal(chain.policy.day_spent_usdc.toString(), '40000000', 'loss P&L does not change authorized collateral');
+});
+
+test('venue failure keeps the approved amount charged and can deny a retry', async () => {
+  const { chain, venue, runtime } = setup();
+  chain.policy.per_day_spend_budget_usdc = new BN(40_000_000);
+  venue.openPosition = async () => {
+    throw new Error('simulated venue outage');
+  };
+
+  const failed = await runtime.handle(sig);
+  assert.equal(failed.audit?.approved, true, 'authorization succeeds before the venue call');
+  assert.equal(failed.venueError, 'simulated venue outage');
+  assert.equal(failed.fill, undefined);
+  assert.equal(chain.policy.day_spent_usdc.toString(), '40000000', 'venue failure does not refund the authorization');
+
+  const retry = await runtime.handle(sig);
+  assert.equal(retry.audit?.approved, false);
+  assert.equal(retry.audit?.reasonCode, 3, 'the retry is denied by the exhausted daily budget');
+  assert.equal(chain.policy.day_spent_usdc.toString(), '40000000');
 });
 
 test('kill-switch denies when equity falls more than 25% below the recorded peak', async () => {

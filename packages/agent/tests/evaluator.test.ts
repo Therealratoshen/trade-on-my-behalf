@@ -14,7 +14,7 @@ function policy(over: Partial<PolicyLike> = {}): PolicyLike {
     agent: PublicKey.unique(),
     vendors: [VENDOR],
     per_tx_cap_usdc: new BN(50_000_000),
-    per_day_cap_usdc: new BN(150_000_000),
+    per_day_spend_budget_usdc: new BN(150_000_000),
     day_spent_usdc: new BN(0),
     ttl_slots: new BN(1_000_000),
     created_at_slot: new BN(1_000),
