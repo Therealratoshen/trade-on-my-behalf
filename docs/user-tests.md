@@ -32,7 +32,7 @@ before D12.
 | Field | Value |
 |---|---|
 | Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `100` bps (1× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
+| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
 | Approve trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
 | Approve outcome | approved · reason code: `0` (`REASON_OK`) |
 | Deny trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
@@ -44,9 +44,9 @@ before D12.
 | Webapp latency | _filled_ ms (slot → SWR refresh) |
 | Reaction | _(1 sentence — what surprised them; filled at D11)_ |
 
-**Expected per `testing-plan.md`:** The 3× trade approves; the 5×
-trade denies with `reason_code: 6`. If the 5× approves, that is a
-kernel bug.
+**Expected per `testing-plan.md`:** The 3× trade at the cap approves;
+the 5× trade above the cap denies with `reason_code: 6`. If the 5×
+approves, that is a kernel bug.
 
 ---
 
