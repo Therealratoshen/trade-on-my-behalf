@@ -48,9 +48,8 @@ pub mod treasury {
     ///
     /// `implied_current_equity_usdc` is a best-effort runtime-reported
     /// value derived off-chain from venue position reconciliation. It
-    /// drives the drawdown kill-switch (D8) but cannot widen the
-    /// kill-switch by itself — only `record_pnl` can raise
-    /// `peak_equity_usdc`.
+    /// drives a soft drawdown signal, not a guaranteed maximum loss.
+    /// Current equity and peak observations are not oracle-authenticated.
     pub fn authorize_spend(
         ctx: Context<AuthorizeSpend>,
         vendor: Pubkey,

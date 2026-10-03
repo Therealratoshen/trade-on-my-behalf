@@ -14,8 +14,20 @@ export interface EvalInput {
   slot: number;
 }
 
-const big = (v: { toString(): string } | number | bigint): bigint => BigInt(v.toString());
-const toMicro = (usd: number): bigint => BigInt(Math.round(usd * 1_000_000));
+const U64_MAX = (1n << 64n) - 1n;
+const big = (v: { toString(): string } | number | bigint): bigint => {
+  const value = BigInt(v.toString());
+  if (value < 0n || value > U64_MAX) throw new Error('Invalid unsigned policy value.');
+  return value;
+};
+export function equityMicros(usd: number): bigint {
+  const value = Math.round(usd * 1_000_000);
+  if (!Number.isFinite(usd) || usd < 0 || !Number.isSafeInteger(value)) {
+    throw new Error('Equity or collateral must be finite, non-negative and precisely representable.');
+  }
+  return BigInt(value);
+}
+const saturatingSub = (a: bigint, b: bigint) => a > b ? a - b : 0n;
 
 /**
  * Off-chain mirror of `authorize_spend`. Same check order and the same
@@ -23,12 +35,16 @@ const toMicro = (usd: number): bigint => BigInt(Math.round(usd * 1_000_000));
  * policy snapshot is stale — the chain's answer always wins.
  */
 export function evaluate(policy: PolicyLike, i: EvalInput): Decision {
+  if (!Number.isSafeInteger(i.slot) || i.slot < 0
+      || !Number.isInteger(i.leverageBps) || i.leverageBps < 0 || i.leverageBps > 65535) {
+    throw new Error('Slot and leverage must fit their unsigned integer ranges.');
+  }
   const slot = BigInt(i.slot);
-  const amount = toMicro(i.amountUsd);
-  const equity = toMicro(i.equityUsd);
+  const amount = equityMicros(i.amountUsd);
+  const equity = equityMicros(i.equityUsd);
 
   let daySpent = big(policy.day_spent_usdc);
-  if (slot - big(policy.last_reset_slot) >= BigInt(SLOTS_PER_DAY)) daySpent = 0n;
+  if (saturatingSub(slot, big(policy.last_reset_slot)) >= BigInt(SLOTS_PER_DAY)) daySpent = 0n;
 
   const peak = big(policy.peak_equity_usdc);
   const killPct = BigInt(policy.kill_switch_drawdown_pct);
@@ -42,8 +58,9 @@ export function evaluate(policy: PolicyLike, i: EvalInput): Decision {
     return { approved: false, reasonCode: REASON_CODES.VENDOR_DENIED };
   }
   if (amount > big(policy.per_tx_cap_usdc)) return { approved: false, reasonCode: REASON_CODES.PER_TX_CAP };
-  if (daySpent + amount > big(policy.per_day_cap_usdc)) return { approved: false, reasonCode: REASON_CODES.DAILY_CAP };
-  if (slot - big(policy.created_at_slot) > big(policy.ttl_slots)) return { approved: false, reasonCode: REASON_CODES.EXPIRED };
+  // Candidate hardened contract denies rather than under-charging overflow.
+  if (daySpent + amount > U64_MAX || daySpent + amount > big(policy.per_day_cap_usdc)) return { approved: false, reasonCode: REASON_CODES.DAILY_CAP };
+  if (saturatingSub(slot, big(policy.created_at_slot)) > big(policy.ttl_slots)) return { approved: false, reasonCode: REASON_CODES.EXPIRED };
   if (policy.max_leverage_bps !== 0 && i.leverageBps > policy.max_leverage_bps) {
     return { approved: false, reasonCode: REASON_CODES.LEVERAGE_CAP };
   }

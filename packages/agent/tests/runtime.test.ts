@@ -63,7 +63,7 @@ function setup(opts: { clamp?: boolean; lie?: Partial<AuditEvent> } = {}) {
   const prices = new StaticPriceFeed({ 'SOL-PERP': 100 });
   const venue = new JupiterPerpsPaperVenue(prices, new MemoryStore(), 1_000);
   const runtime = createRuntime({
-    trader: chain, venue, agent: Keypair.generate().publicKey,
+    trader: chain, venue, agent: chain.policy.agent, expectedOwner: chain.policy.owner,
     getSlot: async () => chain.slot, clamp: opts.clamp,
   });
   return { chain, prices, venue, runtime };

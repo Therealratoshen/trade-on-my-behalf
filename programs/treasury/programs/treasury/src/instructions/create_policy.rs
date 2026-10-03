@@ -11,8 +11,8 @@ pub struct CreatePolicy<'info> {
         bump,
     )]
     pub policy: Account<'info, Policy>,
-    /// CHECK: this is the agent's wallet pubkey. Not deserialized.
-    pub agent: UncheckedAccount<'info>,
+    /// Agent consents to registration; owner also signs and pays.
+    pub agent: Signer<'info>,
     #[account(mut)]
     pub owner: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -56,4 +56,29 @@ pub fn handler(
     p.bump = ctx.bumps.policy;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // This compile-time assertion fails if the field regresses to UncheckedAccount.
+    fn agent_signer_field<'a, 'info>(accounts: &'a CreatePolicy<'info>) -> &'a Signer<'info> {
+        &accounts.agent
+    }
+
+    #[test]
+    fn registration_requires_a_real_agent_signature() {
+        let _ = agent_signer_field;
+        let key = Pubkey::new_unique();
+        let owner = anchor_lang::system_program::ID;
+        let mut lamports = 1;
+        let mut data = [];
+        let unsigned = AccountInfo::new(&key, false, false, &mut lamports, &mut data, &owner, false, 0);
+        assert!(Signer::try_from(&unsigned).is_err());
+        let mut lamports = 1;
+        let mut data = [];
+        let signed = AccountInfo::new(&key, true, false, &mut lamports, &mut data, &owner, false, 0);
+        assert!(Signer::try_from(&signed).is_ok());
+    }
 }
