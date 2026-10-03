@@ -8,6 +8,12 @@ PM-LOG historically reports a 2026-09-29 local-validator nine-step demonstration
 
 Three outside-developer sessions are [NOT RUN](user-tests.md). Read-only devnet account checks in [readiness](devnet-readiness.md) are observations, not transaction receipts.
 
+## Current automated evidence, not public receipts
+
+The [release evidence ledger](release-evidence-2026-10-03.md) records this update's 28 passing offline tests, successful lint/build and blocked program/IDL rerun at the exact main baseline. The logs are committed alongside that ledger.
+
+The owner's separate baseline report includes 12 local-validator tests. Draft PR #2 separately reports 14 local-validator tests using different program source and tools. Neither was re-executed here, neither is a public-devnet receipt, and they must not be summed with this baseline or substituted into the register below. The ledger links and qualifies both reports.
+
 ## Planned receipt register
 
 | Case | Expected observation, not an actual result | Signature / slot | Status |

@@ -1,0 +1,6 @@
+error: no such command: `build-sbf`
+
+help: a command with a similar name exists: `build-bpf`
+
+help: view all installed commands with `cargo --list`
+help: find a package to install `build-sbf` with `cargo search cargo-build-sbf`

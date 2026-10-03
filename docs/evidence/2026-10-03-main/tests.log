@@ -1,0 +1,49 @@
+Scope: 3 of 4 workspace projects
+packages/sdk test$ node --test --import tsx tests/*.test.ts
+packages/sdk test: ✔ decodePolicy reads u64 fields little-endian (3.501286ms)
+packages/sdk test: ✔ parseAuditEvents surfaces a deny even though the transaction succeeded (1.383749ms)
+packages/sdk test: ✔ parseAuditEvents returns nothing for logs without an event (0.737372ms)
+packages/sdk test: ✔ TREASURY_PROGRAM_ID matches IDL address (1.195858ms)
+packages/sdk test: ✔ derivePolicyPda is deterministic for a given agent (4.260367ms)
+packages/sdk test: ✔ derivePolicyPda differs per agent (1.174894ms)
+packages/sdk test: ✔ derivePolicyPda is owned by the treasury program (0.352539ms)
+packages/sdk test: ✔ reasonCodeName round-trips every documented reason (0.925378ms)
+packages/sdk test: ✔ REASON_CODES map is stable across releases (0.130291ms)
+packages/sdk test: ✔ Kill-switch field is PERCENT (1..=100), not basis points (0.27501ms)
+packages/sdk test: ✔ IDL has the four expected instructions (0.142778ms)
+packages/sdk test: ℹ tests 11
+packages/sdk test: ℹ suites 0
+packages/sdk test: ℹ pass 11
+packages/sdk test: ℹ fail 0
+packages/sdk test: ℹ cancelled 0
+packages/sdk test: ℹ skipped 0
+packages/sdk test: ℹ todo 0
+packages/sdk test: ℹ duration_ms 763.837755
+packages/sdk test: Done
+packages/agent test$ node --test --import tsx tests/*.test.ts
+packages/agent test: ✔ approves an in-policy intent (1.996131ms)
+packages/agent test: ✔ denies each rule with the on-chain reason code (0.447654ms)
+packages/agent test: ✔ allows leverage exactly at the configured cap and denies leverage above it (0.432646ms)
+packages/agent test: ✔ amount exactly at the per-trade cap is allowed (0.272783ms)
+packages/agent test: ✔ kill-switch is checked before every other rule (0.203068ms)
+packages/agent test: ✔ kill-switch is disarmed until a peak is recorded, and when pct = 0 (0.15005ms)
+packages/agent test: ✔ daily counter resets after SLOTS_PER_DAY, like the program (0.288648ms)
+packages/agent test: ✔ max_leverage_bps = 0 means no leverage cap (0.136399ms)
+packages/agent test: ✔ approved intent opens a paper position and arms the kill-switch (37.043836ms)
+packages/agent test: ✔ raw over-leveraged intent reaches the chain and is denied; no position opens (1.26474ms)
+packages/agent test: ✔ clamped intent is cut to the caps and approved (1.331799ms)
+packages/agent test: ✔ a full wipe-out of one day of positions stays inside the daily cap (1.971806ms)
+packages/agent test: ✔ kill-switch denies when equity falls more than 25% below the recorded peak (0.810911ms)
+packages/agent test: ✔ chain answer wins over the off-chain preflight and the mismatch is flagged (1.034969ms)
+packages/agent test: ✔ unknown market is dropped before touching the chain (0.931262ms)
+packages/agent test: ✔ paper PnL: 5x long, +10% move = +50% on collateral; loss capped at collateral (0.168715ms)
+packages/agent test: ✔ classifier rejects fractional leverage bps and sub-1x leverage (0.206768ms)
+packages/agent test: ℹ tests 17
+packages/agent test: ℹ suites 0
+packages/agent test: ℹ pass 17
+packages/agent test: ℹ fail 0
+packages/agent test: ℹ cancelled 0
+packages/agent test: ℹ skipped 0
+packages/agent test: ℹ todo 0
+packages/agent test: ℹ duration_ms 701.805985
+packages/agent test: Done

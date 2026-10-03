@@ -6,7 +6,11 @@ The previous target date passed without recorded sessions. Historical local-vali
 
 ## Preconditions
 
-Three consenting developers not on the project; privacy-safe IDs assigned when sessions occur. Verified devnet Treasury deployment and matching IDL, test SOL, explicit owner/agent keys, a new isolated policy/paper ledger per session, and visible policy-versus-paper labels.
+Three consenting developers not on the project; privacy-safe IDs assigned when sessions occur. Matching program/IDL, explicit disposable owner/agent keys, a new isolated policy/paper ledger per session, and visible policy-versus-paper labels.
+
+Sessions 1–2 may run through the CLI on an isolated local validator; public-devnet deployment is not a prerequisite for those local policy/paper sessions. Identify their environment explicitly and never describe local signatures as public-devnet receipts. A session deliberately using public devnet additionally requires verified Treasury deployment, approved test-SOL funding and explicit owner permission. The supplied-equity comparison in Session 3 still does not prove authenticated venue equity.
+
+The owner must supply consenting participants before sessions can occur. This documentation update did not recruit anyone or generate outcomes. Completed pitch/demo recordings and accessible links also remain separate owner-supplied release evidence.
 
 Current trading input is the CLI; browser ticket/chart are not implemented. Use raw authorization/`--raw` where testing an over-limit input: default clamping would turn an over-limit request into a different permitted request.
 

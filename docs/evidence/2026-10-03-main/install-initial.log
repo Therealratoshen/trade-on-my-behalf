@@ -1,0 +1,2 @@
+ ERROR  Failed to switch pnpm to v9.0.0. Looks like pnpm CLI is missing at "/home/runner/workspace/.local/share/pnpm/.tools/pnpm/9.0.0/bin" or is incorrect
+spawnSync /home/runner/workspace/.local/share/pnpm/.tools/pnpm/9.0.0/bin/pnpm ENOENT

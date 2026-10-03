@@ -1,6 +1,6 @@
 # Trade On My Behalf
 
-> A Solana devnet-first perps terminal in development, with an existing on-chain policy demo and **simulated** Jupiter positions.
+> A Solana **devnet policy demo with simulated positions**. A perps terminal remains target scope, not a verified release.
 
 ## What exists today
 
@@ -42,7 +42,9 @@ pnpm demo
 
 `pnpm demo` uses a local validator for policy transactions and paper positions. `pnpm devnet:demo` needs deploy tooling/test SOL and still produces paper positions, not Jupiter devnet orders. No browser E2E suite or CI test workflow is checked in at the reviewed revision.
 
-Existing source defines 12 Anchor/validator, 11 SDK and 17 agent test cases. They were not rerun in the 2026-10-03 documentation update. The historical demo assets are not proof of public-devnet execution or completed human tests.
+At main baseline `8c6e769df1fe5263f3a682fadfe5f7580e2b0c6b`, the 2026-10-03 rerun passed 11 SDK and 17 agent tests (28 total), lint and build with exit 0. The 12 baseline Anchor/validator cases remain BLOCKED / NOT RUN in this update: the available toolchain lacks `cargo build-sbf`. Fresh IDL regeneration is blocked by the missing generated build output.
+
+[Release evidence](docs/release-evidence-2026-10-03.md) includes exact commands, tools, exits and committed logs, and separates the owner's historical 40-test baseline report from draft PR #2's earlier 14-test report. Neither historical result is a current whole-suite pass or public-devnet proof. Demo assets and automated tests do not prove completed outside-developer sessions.
 
 ## Budget semantics
 
