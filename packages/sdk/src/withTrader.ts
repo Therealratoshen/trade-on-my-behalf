@@ -38,12 +38,12 @@
 
 import {
   AnchorProvider,
-  BN,
   EventParser,
   Idl,
   Program,
   Wallet,
 } from '@coral-xyz/anchor';
+import BN from 'bn.js';
 import {
   Commitment,
   ConfirmOptions,
