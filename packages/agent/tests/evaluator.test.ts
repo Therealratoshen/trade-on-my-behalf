@@ -41,6 +41,18 @@ test('denies each rule with the on-chain reason code', () => {
   assert.equal(evaluate(policy(), { ...base, leverageBps: 501 }).reasonCode, REASON_CODES.LEVERAGE_CAP);
 });
 
+test('allows leverage exactly at the configured cap and denies leverage above it', () => {
+  const cappedPolicy = policy({ max_leverage_bps: 300 });
+  assert.deepEqual(
+    evaluate(cappedPolicy, { ...base, leverageBps: 300 }),
+    { approved: true, reasonCode: REASON_CODES.OK },
+  );
+  assert.deepEqual(
+    evaluate(cappedPolicy, { ...base, leverageBps: 301 }),
+    { approved: false, reasonCode: REASON_CODES.LEVERAGE_CAP },
+  );
+});
+
 test('amount exactly at the per-trade cap is allowed', () => {
   assert.equal(evaluate(policy(), { ...base, amountUsd: 50 }).approved, true);
 });
