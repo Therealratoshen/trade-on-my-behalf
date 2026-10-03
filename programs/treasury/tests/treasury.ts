@@ -45,7 +45,8 @@ describe("treasury", () => {
         opts.maxLeverageBps ?? 0,
         opts.killPct ?? 0,
       )
-      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey })
+      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey, systemProgram: anchor.web3.SystemProgram.programId })
+      .signers([agent])
       .rpc(RPC_OPTS);
     return { agent, vendor, pda };
   }
@@ -99,6 +100,44 @@ describe("treasury", () => {
 
     const after = await program.account.policy.fetch(pda);
     assert.equal(after.daySpentUsdc.toString(), "500000");
+  });
+
+  it("rejects an unsigned agent even when a legacy client clears the signer meta", async () => {
+    const agent = anchor.web3.Keypair.generate();
+    const pda = policyPdaFor(agent.publicKey);
+    const ix = await program.methods.createPolicy(
+      [], new BN(1), new BN(1), new BN(1000), 100, 0,
+    ).accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey, systemProgram: anchor.web3.SystemProgram.programId }).instruction();
+    ix.keys.find(k => k.pubkey.equals(agent.publicKey))!.isSigner = false;
+    // Submit to the ledger, not only the client's preflight simulator.
+    const latest = await provider.connection.getLatestBlockhash("confirmed");
+    const tx = new anchor.web3.Transaction({ ...latest, feePayer: owner.publicKey }).add(ix);
+    const signed = await owner.signTransaction(tx);
+    const signature = await provider.connection.sendRawTransaction(signed.serialize(), { skipPreflight: true });
+    const confirmation = await provider.connection.confirmTransaction({ ...latest, signature }, "confirmed");
+    assert.deepEqual(confirmation.value.err, { InstructionError: [0, { Custom: 3010 }] });
+    const recorded = await provider.connection.getTransaction(signature, {
+      commitment: "confirmed", maxSupportedTransactionVersion: 0,
+    });
+    assert.isNotNull(recorded, "failed transaction must actually be recorded on the local ledger");
+    assert.match((recorded?.meta?.logMessages ?? []).join("\n"), /AccountNotSigner|3010/);
+    assert.isNull(await provider.connection.getAccountInfo(pda), "failed initialization must roll back");
+  });
+
+  it("fully charges an exact u64 maximum and denies the next unit without mutation", async () => {
+    const maximum = new BN("18446744073709551615");
+    const agent = anchor.web3.Keypair.generate(), vendor = anchor.web3.Keypair.generate();
+    const pda = policyPdaFor(agent.publicKey);
+    await program.methods.createPolicy([vendor.publicKey], maximum, maximum, new BN(1000000), 0, 0)
+      .accounts({ policy: pda, agent: agent.publicKey, owner: owner.publicKey, systemProgram: anchor.web3.SystemProgram.programId }).signers([agent]).rpc(RPC_OPTS);
+    const first = await program.methods.authorizeSpend(vendor.publicKey, maximum, new BN(1), 100, new BN(0))
+      .accounts({ policy: pda, authority: owner.publicKey }).rpc(RPC_OPTS);
+    assert.isTrue((await auditsOf(first))[0].approved);
+    assert.equal((await program.account.policy.fetch(pda)).daySpentUsdc.toString(), maximum.toString());
+    const denied = await authorize(pda, vendor.publicKey, 1, { nonce: 2, leverageBps: 100 });
+    assert.isFalse(denied.approved);
+    assert.equal(denied.reasonCode, 3);
+    assert.equal((await program.account.policy.fetch(pda)).daySpentUsdc.toString(), maximum.toString());
   });
 
   it("rejects over-cap spend but still emits a denied audit", async () => {

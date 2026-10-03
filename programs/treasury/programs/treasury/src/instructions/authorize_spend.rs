@@ -24,10 +24,9 @@ pub fn handler(
     // Best-effort runtime-reported implied current equity (in USDC microunits),
     // derived off-chain from venue position reconciliation. The runtime is
     // trusted to pass an honest value, but the security model treats this as
-    // a soft signal: an attacker who controls the runtime can under-report
-    // equity to suppress the kill-switch. The on-chain `record_pnl`
-    // instruction is the only path that mutates `peak_equity_usdc`, so the
-    // kill-switch can never widen by a runtime lie.
+    // a soft signal: an attacker who controls the runtime can over-report
+    // current equity to avoid a drawdown denial. A monotonic peak does not
+    // authenticate either equity input; this is not hard loss protection.
     implied_current_equity_usdc: u64,
 ) -> Result<()> {
     let p = &mut ctx.accounts.policy;
@@ -40,6 +39,7 @@ pub fn handler(
 
     let mut reason_code = REASON_OK;
     let mut approved = true;
+    let next_spent = checked_daily_spend(p.day_spent_usdc, amount_usdc, p.per_day_cap_usdc);
 
     // D8: drawdown kill-switch check (BEFORE the existing check ladder).
     // Formula: threshold = peak * (10_000 - kill_pct_bps) / 10_000.
@@ -74,7 +74,7 @@ pub fn handler(
     } else if amount_usdc > p.per_tx_cap_usdc {
         reason_code = REASON_PER_TX_CAP;
         approved = false;
-    } else if p.day_spent_usdc.saturating_add(amount_usdc) > p.per_day_cap_usdc {
+    } else if next_spent.is_none() {
         reason_code = REASON_DAILY_CAP;
         approved = false;
     } else if clock.slot.saturating_sub(p.created_at_slot) > p.ttl_slots {
@@ -98,7 +98,8 @@ pub fn handler(
     }
 
     if approved {
-        p.day_spent_usdc = p.day_spent_usdc.saturating_add(amount_usdc);
+        // The check ladder has proved this amount is fully chargeable.
+        p.day_spent_usdc = next_spent.ok_or(TreasuryError::ExceedsDailyCap)?;
     }
 
     emit!(AuditEvent {

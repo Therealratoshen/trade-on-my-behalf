@@ -34,9 +34,13 @@ export type Classified = { intent: TradeIntent } | { dropped: string };
 export function classify(signal: Signal, policy: PolicyLike, clamp: boolean): Classified {
   if (!isMarket(signal.market)) return { dropped: `unknown market ${signal.market}` };
   if (signal.side !== 'long' && signal.side !== 'short') return { dropped: `bad side ${signal.side}` };
-  if (!(signal.collateralUsd > 0)) return { dropped: 'collateralUsd must be > 0' };
-  if (!Number.isInteger(signal.leverageBps) || signal.leverageBps < 100) {
-    return { dropped: 'leverageBps must be an integer >= 100 (1x)' };
+  const collateralMicro = Math.round(signal.collateralUsd * 1e6);
+  if (!Number.isFinite(signal.collateralUsd) || signal.collateralUsd <= 0
+      || !Number.isSafeInteger(collateralMicro) || collateralMicro <= 0) {
+    return { dropped: 'collateralUsd must be finite, positive and safely representable in quote microunits' };
+  }
+  if (!Number.isInteger(signal.leverageBps) || signal.leverageBps < 100 || signal.leverageBps > 65535) {
+    return { dropped: 'leverageBps must be an integer from 100 (1x) to 65535' };
   }
 
   let collateralUsd = signal.collateralUsd;
@@ -52,6 +56,7 @@ export function classify(signal: Signal, policy: PolicyLike, clamp: boolean): Cl
       clamps.push(`leverage ${leverageBps / 100}x -> ${policy.max_leverage_bps / 100}x (leverage cap)`);
       leverageBps = policy.max_leverage_bps;
     }
+    if (leverageBps < 100) return { dropped: 'policy leverage cap is below the minimum supported 1x' };
     if (collateralUsd < 1) return { dropped: 'collateral below $1 after clamping' };
   }
 

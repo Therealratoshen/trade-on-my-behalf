@@ -16,6 +16,7 @@
  * const owner = withTrader({ connection, wallet: ownerKeypair, policy: agentKeypair.publicKey });
  * await owner.ensurePolicy({
  *   agent: agentKeypair.publicKey,
+ *   agentSigner: agentKeypair, // explicit agent consent; never upload this keypair
  *   vendors: [JUPITER_PERPS_PROGRAM_ID],
  *   perTxCapUsd: 200,
  *   perDayCapUsd: 600,
@@ -24,7 +25,7 @@
  * });
  *
  * // Agent, for every trade intent:
- * const agent = withTrader({ connection, wallet: agentKeypair, policy: agentKeypair.publicKey });
+ * const agent = withTrader({ connection, wallet: agentKeypair, policy: agentKeypair.publicKey, expectedOwner: ownerKeypair.publicKey });
  * const { audit } = await agent.authorizeSpend({
  *   agent: agentKeypair.publicKey,
  *   vendor: JUPITER_PERPS_PROGRAM_ID,
@@ -54,6 +55,7 @@ import {
 } from '@solana/web3.js';
 
 import { IDL as TREASURY_IDL } from './treasury.idl.js';
+import { assertDevnetWrite, assertPolicyBinding, registrationSigners } from './registration.js';
 import {
   AuditEvent,
   AuthorizeSpendInput,
@@ -183,6 +185,10 @@ export interface WithTraderOptions {
   wallet: Keypair;
   /** The agent pubkey the policy is bound to (PDA seed). */
   policy: PublicKey;
+  /** Independently configured owner for agent handles; never trust the fetched owner implicitly. */
+  expectedOwner?: PublicKey;
+  /** Ephemeral loopback test validator opt-in; never permits public mainnet/testnet. */
+  allowLocalValidator?: boolean;
   /** Commitment level. Default 'confirmed'. */
   commitment?: Commitment;
 }
@@ -217,7 +223,11 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   async function fetchPolicy(): Promise<PolicyLike | null> {
     const info = await connection.getAccountInfo(policyPda, commitment);
     if (info === null) return null;
-    return decodePolicy(info.data);
+    if (!info.owner.equals(program.programId)) throw new Error('Policy account is not owned by the treasury program.');
+    const decoded = decodePolicy(info.data);
+    if (!decoded.agent.equals(policy)) throw new Error('Decoded policy belongs to a different agent.');
+    if (opts.expectedOwner) assertPolicyBinding(decoded, policy, opts.expectedOwner);
+    return decoded;
   }
 
   async function ensurePolicy(input: CreatePolicyInput) {
@@ -227,7 +237,13 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
     if (!input.agent.equals(policy)) {
       throw new Error(`input.agent ${input.agent.toBase58()} does not match handle policy ${policy.toBase58()}`);
     }
-    if (await fetchPolicy()) return { signature: '', createdNew: false };
+    const existing = await fetchPolicy();
+    if (existing) {
+      assertPolicyBinding(existing, policy, wallet.publicKey);
+      return { signature: '', createdNew: false };
+    }
+    const signers = registrationSigners(wallet, input.agent, input.agentSigner);
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
     const signature = await program.methods
       .createPolicy(
         input.vendors,
@@ -243,11 +259,18 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
         owner: wallet.publicKey,
         systemProgram: SystemProgram.programId,
       })
+      .signers(signers)
       .rpc(confirmOpts);
     return { signature, createdNew: true };
   }
 
   async function authorizeSpend(input: AuthorizeSpendInput) {
+    if (!input.agent.equals(policy)) throw new Error('Spend input agent does not match this handle.');
+    if (!opts.expectedOwner) throw new Error('Agent signing requires an independently configured expectedOwner.');
+    const current = await fetchPolicy();
+    if (!current) throw new Error('Policy is missing; authorization is blocked.');
+    assertPolicyBinding(current, policy, opts.expectedOwner);
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
     const signature = await program.methods
       .authorizeSpend(
         input.vendor,
@@ -274,6 +297,12 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   }
 
   async function recordPnl(input: RecordPnlInput) {
+    if (!input.agent.equals(policy)) throw new Error('Equity input agent does not match this handle.');
+    if (!opts.expectedOwner) throw new Error('Equity signing requires an independently configured expectedOwner.');
+    const current = await fetchPolicy();
+    if (!current) throw new Error('Policy is missing; equity signing is blocked.');
+    assertPolicyBinding(current, policy, opts.expectedOwner);
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
     const signature = await program.methods
       .recordPnl(micro(input.newEquityUsd))
       .accounts({ policy: policyPda, authority: wallet.publicKey })
@@ -282,6 +311,11 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   }
 
   async function updatePolicy(input: UpdatePolicyInput) {
+    if (!input.agent.equals(policy)) throw new Error('Policy update agent does not match this handle.');
+    const current = await fetchPolicy();
+    if (!current) throw new Error('Policy is missing; update is blocked.');
+    assertPolicyBinding(current, policy, wallet.publicKey);
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
     // update_policy takes 5 Option<T> args; null means "do not change".
     const signature = await program.methods
       .updatePolicy(

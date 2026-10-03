@@ -39,6 +39,41 @@ pub struct AuditEvent {
 /// is rolling from `last_reset_slot`, not aligned to midnight UTC.
 pub const SLOTS_PER_DAY: u64 = 216_000;
 
+/// Deny overflow, including when the configured cap is u64::MAX.
+/// A valid approval must charge the entire amount, never a saturated fraction.
+pub fn checked_daily_spend(spent: u64, amount: u64, cap: u64) -> Option<u64> {
+    spent.checked_add(amount).filter(|total| *total <= cap)
+}
+
+#[cfg(test)]
+mod accounting_tests {
+    use super::checked_daily_spend;
+
+    #[test]
+    fn exact_cap_is_allowed_and_fully_charged() {
+        assert_eq!(checked_daily_spend(5, 5, 10), Some(10));
+        assert_eq!(checked_daily_spend(u64::MAX - 5, 5, u64::MAX), Some(u64::MAX));
+    }
+
+    #[test]
+    fn overflow_is_denied_even_with_maximum_cap() {
+        assert_eq!(checked_daily_spend(u64::MAX - 5, 6, u64::MAX), None);
+        assert_eq!(checked_daily_spend(u64::MAX, 1, u64::MAX), None);
+    }
+
+    #[test]
+    fn over_cap_and_lowered_cap_are_denied() {
+        assert_eq!(checked_daily_spend(5, 6, 10), None);
+        assert_eq!(checked_daily_spend(11, 0, 10), None);
+    }
+
+    #[test]
+    fn zero_and_reset_accounting_preserve_existing_semantics() {
+        assert_eq!(checked_daily_spend(0, 0, 0), Some(0));
+        assert_eq!(checked_daily_spend(0, 5, 10), Some(5));
+    }
+}
+
 pub const REASON_OK: u8 = 0;
 pub const REASON_VENDOR_DENIED: u8 = 1;
 pub const REASON_PER_TX_CAP: u8 = 2;

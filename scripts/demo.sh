@@ -80,7 +80,12 @@ fi
 rm -f "$PAPER"
 echo "  agent $AGENT_PUB (funded for tx fees only)"
 
-tomb()  { (cd "$REPO_ROOT/packages/agent" && pnpm -s tomb "$@"); }
+tomb() {
+  local validator_flags=()
+  if [ "$CLUSTER" = "local" ]; then validator_flags=(--local-validator); fi
+  (cd "$REPO_ROOT/packages/agent" && pnpm -s tomb "$@" \
+    --expected-owner "$(solana-keygen pubkey "$OWNER_KEY")" "${validator_flags[@]}")
+}
 agent() { tomb "$@" --agent "$AGENT_KEY" --paper-state "$PAPER" || true; }
 
 say "1. Owner sets the rules on-chain: \$50/trade, \$150/day, max 5x, 25% drawdown kill-switch"

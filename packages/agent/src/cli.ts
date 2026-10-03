@@ -31,7 +31,9 @@ Commands
   resolve-venue Check whether a venue program exists on a cluster  jupiter-perps
 
 Global flags
-  --url <rpc>            RPC endpoint (default $RPC_URL or http://127.0.0.1:8899)
+  --url <rpc>            RPC endpoint (default $RPC_URL or https://api.devnet.solana.com)
+  --expected-owner <pk>  Trusted owner public key (required for status/trade/positions/close/watch)
+  --local-validator     Explicit loopback regression-validator opt-in; mainnet stays blocked
   --paper-state <file>   Paper account file (default ~/.tomb/paper-<agent>.json)
   --paper-cash <usd>     Starting paper cash for a new account (default 1000)
   --price M=P[,M=P]      Override oracle prices, e.g. SOL-PERP=90 (simulate a crash)
@@ -101,16 +103,18 @@ function priceFeed(flags: Flags): PriceFeed {
 }
 
 function setup(flags: Flags) {
-  const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
+  const url = str(flags, 'url', process.env.RPC_URL ?? 'https://api.devnet.solana.com');
   const connection = new Connection(url, 'confirmed');
   const agentKp = loadKeypair(str(flags, 'agent'));
-  const trader = withTrader({ connection, wallet: agentKp, policy: agentKp.publicKey });
+  const expectedOwner = new PublicKey(str(flags, 'expected-owner'));
+  const trader = withTrader({ connection, wallet: agentKp, policy: agentKp.publicKey, expectedOwner, allowLocalValidator: flags['local-validator'] === true });
   const statePath = str(flags, 'paper-state', join(homedir(), '.tomb', `paper-${agentKp.publicKey.toBase58()}.json`));
   const venue = new JupiterPerpsPaperVenue(priceFeed(flags), new FileStore(statePath), num(flags, 'paper-cash', 1000));
   const runtime = createRuntime({
     trader,
     venue,
     agent: agentKp.publicKey,
+    expectedOwner,
     getSlot: () => connection.getSlot('confirmed'),
     clamp: flags.raw !== true,
   });
@@ -151,13 +155,14 @@ async function main(argv: string[]): Promise<number> {
 
   switch (cmd) {
     case 'init-policy': {
-      const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
+      const url = str(flags, 'url', process.env.RPC_URL ?? 'https://api.devnet.solana.com');
       const connection = new Connection(url, 'confirmed');
       const ownerKp = loadKeypair(str(flags, 'owner'));
       const agentKp = loadKeypair(str(flags, 'agent'));
-      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey });
+      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey, allowLocalValidator: flags['local-validator'] === true });
       const res = await owner.ensurePolicy({
         agent: agentKp.publicKey,
+        agentSigner: agentKp,
         vendors: [JUPITER_PERPS_PROGRAM_ID],
         perTxCapUsd: num(flags, 'per-tx', 50),
         perDayCapUsd: num(flags, 'per-day', 150),
@@ -172,11 +177,11 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case 'update-policy': {
-      const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
+      const url = str(flags, 'url', process.env.RPC_URL ?? 'https://api.devnet.solana.com');
       const connection = new Connection(url, 'confirmed');
       const ownerKp = loadKeypair(str(flags, 'owner'));
       const agentKp = loadKeypair(str(flags, 'agent'));
-      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey });
+      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey, allowLocalValidator: flags['local-validator'] === true });
       const opt = (k: string) => (flags[k] === undefined ? undefined : num(flags, k));
       const lev = opt('max-leverage');
       const days = opt('ttl-days');
@@ -262,7 +267,7 @@ async function main(argv: string[]): Promise<number> {
     case 'resolve-venue': {
       const venueName = pos[0] ?? 'jupiter-perps';
       if (venueName !== 'jupiter-perps') throw new Error(`unknown venue ${venueName}; v1 supports jupiter-perps`);
-      const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
+      const url = str(flags, 'url', process.env.RPC_URL ?? 'https://api.devnet.solana.com');
       const info = await new Connection(url, 'confirmed').getAccountInfo(JUPITER_PERPS_PROGRAM_ID);
       const live = info?.executable === true;
       console.log(JUPITER_PERPS_PROGRAM_ID.toBase58());

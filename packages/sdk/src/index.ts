@@ -1,3 +1,4 @@
+export { assertPolicyBinding, assertDevnetWrite, registrationSigners, DEVNET_GENESIS_HASH } from './registration.js';
 /**
  * @trade-on-my-behalf/sdk
  *
@@ -14,6 +15,7 @@
  *   connection,
  *   wallet: agentKeypair,
  *   policy: agentPubkey,
+ *   expectedOwner: ownerKeypair.publicKey,
  * });
  * ```
  */

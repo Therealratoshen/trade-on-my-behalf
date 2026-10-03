@@ -16,6 +16,71 @@ export const IDL = {
   },
   "instructions": [
     {
+      "name": "create_policy",
+      "docs": [
+        "Create a policy PDA for an agent wallet."
+      ],
+      "discriminator": [
+        27,
+        81,
+        33,
+        27,
+        196,
+        103,
+        246,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "policy",
+          "writable": true
+        },
+        {
+          "name": "agent",
+          "docs": [
+            "Agent consents to registration; owner also signs and pays."
+          ],
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "vendors",
+          "type": {
+            "vec": "pubkey"
+          }
+        },
+        {
+          "name": "per_tx_cap_usdc",
+          "type": "u64"
+        },
+        {
+          "name": "per_day_cap_usdc",
+          "type": "u64"
+        },
+        {
+          "name": "ttl_slots",
+          "type": "u64"
+        },
+        {
+          "name": "max_leverage_bps",
+          "type": "u16"
+        },
+        {
+          "name": "kill_switch_drawdown_pct",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "authorize_spend",
       "docs": [
         "Authorize a single spend. Emits an `AuditEvent` either way.",
@@ -23,9 +88,8 @@ export const IDL = {
         "",
         "`implied_current_equity_usdc` is a best-effort runtime-reported",
         "value derived off-chain from venue position reconciliation. It",
-        "drives the drawdown kill-switch (D8) but cannot widen the",
-        "kill-switch by itself — only `record_pnl` can raise",
-        "`peak_equity_usdc`."
+        "drives a soft drawdown signal, not a guaranteed maximum loss.",
+        "Current equity and peak observations are not oracle-authenticated."
       ],
       "discriminator": [
         142,
@@ -40,27 +104,7 @@ export const IDL = {
       "accounts": [
         {
           "name": "policy",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  108,
-                  105,
-                  99,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "policy.agent",
-                "account": "Policy"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -94,142 +138,6 @@ export const IDL = {
       ]
     },
     {
-      "name": "create_policy",
-      "docs": [
-        "Create a policy PDA for an agent wallet."
-      ],
-      "discriminator": [
-        27,
-        81,
-        33,
-        27,
-        196,
-        103,
-        246,
-        53
-      ],
-      "accounts": [
-        {
-          "name": "policy",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  108,
-                  105,
-                  99,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "agent"
-              }
-            ]
-          }
-        },
-        {
-          "name": "agent"
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "vendors",
-          "type": {
-            "vec": "pubkey"
-          }
-        },
-        {
-          "name": "per_tx_cap_usdc",
-          "type": "u64"
-        },
-        {
-          "name": "per_day_cap_usdc",
-          "type": "u64"
-        },
-        {
-          "name": "ttl_slots",
-          "type": "u64"
-        },
-        {
-          "name": "max_leverage_bps",
-          "type": "u16"
-        },
-        {
-          "name": "kill_switch_drawdown_pct",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "record_pnl",
-      "docs": [
-        "D8: Record PnL after a venue fill. The **only** on-chain path that",
-        "mutates `peak_equity_usdc`. Updates the peak-equity watermark",
-        "monotonically (`max(peak, new_equity)`) so the drawdown math has a",
-        "stable reference. Agent or owner."
-      ],
-      "discriminator": [
-        98,
-        235,
-        215,
-        253,
-        46,
-        94,
-        140,
-        14
-      ],
-      "accounts": [
-        {
-          "name": "policy",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  108,
-                  105,
-                  99,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "policy.agent",
-                "account": "Policy"
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "new_equity_usdc",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "update_policy",
       "docs": [
         "Update mutable fields on an existing policy. Owner-only."
@@ -247,27 +155,7 @@ export const IDL = {
       "accounts": [
         {
           "name": "policy",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  108,
-                  105,
-                  99,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "policy.agent",
-                "account": "Policy"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "owner",
@@ -306,6 +194,41 @@ export const IDL = {
           }
         }
       ]
+    },
+    {
+      "name": "record_pnl",
+      "docs": [
+        "D8: Record PnL after a venue fill. The **only** on-chain path that",
+        "mutates `peak_equity_usdc`. Updates the peak-equity watermark",
+        "monotonically (`max(peak, new_equity)`) so the drawdown math has a",
+        "stable reference. Agent or owner."
+      ],
+      "discriminator": [
+        98,
+        235,
+        215,
+        253,
+        46,
+        94,
+        140,
+        14
+      ],
+      "accounts": [
+        {
+          "name": "policy",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_equity_usdc",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -323,104 +246,7 @@ export const IDL = {
       ]
     }
   ],
-  "events": [
-    {
-      "name": "AuditEvent",
-      "discriminator": [
-        241,
-        242,
-        94,
-        109,
-        175,
-        205,
-        78,
-        0
-      ]
-    }
-  ],
-  "errors": [
-    {
-      "code": 6000,
-      "name": "TooManyVendors",
-      "msg": "max 16 vendors per policy"
-    },
-    {
-      "code": 6001,
-      "name": "VendorNotWhitelisted",
-      "msg": "vendor not whitelisted"
-    },
-    {
-      "code": 6002,
-      "name": "ExceedsPerTxCap",
-      "msg": "amount exceeds per-tx cap"
-    },
-    {
-      "code": 6003,
-      "name": "ExceedsDailyCap",
-      "msg": "amount exceeds per-day cap"
-    },
-    {
-      "code": 6004,
-      "name": "PolicyExpired",
-      "msg": "policy expired (TTL slots elapsed)"
-    },
-    {
-      "code": 6005,
-      "name": "Unauthorized",
-      "msg": "unauthorized signer for this policy"
-    },
-    {
-      "code": 6006,
-      "name": "LeverageCapExceeded",
-      "msg": "leverage cap exceeded"
-    },
-    {
-      "code": 6007,
-      "name": "DrawdownKillSwitchTripped",
-      "msg": "drawdown kill-switch tripped"
-    }
-  ],
   "types": [
-    {
-      "name": "AuditEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "policy",
-            "type": "pubkey"
-          },
-          {
-            "name": "agent",
-            "type": "pubkey"
-          },
-          {
-            "name": "vendor",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "approved",
-            "type": "bool"
-          },
-          {
-            "name": "reason_code",
-            "type": "u8"
-          },
-          {
-            "name": "nonce",
-            "type": "u64"
-          },
-          {
-            "name": "at_slot",
-            "type": "u64"
-          }
-        ]
-      }
-    },
     {
       "name": "Policy",
       "type": {
@@ -482,6 +308,103 @@ export const IDL = {
           }
         ]
       }
+    },
+    {
+      "name": "AuditEvent",
+      "type": {
+        "fields": [
+          {
+            "name": "policy",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "vendor",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "approved",
+            "type": "bool"
+          },
+          {
+            "name": "reason_code",
+            "type": "u8"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "at_slot",
+            "type": "u64"
+          }
+        ],
+        "kind": "struct"
+      }
+    }
+  ],
+  "events": [
+    {
+      "discriminator": [
+        241,
+        242,
+        94,
+        109,
+        175,
+        205,
+        78,
+        0
+      ],
+      "name": "AuditEvent"
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TooManyVendors",
+      "msg": "max 16 vendors per policy"
+    },
+    {
+      "code": 6001,
+      "name": "VendorNotWhitelisted",
+      "msg": "vendor not whitelisted"
+    },
+    {
+      "code": 6002,
+      "name": "ExceedsPerTxCap",
+      "msg": "amount exceeds per-tx cap"
+    },
+    {
+      "code": 6003,
+      "name": "ExceedsDailyCap",
+      "msg": "amount exceeds per-day cap"
+    },
+    {
+      "code": 6004,
+      "name": "PolicyExpired",
+      "msg": "policy expired (TTL slots elapsed)"
+    },
+    {
+      "code": 6005,
+      "name": "Unauthorized",
+      "msg": "unauthorized signer for this policy"
+    },
+    {
+      "code": 6006,
+      "name": "LeverageCapExceeded",
+      "msg": "leverage cap exceeded"
+    },
+    {
+      "code": 6007,
+      "name": "DrawdownKillSwitchTripped",
+      "msg": "drawdown kill-switch tripped"
     }
   ]
 } as const;

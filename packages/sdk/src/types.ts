@@ -61,7 +61,7 @@ export interface Policy {
   vendors: PublicKey[];
   /** Per-transaction cap in USDC micro-units (1e6 = $1). */
   perTxCapUsdc: BN;
-  /** Per-day loss cap in USDC micro-units (1e6 = $1). */
+  /** Daily authorized-collateral spend budget in six-decimal quote units; not a maximum-loss guarantee. */
   perDayCapUsdc: BN;
   /** Policy TTL in slots (~0.4 s/slot). */
   ttlSlots: BN;
@@ -137,11 +137,13 @@ export interface AuditEvent {
 export interface CreatePolicyInput {
   /** Agent wallet the policy applies to. PDA seed. */
   agent: PublicKey;
+  /** Required on creation when owner and agent differ. Never send this keypair to a server. */
+  agentSigner?: import('@solana/web3.js').Keypair;
   /** Whitelisted venues (vendor pubkeys). Max 16. */
   vendors: PublicKey[];
   /** Per-tx cap in USD (e.g. 200 = $200). */
   perTxCapUsd: number;
-  /** Per-day loss cap in USD (e.g. 60 = $60). */
+  /** Daily authorized-collateral budget in human quote units (e.g. 60 = 60 quote tokens). */
   perDayCapUsd: number;
   /** Policy TTL in slots (~0.4 s/slot). Default 7 days = ~1.5M slots. */
   ttlSlots?: bigint | number;
