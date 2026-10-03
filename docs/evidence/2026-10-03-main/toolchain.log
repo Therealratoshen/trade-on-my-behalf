@@ -1,0 +1,13 @@
+Node:
+v24.13.0
+Pinned pnpm used for build/lint/tests:
+9.0.0
+Outer pnpm used for frozen install fallback:
+9.0.0
+Anchor:
+anchor-cli 0.31.1
+Available Solana CLI (not the previously reported Agave validators):
+solana-cli 1.17.28 (src:00000000; feat:3746964731, client:SolanaLabs)
+Host Rust:
+cargo 1.88.0 (873a06493 2025-05-10)
+rustc 1.88.0 (6b00bc388 2025-06-23)

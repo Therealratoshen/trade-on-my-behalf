@@ -1,0 +1,7 @@
+Scope: 3 of 4 workspace projects
+packages/sdk lint$ tsc -p tsconfig.json --noEmit
+packages/sdk lint: Done
+packages/agent lint$ tsc -p tsconfig.json --noEmit
+packages/agent lint: Done
+apps/dashboard lint$ tsc --noEmit
+apps/dashboard lint: Done

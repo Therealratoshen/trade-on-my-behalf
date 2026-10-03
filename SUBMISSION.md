@@ -4,7 +4,7 @@ Updated 2026-10-03. **Not a claim of submission, completed videos, human tests o
 
 ## Project
 
-Trade On My Behalf — a Solana devnet-first perps terminal in development. Existing code demonstrates on-chain authorization decisions followed by clearly simulated Jupiter positions.
+Trade On My Behalf — a **devnet policy demo with simulated positions**. A perps terminal remains target scope, not a verified release. Existing code demonstrates on-chain authorization decisions followed by clearly simulated Jupiter positions.
 
 Repository: https://github.com/Therealratoshen/trade-on-my-behalf
 
@@ -21,7 +21,11 @@ Do **not** claim live Jupiter orders, working devnet venue trading, immutable wa
 
 | Evidence | Status | Source |
 |---|---|---|
-| Current offline/program test rerun | NOT RUN in this documentation update | [testing plan](docs/testing-plan.md) |
+| Current main-branch offline rerun | PASS: SDK 11/11, agent 17/17; 28 tests, 0 failures | [revision, commands and committed logs](docs/release-evidence-2026-10-03.md) |
+| Current main-branch lint and build | PASS: both commands exit 0 | [revision, commands and committed logs](docs/release-evidence-2026-10-03.md) |
+| Current main-branch program rerun / fresh IDL regeneration | BLOCKED: available toolchain lacks `cargo build-sbf`; no fresh program/IDL output | [observed errors and boundaries](docs/release-evidence-2026-10-03.md) |
+| Owner-reported baseline suite | Historical report: 11 SDK + 17 agent + 12 program tests at `8c6e769`; not a fresh 40-test pass claim | [separate owner report](docs/release-evidence-2026-10-03.md#owner-reported-baseline) |
+| Draft consent/accounting PR | Prior report: 14 local-validator tests; NOT RUN again here, not merged/deployed main | [separate draft-PR evidence](docs/release-evidence-2026-10-03.md#draft-pr-evidence) |
 | Historical local-validator policy/paper demo | Reported historically; not rerun or public-devnet proof | [demo receipts](docs/demo-receipts.md) |
 | Treasury devnet deployment | BLOCKED: configured address absent at dated RPC observation | [readiness](docs/devnet-readiness.md) |
 | Public devnet authorization receipts | NOT CAPTURED | [demo receipts](docs/demo-receipts.md) |
@@ -44,5 +48,7 @@ A successful authorization transaction is not a fill. A supplied-equity drawdown
 - Supply accurate prior-work disclosure from the project's actual history; preserve the original historical records in SPEC/PM-LOG.
 - Keep team/contact/location fields accurate and supplied by the founder; do not infer or fabricate them.
 - Update evidence ledger only from actual runs/receipts, then perform an outside-person link check.
+
+Owner-supplied evidence still needed: three consenting outside developers and their privacy-safe observed session records; completed, accessible pitch/demo recordings; event/track/deadline and actual submission confirmation. Public funding/deployment and PR disposition remain separate explicit owner decisions. No participant identities, wallet keys, funding, public transactions, recordings or submission were produced by this documentation work.
 
 Current product/technical scope: [PRD](PRD.md), [TRD](TRD.md). Historical marketing language is not proof of implementation.

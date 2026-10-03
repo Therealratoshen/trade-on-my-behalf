@@ -1,0 +1,24 @@
+
+> @trade-on-my-behalf/sdk@0.1.0 sync-idl /tmp/terading-evidence12/source/packages/sdk
+> node scripts/sync-idl.mjs
+
+node:fs:439
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/tmp/terading-evidence12/source/programs/treasury/target/idl/treasury.json'
+    at readFileSync (node:fs:439:20)
+    at file:///tmp/terading-evidence12/source/packages/sdk/scripts/sync-idl.mjs:11:24
+    at ModuleJob.run (node:internal/modules/esm/module_job:413:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:660:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/terading-evidence12/source/programs/treasury/target/idl/treasury.json'
+}
+
+Node.js v24.13.0
+/tmp/terading-evidence12/source/packages/sdk:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @trade-on-my-behalf/sdk@0.1.0 sync-idl: `node scripts/sync-idl.mjs`
+Exit status 1

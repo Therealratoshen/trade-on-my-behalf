@@ -1,0 +1,148 @@
+{
+  "date": "2026-10-03",
+  "source_revision": "8c6e769df1fe5263f3a682fadfe5f7580e2b0c6b",
+  "environment": "Replit Linux/Nix isolated temporary source archive; no public transactions",
+  "executed_tests": {
+    "sdk": {
+      "pass": 11,
+      "fail": 0
+    },
+    "agent": {
+      "pass": 17,
+      "fail": 0
+    },
+    "total_offline_pass": 28
+  },
+  "commands": [
+    {
+      "command": "CI=true pnpm install --frozen-lockfile",
+      "exit": 1,
+      "status": "FAIL",
+      "scope": "setup",
+      "log": "install-initial.log"
+    },
+    {
+      "command": "CI=true PNPM_WORKERS=1 pnpm install --frozen-lockfile --config.manage-package-manager-versions=false --config.package-manager-strict-version=false",
+      "exit": 0,
+      "status": "PASS",
+      "log": "install.log"
+    },
+    {
+      "command": "pnpm build",
+      "exit": 0,
+      "status": "PASS",
+      "log": "build.log"
+    },
+    {
+      "command": "pnpm -r lint",
+      "exit": 0,
+      "status": "PASS",
+      "log": "lint.log"
+    },
+    {
+      "command": "pnpm -r test",
+      "exit": 0,
+      "status": "PASS",
+      "log": "tests.log"
+    },
+    {
+      "command": "anchor build -- --locked",
+      "directory": "programs/treasury",
+      "exit": 101,
+      "status": "BLOCKED",
+      "cause": "cargo build-sbf unavailable",
+      "log": "anchor-build.log"
+    },
+    {
+      "command": "pnpm --filter @trade-on-my-behalf/sdk run sync-idl",
+      "exit": 1,
+      "status": "BLOCKED",
+      "cause": "No fresh generated Treasury IDL",
+      "log": "idl-sync.log"
+    }
+  ],
+  "not_executed": [
+    {
+      "check": "12-case baseline local-validator suite",
+      "status": "BLOCKED",
+      "exit": null,
+      "cause": "No fresh SBF binary"
+    },
+    {
+      "check": "local CLI demo",
+      "status": "NOT RUN",
+      "exit": null,
+      "cause": "Program build prerequisite blocked"
+    },
+    {
+      "check": "public devnet writes",
+      "status": "NOT RUN",
+      "exit": null,
+      "cause": "Not authorized"
+    },
+    {
+      "check": "browser E2E",
+      "status": "NOT IMPLEMENTED",
+      "exit": null
+    },
+    {
+      "check": "three human sessions",
+      "status": "NOT RUN",
+      "exit": null
+    }
+  ],
+  "tools": {
+    "node": "24.13.0",
+    "pnpm_observed_during_verification": "9.0.0",
+    "anchor_cli": "0.31.1",
+    "available_solana_cli": "1.17.28",
+    "cargo": "1.88.0",
+    "rustc": "1.88.0"
+  },
+  "separate_reports": {
+    "owner_report": {
+      "claimed_revision": "8c6e769df1fe5263f3a682fadfe5f7580e2b0c6b",
+      "reported_counts": {
+        "sdk": 11,
+        "agent": 17,
+        "program": 12
+      },
+      "attribution": "Owner-provided master prompt; no raw program/IDL/secret-scan output supplied",
+      "not_a_current_full_suite_pass": true
+    },
+    "draft_pr_report": {
+      "report_snapshot_revision": "08b08401bc35ed4a6fdd4c030829829eab7be0b2",
+      "exact_execution_revision": "NOT RECORDED in original report",
+      "reported_program_pass": 14,
+      "rerun_here": false,
+      "url": "https://github.com/Therealratoshen/trade-on-my-behalf/blob/08b08401bc35ed4a6fdd4c030829829eab7be0b2/docs/local-validator-validation.md"
+    }
+  },
+  "unchanged_source_config_and_locks": true,
+  "changed_existing_documents": [
+    "README.md",
+    "SUBMISSION.md",
+    "docs/demo-receipts.md",
+    "docs/testing-plan.md",
+    "docs/user-tests.md",
+    "docs/whats-missing.md"
+  ],
+  "unchanged_hashes": {
+    "pnpm-lock.yaml": "29fb42324c1ca22411045054add47ebae90045f56724f8bfb36dec2eb1312853",
+    "programs/treasury/pnpm-lock.yaml": "e9c39ebce94f01555d40c7bb7a7e6c8d827d8a9dea221988bbd8dee1f1c50d5b",
+    "programs/treasury/Cargo.lock": "c299e81975974c6f96b581f989e78aa8c185fafd0b542f9c08c30e3bd4a9565f",
+    "programs/treasury/Anchor.toml": "6cda7db7b89147483d9a7c8565d3bbb661b0f54f56a78b2c7435edad7ef2b78a",
+    "packages/sdk/src/treasury.idl.ts": "bf496171b474aa11614802fffa674ad641b51fb799883689a6b5ac7d632f80a0"
+  },
+  "artifact_sha256": {
+    "install.log": "fb9396596b9e113e5182f9f6ad52e75573dba229bbb58cacdeca075953a11d57",
+    "install-initial.log": "7e821e600796667c5551f28b77bacc1a574b54db30a40c9ca35bee8ccb07fe96",
+    "build.log": "b4b2f16a87a59a332a53eff20a1ddab9bc491b3136174bee91f387ca84fb18b0",
+    "lint.log": "46c2df9e3cb92e81f68e47fedd2d5aa0961bdb06544bd6fe7e8e1bc6c6878bea",
+    "tests.log": "2c5df877e6a4e22e07299723e43b34fb49fda3901c7abfe7810a658949fe2328",
+    "anchor-build.log": "05004558b95ba094ff630446a79706938a4543d391559e4b2299850be80de136",
+    "idl-sync.log": "c696ae57a46fa9bea5dcbbdf5db4ea7b3d4c810f9fcc7f23d44fdaa2d09d5932",
+    "session.log": "443c63da650a338e49ac2a222b004b195cd6e3830ae4a6f5137bf38a0e324f42",
+    "toolchain.log": "1cd3d4a81a565edc83d5e85dfa672d4a9acd6d471dc3b56aed383232911cb24a"
+  }
+}

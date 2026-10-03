@@ -1,6 +1,6 @@
 # Testing Plan — Source Inventory, Required Coverage and Evidence
 
-Updated 2026-10-03. **No code tests were executed in this documentation update.** Test-source counts below are not pass counts. Historical local-demo reports do not substitute for current automated runs, public devnet receipts or human sessions.
+Updated 2026-10-03. **Fresh main-baseline rerun: SDK 11/11 and agent 17/17 PASS; lint and build exit 0. Program rerun and fresh IDL regeneration: BLOCKED by missing SBF build tooling.** Exact revision, tool versions, commands, exits and committed logs are in the [release evidence ledger](release-evidence-2026-10-03.md). Defined cases are not additional passes. Owner-reported baseline results and earlier draft-PR results are separate evidence sets, not public-devnet or human-session proof.
 
 ## Authoritative links
 
@@ -10,16 +10,22 @@ Updated 2026-10-03. **No code tests were executed in this documentation update.*
 
 | Layer | Existing files | Defined cases | Current run status |
 |---|---|---|---|
-| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 12 `it` cases | NOT RUN in this update |
-| SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts` | 11 `test` cases | NOT RUN in this update |
-| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts` | 17 `test` cases | NOT RUN in this update |
-| Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | Historical report only; NOT RERUN |
+| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 12 `it` cases on tested main baseline | BLOCKED / NOT RUN: fresh SBF binary unavailable |
+| SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts` | 11 `test` cases | PASS: 11/11 at `8c6e769df1fe5263f3a682fadfe5f7580e2b0c6b` |
+| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts` | 17 `test` cases | PASS: 17/17 at the same main baseline |
+| Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | NOT RUN: historical report only; fresh program build blocked |
 | Browser E2E | No checked-in browser test harness/suite | None | NOT IMPLEMENTED |
 | Public devnet venue E2E | No implemented real venue adapter | None | BLOCKED |
 | Outside-developer sessions | Three planned cases in `user-tests.md` | None recorded | NOT RUN |
 | CI execution workflow | No `.github/workflows` test workflow in reviewed source | None | NOT IMPLEMENTED; separate CI work remains |
 
 Earlier references to `tests/litesvm.rs`, `tests/surfpool/*.spec.ts`, `pnpm test:surfpool`, nightly integration or already-measured coverage were plans, not implemented evidence. LiteSVM/Mollusk/Surfpool can be evaluated later; they are not the present harness.
+
+## Executed versus reported results
+
+The current executed total is **28 offline tests**, not 40 program-plus-unit tests and not the draft PR's 14 program tests added to this baseline. `pnpm -r test` only reaches the root pnpm workspace's SDK and agent test scripts; it does not execute the nested Anchor suite.
+
+The owner supplied a separate 40-test baseline report on 2026-10-03. Draft PR #2 has a separate earlier 14-case local-validator report. See the [ledger](release-evidence-2026-10-03.md) for attribution, pinned source/report links, missing execution metadata, and this update's actual blockers. Neither report upgrades the current public-devnet, venue or human-session status.
 
 ## Pyramid and isolation
 
@@ -36,7 +42,7 @@ Mock/paper success does not pass the real-venue layer. Public devnet outages are
 Run only in a normal checkout of this repository with Node 20+, pinned pnpm, Anchor/Solana/Rust toolchains installed:
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm --filter @trade-on-my-behalf/sdk build
 pnpm --filter @trade-on-my-behalf/agent build
 pnpm --filter @trade-on-my-behalf/sdk test
@@ -54,6 +60,8 @@ pnpm --filter @trade-on-my-behalf/sdk run sync-idl
 ```
 
 Rebuild dependent packages before their tests. `pnpm devnet:demo` deploys/uses Treasury and produces **paper** venue fills; review its deploy/key/toolchain requirements first. It is not a devnet venue-order test. No browser-test command is documented as runnable until that harness exists.
+
+The provider in the tested source defaults to devnet. Never run plain `anchor test` for an offline check: select localnet explicitly and supply an explicitly generated disposable wallet instead of the owner's default key. Root `anchor:build` / `anchor:test` currently do not select the nested program workspace; their repair and CI enforcement remain separate work. This update did not change deployment settings or run any public write.
 
 ## Coverage and CI requirements — proposed
 
