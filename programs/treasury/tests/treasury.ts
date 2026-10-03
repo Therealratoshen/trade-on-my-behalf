@@ -151,11 +151,18 @@ describe("treasury", () => {
 
   // ---------- D7: leverage cap + UpdatePolicy ----------
 
-  it("denies authorize_spend when leverage_bps exceeds max_leverage_bps", async () => {
+  it("approves leverage at max_leverage_bps and denies leverage above it", async () => {
     const { vendor, pda } = await createPolicy({ maxLeverageBps: 3000 });
-    const audit = await authorize(pda, vendor.publicKey, 500_000, { leverageBps: 5000 });
-    assert.isFalse(audit.approved);
-    assert.equal(audit.reasonCode, 6, "REASON_LEVERAGE_CAP = 6");
+    const atCap = await authorize(pda, vendor.publicKey, 500_000, { nonce: 1, leverageBps: 3000 });
+    assert.isTrue(atCap.approved, "leverage exactly at the cap should approve");
+    assert.equal(atCap.reasonCode, 0, "REASON_OK = 0");
+
+    const aboveCap = await authorize(pda, vendor.publicKey, 500_000, { nonce: 2, leverageBps: 3001 });
+    assert.isFalse(aboveCap.approved, "leverage above the cap should deny");
+    assert.equal(aboveCap.reasonCode, 6, "REASON_LEVERAGE_CAP = 6");
+
+    const after = await program.account.policy.fetch(pda);
+    assert.equal(after.daySpentUsdc.toString(), "500000", "only the approved trade should consume the daily cap");
   });
 
   it("owner can update_policy max_leverage_bps; subsequent leverage within cap approves", async () => {
