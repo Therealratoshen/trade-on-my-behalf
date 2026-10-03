@@ -1,14 +1,8 @@
 # User Tests — D11
 
-> **Status:** Templates filled with concrete examples. Actual
-> results captured at D11 by the three outside-dev testers.
-> Each test logs the user, the rule they configured, the trade they
-> attempted, the outcome, and the `AuditEvent` they observed.
-> The results are appended verbatim below — no editing, no
-> embellishment.
+> **Status (2026-10-03 WIB): NOT RUN.** No outside-developer test sessions, privacy-safe tester IDs, configured policies, attempted trades, observed outcomes, transaction signatures or slots, latency measurements, or participant reactions are recorded. The cases below are planned scenarios; expected results are not observations. Do not claim these tests passed.
 >
-> **Target D11 (Fri Oct 2, 2026).** Testers lined up by D9.
-> See PM-LOG §5 R19 + §6 (recruiting call).
+> The planned D11 target (Friday, 2026-10-02) has passed. PM-LOG §5 R19 and `docs/whats-missing.md` report that testers were not lined up. The previously recorded local demo is not a substitute for these human devnet tests.
 
 The three tests are designed to exercise each on-chain gate at
 least once:
@@ -29,20 +23,22 @@ before D12.
 
 ## Test 1 — Solana-native dev
 
+> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no policy was configured and no trade was attempted.
+
 | Field | Value |
 |---|---|
-| Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
-| Approve trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
-| Approve outcome | approved · reason code: `0` (`REASON_OK`) |
-| Deny trade | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
-| Deny outcome | denied · reason code: `6` (`REASON_LEVERAGE_CAP`) |
-| Approve observed | slot: _filled_ · tx sig: _filled_ · `approved`: `true` · `reason_code`: `0` |
-| Deny observed | slot: _filled_ · tx sig: _filled_ · `approved`: `false` · `reason_code`: `6` |
-| Solscan (approve) | `https://solscan.io/tx/<APPROVE_SIG>?cluster=devnet` |
-| Solscan (deny) | `https://solscan.io/tx/<DENY_SIG>?cluster=devnet` |
-| Webapp latency | _filled_ ms (slot → SWR refresh) |
-| Reaction | _(1 sentence — what surprised them; filled at D11)_ |
+| Tester ID | NOT RUN — no participant session was recorded. |
+| Planned policy (not configured) | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `0` (disabled) |
+| Planned approve trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `300` bps (3×) |
+| Expected approve result (not observed) | approved · reason code: `0` (`REASON_OK`) |
+| Planned deny trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$150` · lev: `500` bps (5×) |
+| Expected deny result (not observed) | denied · reason code: `6` (`REASON_LEVERAGE_CAP`) |
+| Actual approve evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
+| Actual deny evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
+| Solscan approve receipt | NOT AVAILABLE — no transaction signature was recorded. |
+| Solscan deny receipt | NOT AVAILABLE — no transaction signature was recorded. |
+| Webapp latency | NOT MEASURED — no session or audit refresh was observed. |
+| Tester reaction | NOT COLLECTED — no session. |
 
 **Expected per `testing-plan.md`:** The 3× trade at the cap approves;
 the 5× trade above the cap denies with `reason_code: 6`. If the 5×
@@ -52,21 +48,23 @@ approves, that is a kernel bug.
 
 ## Test 2 — Cross-venue trader
 
+> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no policy was configured and no trade was attempted.
+
 | Field | Value |
 |---|---|
-| Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$500` · `maxDailyLossUsd`: `$100` · `killSwitchDrawdownPct`: `0` |
-| Vendors whitelisted | Jupiter Perps only (`policy.vendors = [<JUPITER_PERPS_PROGRAM_ID>]`) |
-| Approve trade | side: `short` · market: `SOL-PERP` (Jupiter Perps) · sizeUsd: `$400` · lev: `200` bps (2×) |
-| Approve outcome | approved · reason code: `0` |
-| Deny trade | side: `long` · market: `BTC-PERP` (Drift) — _Drift pubkey NOT in `policy.vendors`_ |
-| Deny outcome | denied · reason code: `1` (`REASON_VENDOR_DENIED`) |
-| Approve observed | slot: _filled_ · tx sig: _filled_ · `approved`: `true` · `reason_code`: `0` |
-| Deny observed | slot: _filled_ · tx sig: _filled_ · `approved`: `false` · `reason_code`: `1` |
-| Solscan (approve) | `https://solscan.io/tx/<APPROVE_SIG>?cluster=devnet` |
-| Solscan (deny) | `https://solscan.io/tx/<DENY_SIG>?cluster=devnet` |
-| Webapp latency | _filled_ ms |
-| Reaction | _(1 sentence)_ |
+| Tester ID | NOT RUN — no participant session was recorded. |
+| Planned policy (not configured) | `maxLeverage`: `300` bps (3× cap) · `maxPositionUsd`: `$500` · `maxDailyLossUsd`: `$100` · `killSwitchDrawdownPct`: `0` |
+| Planned vendor whitelist (not configured) | Jupiter Perps only (`policy.vendors = [<JUPITER_PERPS_PROGRAM_ID>]`) |
+| Planned approve trade (not attempted) | side: `short` · market: `SOL-PERP` (Jupiter Perps) · sizeUsd: `$400` · lev: `200` bps (2×) |
+| Expected approve result (not observed) | approved · reason code: `0` |
+| Planned deny trade (not attempted) | side: `long` · market: `BTC-PERP` (Drift) — _Drift pubkey NOT in `policy.vendors`_ |
+| Expected deny result (not observed) | denied · reason code: `1` (`REASON_VENDOR_DENIED`) |
+| Actual approve evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
+| Actual deny evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
+| Solscan approve receipt | NOT AVAILABLE — no transaction signature was recorded. |
+| Solscan deny receipt | NOT AVAILABLE — no transaction signature was recorded. |
+| Webapp latency | NOT MEASURED — no session or audit refresh was observed. |
+| Tester reaction | NOT COLLECTED — no session. |
 
 **Expected per `testing-plan.md`:** The Jupiter Perps trade approves;
 the Drift trade denies with `reason_code: 1`. If the Drift trade
@@ -76,23 +74,25 @@ approves, the vendor whitelist is broken — kernel bug.
 
 ## Test 3 — Kill-switch stress
 
+> **Run status: NOT RUN (2026-10-03 WIB).** No participant session was recorded for this case. The inputs below are planned only; no policy was configured and no trade was attempted.
+
 | Field | Value |
 |---|---|
-| Tester | _(name + background, 1 line; filled at D11)_ |
-| Rule | `maxLeverage`: `500` bps (5× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `25` (25 %) |
-| Setup | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
-| Approve trade (above water) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 900` |
-| Approve outcome | approved · reason code: `0` |
-| Setup (under water) | runtime reconciles losses; reports `implied_current_equity_usdc: 700` |
-| Deny trade (under water) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 700` |
-| Deny outcome | denied · reason code: `7` (`REASON_DRAWDOWN_KILLSWITCH`) |
-| Threshold math | `1000 × (10_000 − 2_500) / 10_000 = 750` ; `700 < 750` ⇒ KILL |
-| Approve observed | slot: _filled_ · tx sig: _filled_ · `approved`: `true` · `reason_code`: `0` |
-| Deny observed | slot: _filled_ · tx sig: _filled_ · `approved`: `false` · `reason_code`: `7` |
-| Solscan (approve) | `https://solscan.io/tx/<APPROVE_SIG>?cluster=devnet` |
-| Solscan (deny) | `https://solscan.io/tx/<DENY_SIG>?cluster=devnet` |
-| Webapp latency | _filled_ ms |
-| Reaction | _(1 sentence)_ |
+| Tester ID | NOT RUN — no participant session was recorded. |
+| Planned policy (not configured) | `maxLeverage`: `500` bps (5× cap) · `maxPositionUsd`: `$200` · `maxDailyLossUsd`: `$60` · `killSwitchDrawdownPct`: `25` (25 %) |
+| Planned setup (not executed) | `record_pnl(new_equity_usdc: 1000)` ⇒ `peak_equity_usdc = 1000` |
+| Planned approve trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 900` |
+| Expected approve result (not observed) | approved · reason code: `0` |
+| Planned drawdown setup (not executed) | runtime reconciles losses; reports `implied_current_equity_usdc: 700` |
+| Planned deny trade (not attempted) | side: `long` · market: `SOL-PERP` · sizeUsd: `$50` · lev: `100` bps · `implied_current_equity_usdc: 700` |
+| Expected deny result (not observed) | denied · reason code: `7` (`REASON_DRAWDOWN_KILLSWITCH`) |
+| Expected threshold math (not observed) | `1000 × (10_000 − 2_500) / 10_000 = 750` ; `700 < 750` ⇒ KILL |
+| Actual approve evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
+| Actual deny evidence | NOT OBSERVED — no session, slot, signature, or AuditEvent. |
+| Solscan approve receipt | NOT AVAILABLE — no transaction signature was recorded. |
+| Solscan deny receipt | NOT AVAILABLE — no transaction signature was recorded. |
+| Webapp latency | NOT MEASURED — no session or audit refresh was observed. |
+| Tester reaction | NOT COLLECTED — no session. |
 
 **Expected per `testing-plan.md`:** The above-water trade approves
 with `reason_code: 0`; the under-water trade denies with
@@ -101,7 +101,7 @@ under-water trade approves, the kill-switch is broken — kernel bug.
 
 ---
 
-## Notes for judges
+## Planned notes for judges (not observed outcomes)
 
 - **A deny is the product working, not failing.** Read the reason code first.
 - **A timeout means the tester's phone wasn't reachable in 60 s.** That's also working as designed. The persona's complaint about being-at-work is the use case.
@@ -117,11 +117,11 @@ under-water trade approves, the kill-switch is broken — kernel bug.
 
 If any of those three things don't happen, the kernel isn't enforcing and the demo isn't ready. Stop and check the Anchor program state.
 
-## How to fill this template at D11
+## How to record a completed test
 
-1. Open the Solscan link for each receipt — verify the program id is `4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph`.
-2. Paste the slot number and base58 signature into the row.
-3. Record the webapp latency from the audit-log row timestamp (slot → SWR refresh).
-4. Ask the tester for one sentence on what surprised them.
-5. Append verbatim — no editing, no embellishment.
-6. Once all three rows are filled, the founder signs off in PM-LOG §3 decision log as `D11: 3 outside-dev user tests recorded`.
+1. Assign a privacy-safe ID such as `UT-01`; record only a broad tester background with consent. Do not include names, handles, or wallet addresses.
+2. Record the exact policy that was actually configured and every trade that was actually attempted.
+3. Record the observed result and parsed `AuditEvent`. For on-chain runs, verify the program ID and record the real slot, signature, and Solscan link.
+4. Measure audit latency from slot confirmation to the audit row appearing in the webapp, and collect one reaction with consent.
+5. Append the evidence without embellishment. If the result differs from the expected code, stop and investigate before calling the test passed.
+6. Update the status only after the run and its evidence exist. Do not back-date the D11 target or sign off based on a local demo or unit test.
