@@ -41,6 +41,8 @@ Updated 2026-10-03. All 43 existing project Markdown files were reviewed for thi
 | [docs/testing-plan.md](../docs/testing-plan.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/trader-lifecycle-edge-cases.md](../docs/trader-lifecycle-edge-cases.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/unit-testing.md](../docs/unit-testing.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
+| [docs/user-journey.md](../docs/user-journey.md) | Three designed personas; all reactions are assumptions because no session has been run |
+| [docs/user-manual.md](../docs/user-manual.md) | Task-by-task walkthrough; every command executed with its real output on 2026-10-04 |
 | [docs/user-tests.md](../docs/user-tests.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/venues.md](../docs/venues.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/whats-missing.md](../docs/whats-missing.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |

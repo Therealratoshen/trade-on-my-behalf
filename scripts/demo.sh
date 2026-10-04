@@ -80,7 +80,24 @@ fi
 rm -f "$PAPER"
 echo "  agent $AGENT_PUB (funded for tx fees only)"
 
-tomb()  { (cd "$REPO_ROOT/packages/agent" && pnpm -s tomb "$@"); }
+# Every write goes through the SDK's devnet guard (packages/sdk/src/registration.ts):
+# signing is refused unless getGenesisHash() is devnet. The local validator is
+# not devnet, so local mode must opt in with --local-validator. devnet mode must
+# NOT pass it, so it is derived from $CLUSTER rather than hardcoded.
+#
+# The flag is APPENDED, never prepended. cli.ts parseArgs() has no notion of a
+# valueless boolean: for any --flag it reads the next token as that flag's
+# value unless it is undefined or itself starts with --. Putting
+# --local-validator before the subcommand therefore makes it swallow the
+# subcommand name as its value, leaves the command positionally empty, and the
+# CLI prints its usage banner instead of running anything.
+if [ "$CLUSTER" = "local" ]; then
+  LOCAL_FLAG=(--local-validator)
+else
+  LOCAL_FLAG=()
+fi
+
+tomb()  { (cd "$REPO_ROOT/packages/agent" && pnpm -s tomb "$@" ${LOCAL_FLAG+"${LOCAL_FLAG[@]}"}); }
 agent() { tomb "$@" --agent "$AGENT_KEY" --paper-state "$PAPER" || true; }
 
 say "1. Owner sets the rules on-chain: \$50/trade, \$150/day, max 5x, 25% drawdown kill-switch"
