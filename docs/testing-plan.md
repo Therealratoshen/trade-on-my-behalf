@@ -1,6 +1,6 @@
 # Testing Plan — Source Inventory, Required Coverage and Evidence
 
-Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source (20 / 31 / 37 = 88 `it`/`test` cases), the SDK and agent suites were executed locally, and the CI run for revision `01940a2` was inspected — both CI jobs report success. Counts and PASS statuses below are backed by the executed-run record in [Executed-run record](#executed-run-record). Historical local-demo reports still do not substitute for public devnet receipts or human sessions, and no local-validator run was performed in this documentation update for the Anchor row.
+Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source (20 / 31 / 37 = 88 `it`/`test` cases) and all three were executed locally — the Anchor suite against a local validator from a cleaned `target/`, the SDK and agent suites offline — and `pnpm demo` ran end-to-end. The CI run for revision `d293398` was inspected and both jobs report success. Counts and PASS statuses below are backed by the executed-run record in [Executed-run record](#executed-run-record). Historical local-demo reports still do not substitute for public devnet receipts or human sessions.
 
 ## Authoritative links
 
@@ -10,14 +10,14 @@ Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-c
 
 | Layer | Existing files | Defined cases | Current run status |
 |---|---|---|---|
-| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 20 `it` cases | PASS in CI; not rerun locally in this update — see [run record](#executed-run-record) |
+| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 20 `it` cases | PASS — 20/20 executed locally 2026-10-04, and green in CI — see [run record](#executed-run-record) |
 | SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts`, `ensurePolicyOwnership.test.ts`, `registration.test.ts` | 31 `test` cases | PASS — 31/31 executed 2026-10-04 |
 | Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts`, `policyState.test.ts` | 37 `test` cases | PASS — 37/37 executed 2026-10-04 |
-| Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | Historical report only; NOT RERUN |
+| Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | PASS — ran end-to-end 2026-10-04; see [run record](#executed-run-record) |
 | Browser E2E | No checked-in browser test harness/suite | None | NOT IMPLEMENTED |
 | Public devnet venue E2E | No implemented real venue adapter | None | BLOCKED |
 | Outside-developer sessions | Three planned cases in `user-tests.md` | None recorded | NOT RUN |
-| CI execution workflow | `.github/workflows/ci.yml` — committed, `SDK + agent tests` and `Anchor program tests` jobs | Both jobs execute on every push and pull request | PASS — both jobs success on revision `01940a2` |
+| CI execution workflow | `.github/workflows/ci.yml` — committed, `SDK + agent tests` and `Anchor program tests` jobs | Both jobs execute on every push and pull request | PASS — both jobs success on revision `d293398` |
 
 Earlier references to `tests/litesvm.rs`, `tests/surfpool/*.spec.ts`, `pnpm test:surfpool`, nightly integration or already-measured coverage were plans, not implemented evidence. LiteSVM/Mollusk/Surfpool can be evaluated later; they are not the present harness.
 
@@ -28,12 +28,23 @@ Earlier references to `tests/litesvm.rs`, `tests/surfpool/*.spec.ts`, `pnpm test
 
 Per the release rule, PASS/FAIL require actual execution and artifacts. This is the record behind the PASS rows above.
 
-- **Anchor program tests — PASS.** Executed by the `Anchor program tests` CI job, not by hand in this update. The `Anchor program tests` job reported `success` on the `main` push for revision `01940a2`: <https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37201121325>. The job runs a local validator; it is not a public-cluster result.
-- **SDK offline unit tests — PASS, 31/31.** `cd packages/sdk && pnpm test`, 2026-10-04, exit 0, `pass 31 / fail 0`.
-- **Agent offline unit tests — PASS, 37/37.** `cd packages/agent && pnpm test`, 2026-10-04, exit 0, `pass 37 / fail 0`.
+- **Anchor program tests — PASS, 20/20.** Executed locally on 2026-10-04 from a cleaned `target/`
+  (`rm -rf programs/treasury/target && anchor build`), against a local validator with the program
+  preloaded and a throwaway wallet in a temp directory, with `Anchor.toml` left at
+  `cluster = "devnet"` and the suite invoked as
+  `pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts`. Result `20 passing (33s)`. It is
+  also green in CI: the `Anchor program tests` job reported `success` on the `main` push for
+  revision `d293398`, <https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37203451979>.
+  The job runs a local validator; it is not a public-cluster result.
+- **SDK offline unit tests — PASS, 31/31.** `pnpm --filter @trade-on-my-behalf/sdk test`, 2026-10-04, exit 0, `pass 31 / fail 0`.
+- **Agent offline unit tests — PASS, 37/37.** `pnpm --filter @trade-on-my-behalf/agent test`, 2026-10-04, exit 0, `pass 37 / fail 0`.
+- **`pnpm demo` — PASS, all nine steps.** Run 2026-10-04 with a throwaway `OWNER_KEY`; each step
+  produced its documented outcome. The devnet-write guard added in `01940a2` had been blocking every
+  write because `scripts/demo.sh` never passed `--local-validator`; fixed there and re-verified.
 - **CI workflow — PASS.** Both jobs (`SDK + agent tests`, `Anchor program tests`) reported `success` on the run cited above.
 
-Still owed, and not claimed here: a rerun of the 20 Anchor cases from a local validator in this documentation update; a browser E2E harness; public devnet receipts; three outside-developer sessions; any real venue adapter.
+Still owed, and not claimed here: a browser E2E harness; public devnet receipts; three
+outside-developer sessions; any real venue adapter.
 
 ## Pyramid and isolation
 
@@ -55,7 +66,8 @@ pnpm --filter @trade-on-my-behalf/sdk build
 pnpm --filter @trade-on-my-behalf/agent build
 pnpm --filter @trade-on-my-behalf/sdk test
 pnpm --filter @trade-on-my-behalf/agent test
-(cd programs/treasury && anchor build && anchor test --provider.cluster localnet)
+(cd programs/treasury && anchor build)
+(cd programs/treasury && pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts)
 pnpm --filter @trade-on-my-behalf/dashboard build
 pnpm demo
 ```

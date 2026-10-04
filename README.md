@@ -37,14 +37,26 @@ pnpm --filter @trade-on-my-behalf/sdk build
 pnpm --filter @trade-on-my-behalf/agent build
 pnpm --filter @trade-on-my-behalf/sdk test
 pnpm --filter @trade-on-my-behalf/agent test
-(cd programs/treasury && anchor build && anchor test --provider.cluster localnet)
+(cd programs/treasury && anchor build)
+(cd programs/treasury && pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts)
 pnpm --filter @trade-on-my-behalf/dashboard dev
 pnpm demo
 ```
 
-`pnpm demo` uses a local validator for policy transactions and paper positions. `pnpm devnet:demo` needs deploy tooling/test SOL and still produces paper positions, not Jupiter devnet orders. No browser E2E suite or CI test workflow is checked in at the reviewed revision.
+The Anchor suite talks to a **local** validator, not a public cluster. `Anchor.toml` commits
+`provider.cluster = "devnet"`, and `anchor test` reads that field to decide where to deploy — so
+run the test script directly against a `solana-test-validator` with the program preloaded, and
+point `ANCHOR_PROVIDER_URL`/`ANCHOR_WALLET` at a **throwaway** keypair. Never point
+`ANCHOR_WALLET` at `~/.config/solana/id.json`, and never run `anchor deploy` against a public
+cluster.
 
-Existing source defines 12 Anchor/validator, 11 SDK and 17 agent test cases. They were not rerun in the 2026-10-03 documentation update. The historical demo assets are not proof of public-devnet execution or completed human tests.
+`pnpm demo` uses a local validator for policy transactions and paper positions, and takes no real SOL — pass a throwaway `OWNER_KEY`. `pnpm devnet:demo` needs deploy tooling/test SOL and still produces paper positions, not Jupiter devnet orders.
+
+CI is checked in: `.github/workflows/ci.yml` runs `SDK + agent tests` and `Anchor program tests` on every push and pull request to `main`, and the ruleset requires both to pass before merge. Both jobs reported `success` on revision `d293398`: <https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37203451979>. A browser E2E suite is still not implemented.
+
+Source defines **20 Anchor/validator, 31 SDK and 37 agent** test cases (88 total). The SDK and agent suites were re-run locally and the Anchor suite re-run against a local validator on 2026-10-04, all passing; see the executed-run record in [testing-plan](docs/testing-plan.md) for commands, results and the cited CI run. The historical demo assets are not proof of public-devnet execution or completed human tests.
+
+For a task-by-task walkthrough with real output, see the [user manual](docs/user-manual.md) and [user journey](docs/user-journey.md).
 
 ## Budget semantics
 
