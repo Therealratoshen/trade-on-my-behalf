@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -173,6 +174,29 @@ export function Dashboard() {
 
       {/* 0 — market workspace: reference price + trade ticket, both preview-only */}
       <MarketWorkspace policy={policy} walletConnected={connected} />
+
+      {/* 0b — the local-only paper-practice concept. It is a different thing
+          from the workspace above, so it says so rather than linking quietly:
+          the workspace is wired to a real spot feed, this one is not. */}
+      <section className="panel tier-reference">
+        <header>
+          <span className="n">0b</span>
+          <h2>Paper practice</h2>
+          <div className="spacer" />
+          <span className="n">fictional fixtures · local only · no orders</span>
+        </header>
+        <div className="body">
+          <p className="dim">
+            A separate concept surface with invented market, depth and budget fixtures for checking an
+            idea before spending anything. It makes no network, wallet or storage call, records no
+            position and reports no PnL.
+          </p>
+          <div className="copyrow" style={{ marginTop: 'var(--s2)' }}>
+            <Link href="/paper-practice">Open paper practice &rarr;</Link>
+            <span className="faint mono">no signatures requested</span>
+          </div>
+        </div>
+      </section>
 
       <ConnectPanel />
 

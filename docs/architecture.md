@@ -170,6 +170,8 @@ Account-scoped positions + orders + risk state + receipt viewer
 
 A compatible custody/wrapper must bind policy parameters to venue accounts/action and prevent direct agent bypass. Request/keeper execution requires a separate asynchronous lifecycle; submitting the request is not the fill.
 
+The linked `/paper-practice` route is only a UI concept and is not part of that target path. Its market, candle, depth and budget fixtures are invented constants, and its scenario preview, risk estimates and manual close observations are local page state. Its page code has no market-data or venue API client, no wallet-signature call and no chain or order submission path, and it creates no saved positions, fills or PnL. It is not the live chart/ticket or an execution adapter.
+
 ## On-chain versus off-chain responsibilities
 
 | On-chain current | Off-chain current | Required additions |
