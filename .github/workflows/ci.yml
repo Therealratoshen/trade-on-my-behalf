@@ -84,12 +84,25 @@ jobs:
       # Installs the Solana CLI (and Node) only. Its Anchor install is
       # deliberately overridden below — see the note on the cargo step.
       #
+      # `node-version: 20` here is deliberate. Do NOT pin 20.11.0 (or any
+      # 20.x < 20.19): the test suite is TypeScript run through ts-mocha, and
+      # on those versions Node's `require(esm)` support intercepts a `.ts` file
+      # before ts-node's require.extensions hook can compile it. The suite then
+      # dies at load time with
+      #   TypeError: Unknown file extension ".ts" for tests/treasury.ts
+      # regardless of how the file is globbed. On 20.19+ (Node resolved `20` to
+      # 20.20.2 in the workspace job's log) the hook runs and the suite loads.
+      #
+      # This also keeps both jobs on the same Node: setup-anchor provisions Node
+      # first, and actions/setup-node below then reuses the same 20.x instead of
+      # switching toolchains underneath pnpm.
+      #
       # Do NOT also run the Anza `install` script: two competing installs of the
       # same toolchain leave an unpredictable one first on PATH.
       - uses: metadaoproject/setup-anchor@v3.4
         with:
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
-          node-version: 20.11.0
+          node-version: "20"
 
       # setup-anchor pipes the Anza installer through `sh -c "$(curl -sSfL
       # ...)"; a bad version string therefore fails the download, not the
@@ -160,6 +173,22 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      # The suite is TypeScript run through ts-mocha. Node < 20.19 intercepts
+      # `require()` of a .ts file through its require(esm) support, before
+      # ts-node's require.extensions hook can compile it, so the tests fail to
+      # even load ("Unknown file extension .ts"). Assert the floor here so that
+      # shows up as a clear message instead.
+      - name: Verify the Node runtime
+        run: |
+          set -x
+          node --version
+          node -e 'const [M,m]=process.versions.node.split(".").map(Number);
+            if (M < 20 || (M === 20 && m < 19)) {
+              console.error("::error::node " + process.versions.node +
+                " cannot run the ts-mocha suite; need >= 20.19");
+              process.exit(1);
+            }'
 
       # programs/treasury is NOT a member of the root workspace (the root
       # pnpm-workspace.yaml only globs apps/* and packages/*), so it has its own
