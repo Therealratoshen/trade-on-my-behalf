@@ -50,10 +50,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # NOTE: actions/cache requires the singular `path:` input. The plural
+      # `paths:` is silently ignored and the step fails with
+      # "Input required and not supplied: path".
       - name: Cache cargo
         uses: actions/cache@v4
         with:
-          paths: |
+          path: |
             ~/.cargo/registry
             ~/.cargo/git
             programs/treasury/target
