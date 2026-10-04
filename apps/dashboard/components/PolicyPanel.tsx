@@ -30,13 +30,13 @@ function PolicyStateNote({ state }: { state: PolicyState }) {
 export function PolicyPanel({
   policy,
   isOwner,
-  nowUnix,
+  currentSlot,
 }: {
   policy: PolicyLike;
   /** Drives the `unowned` state; the shell owns the wallet context. */
   isOwner: boolean;
-  /** Latest block time the shell has polled, in unix seconds. */
-  nowUnix: number | null;
+  /** Latest slot the shell has polled. Null when the RPC gave us none. */
+  currentSlot: number | null;
 }) {
   const perDayUsed = microToUsd(policy.per_day_cap_usdc);
   const daySpent = microToUsd(policy.day_spent_usdc);
@@ -47,7 +47,7 @@ export function PolicyPanel({
   // Panel 2 is the only surface that holds the whole account, so it is where
   // the state chip is derived. `loaded` is true by construction: this panel
   // only renders once an account has actually been decoded.
-  const state = derivePolicyState({ policy, loaded: true, isOwner, nowUnix });
+  const state = derivePolicyState({ policy, loaded: true, isOwner, currentSlot });
 
   return (
     <Panel

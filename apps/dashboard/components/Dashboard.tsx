@@ -122,24 +122,27 @@ export function Dashboard() {
   );
 
   /**
-   * Newest block time the audit feed has actually seen. Used for the policy
-   * TTL so the expiry state is judged against chain time, not a local clock
-   * that could be hours off. Null before the first event, in which case
-   * `derivePolicyState` deliberately declines to call the policy expired.
+   * The chain's current slot, straight from `getSlot()`.
+   *
+   * The TTL is compared against `Clock::get().slot` on chain, so the only
+   * honest input is a slot. The audit feed's block times cannot be converted
+   * into one: slots elapsed since the unix epoch is not the chain's slot
+   * number, and the gap is billions of slots — enough to make every policy
+   * read EXPIRED. `getSlot` is one cheap call, so there is no reason to
+   * guess. Null until the first answer, in which case `derivePolicyState`
+   * declines to assert expiry rather than inventing it.
    */
-  const nowUnix = useMemo(() => {
-    let newest: number | null = null;
-    for (const e of events ?? []) {
-      if (e.blockTime !== null && (newest === null || e.blockTime > newest)) newest = e.blockTime;
-    }
-    return newest;
-  }, [events]);
+  const currentSlot = useSWR(
+    agent ? ['slot', CLUSTER, agent.toBase58()] : null,
+    () => connection.getSlot('confirmed'),
+    { refreshInterval: POLICY_POLL_MS, revalidateOnFocus: true },
+  ).data ?? null;
 
   const policyState = derivePolicyState({
     policy,
     loaded: !policyLoading && !policyError,
     isOwner,
-    nowUnix,
+    currentSlot,
   });
 
   const notConnected = (
@@ -226,7 +229,7 @@ export function Dashboard() {
           </Empty>
         </section>
       ) : (
-        <PolicyPanel policy={policy} isOwner={isOwner} nowUnix={nowUnix} />
+        <PolicyPanel policy={policy} isOwner={isOwner} currentSlot={currentSlot} />
       )}
 
       {/* 3 — audit log */}

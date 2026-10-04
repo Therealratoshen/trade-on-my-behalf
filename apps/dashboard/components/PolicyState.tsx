@@ -21,11 +21,16 @@ import { fmtSlots, microToUsd } from '@/lib/format';
  * property of the account — not an error, and not health.
  *
  * So `unarmed` is a first-class state here, distinct from both `live` and
- * anything that looks like a fault. All five states are neutral: none of them
+ * anything that looks like a fault. All six states are neutral: none of them
  * wears --ok/--no/--warn, because the kernel made no decision about any of
  * them. Guard R3b is the reason this is enforced rather than merely intended.
+ *
+ * `loading` is the same distinction one level up. Before the first read
+ * completes we do not know whether an account exists, and "we have not looked
+ * yet" is not the claim "there is nothing there" — that is why `none` is
+ * reserved for a completed read that found no account.
  */
-export type PolicyState = 'live' | 'unarmed' | 'expired' | 'unowned' | 'none';
+export type PolicyState = 'live' | 'unarmed' | 'expired' | 'unowned' | 'none' | 'loading';
 
 const GLYPH: Record<PolicyState, string> = {
   live: '●',
@@ -33,6 +38,7 @@ const GLYPH: Record<PolicyState, string> = {
   expired: '○',
   unowned: '○',
   none: '·',
+  loading: '…',
 };
 
 const LABEL: Record<PolicyState, string> = {
@@ -41,6 +47,7 @@ const LABEL: Record<PolicyState, string> = {
   expired: 'EXPIRED',
   unowned: 'READ-ONLY',
   none: 'NO POLICY',
+  loading: 'READING',
 };
 
 const NOTE: Record<PolicyState, string> = {
@@ -50,6 +57,8 @@ const NOTE: Record<PolicyState, string> = {
   expired: 'created_at_slot + ttl_slots has passed. The chain would answer REASON_EXPIRED.',
   unowned: 'this account exists but the connected wallet is not its owner, so it is read-only here',
   none: 'no account at [b"policy", wallet]',
+  loading:
+    'the account has not been read yet. "NO POLICY" would be a claim about a read this page has not made.',
 };
 
 /** The explanation text, exported so a panel can place it however it likes. */
@@ -63,27 +72,59 @@ export interface PolicyStateInput {
   /** False while loading; keeps the chip from flashing "NO POLICY" at a live account. */
   loaded: boolean;
   isOwner: boolean;
-  /** Wall clock seconds from the RPC block time, or null if unavailable. */
-  nowUnix: number | null;
+  /**
+   * The chain's current slot, from `connection.getSlot()`. Null when the RPC
+   * did not answer.
+   *
+   * This is a SLOT, not a unix timestamp, and the difference is the whole
+   * point — see `derivePolicyState`.
+   */
+  currentSlot: number | null;
 }
 
 /**
  * Derive the state.
  *
- * `nowUnix` comes from the RPC's block time rather than `Date.now()`: the TTL
- * is counted in slots by the program, so a client whose clock is a day off
- * must not decide the policy has expired. Where the RPC gave us no block
- * time we deliberately fall back to "not expired" — inventing an expiry from
- * a local clock is the same class of error as drawing an invented price line.
+ * ## Why `currentSlot` and not a wall clock
+ *
+ * The program counts TTL in slots and compares it against `Clock::get().slot`
+ * (`authorize_spend.rs`: `clock.slot - created_at_slot > ttl_slots`). The only
+ * quantity that is comparable to a slot is a slot.
+ *
+ * The obvious conversion — `(unixSeconds * 1000) / 400`, i.e. "slots elapsed
+ * since the unix epoch" — silently assumes the chain's slot 0 sat at 1970-01-01.
+ * It did not, and the resulting error is not small: mainnet is around slot
+ * 453,000,000, while the unix epoch conversion yields about 4,477,000,000. The
+ * derived "age" therefore exceeds any plausible `ttl_slots` (7 days is
+ * 1,512,000) by three orders of magnitude, and every policy reads `expired`
+ * the moment a block time is available. The chip would have claimed the chain
+ * would answer `REASON_EXPIRED` on accounts the chain is actively honouring.
+ *
+ * A wall clock is also the wrong source for a different reason: slot height is
+ * what the kernel reads, so only the node can tell us the slot, and only the
+ * slot can be compared to `created_at_slot`.
+ *
+ * ## The fallback
+ *
+ * `currentSlot === null` — the RPC gave us nothing — declines to assert
+ * expiry, exactly as this component has always claimed to. The policy still
+ * reads `unarmed`/`live`, and the note under the chip says the TTL was not
+ * judged. Inventing an expiry is the same class of error as drawing an
+ * invented price line, and the asymmetry matters: reporting a live policy as
+ * expired sends a tester to debug a kill-switch that is working.
  */
 export function derivePolicyState(i: PolicyStateInput): PolicyState {
+  // A loading read has not established that the account is absent, so it must
+  // not answer "none". `loaded` is checked before the null policy because
+  // "we have not looked" and "there is nothing there" are different claims.
+  if (!i.loaded) return 'loading';
   if (i.policy === null) return 'none';
   if (!i.isOwner) return 'unowned';
-  if (i.nowUnix !== null) {
-    // ~0.4 s/slot on Solana. The tolerance below is one slot; the point is
-    // to not flicker at the boundary, not to be exact.
-    const ageSlots = (i.nowUnix * 1000) / 400;
-    if (ageSlots - Number(i.policy.created_at_slot.toString()) > Number(i.policy.ttl_slots.toString())) {
+  if (i.currentSlot !== null) {
+    const ageSlots = i.currentSlot - Number(i.policy.created_at_slot.toString());
+    // Mirrors the on-chain predicate exactly: `>` and not `>=`, so a policy
+    // is unexpired on its final slot, which is what the kernel does.
+    if (ageSlots > Number(i.policy.ttl_slots.toString())) {
       return 'expired';
     }
   }
