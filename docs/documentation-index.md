@@ -31,6 +31,7 @@ Updated 2026-10-03. All 43 existing project Markdown files were reviewed for thi
 | [docs/devnet-readiness.md](../docs/devnet-readiness.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/e2e-testing.md](../docs/e2e-testing.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/gtm-and-submission.md](../docs/gtm-and-submission.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
+| [docs/local-validator-validation.md](../docs/local-validator-validation.md) | Recorded local-validator run of the Anchor suite; program evidence only, not devnet or venue evidence |
 | [docs/onboarding.md](../docs/onboarding.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/onchain-program.md](../docs/onchain-program.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [docs/roadmap.md](../docs/roadmap.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
