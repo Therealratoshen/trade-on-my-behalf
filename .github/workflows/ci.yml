@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROGRAM_ID: 4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph
+  SOLANA_VERSION: v1.18.26
+  ANCHOR_VERSION: 0.31.1
+
+jobs:
+  workspace:
+    name: SDK + agent tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm -r test
+
+  program:
+    name: Anchor program tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          paths: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            programs/treasury/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('programs/treasury/**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Solana CLI
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/solana
+            ~/.local/share/solana/install
+          key: ${{ runner.os }}-solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana CLI
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/${{ env.SOLANA_VERSION }}/install)"
+
+      - uses: coral-xyz/anchor/action@v1
+        with:
+          anchor-version: ${{ env.ANCHOR_VERSION }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install program deps
+        working-directory: programs/treasury
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build program
+        working-directory: programs/treasury
+        run: anchor build
+
+      - name: Create test wallet
+        run: |
+          solana-keygen new --no-bip39-passphrase --silent --force -o "$HOME/.config/solana/id.json"
+          solana config set --keypair "$HOME/.config/solana/id.json" --url http://127.0.0.1:8899
+          echo "ANCHOR_WALLET=$HOME/.config/solana/id.json" >> "$GITHUB_ENV"
+          echo "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899" >> "$GITHUB_ENV"
+
+      - name: Start local validator with program preloaded
+        run: |
+          LEDGER="$RUNNER_TEMP/ledger"
+          solana-test-validator --reset --quiet --ledger "$LEDGER" \
+            --bpf-program "$PROGRAM_ID" programs/treasury/target/deploy/treasury.so \
+            > "$RUNNER_TEMP/validator.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/validator.pid"
+          for _ in $(seq 1 60); do
+            solana cluster-version --url http://127.0.0.1:8899 >/dev/null 2>&1 && break
+            sleep 1
+          done
+          solana cluster-version --url http://127.0.0.1:8899
+
+      - name: Fund the test wallet
+        run: solana airdrop 10 "$(solana-keygen pubkey "$HOME/.config/solana/id.json")" --url http://127.0.0.1:8899
+
+      - name: Program tests
+        working-directory: programs/treasury
+        run: pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
+
+      - name: Validator log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/validator.log" || true
+
+      - name: Stop validator
+        if: always()
+        run: kill "$(cat "$RUNNER_TEMP/validator.pid")" 2>/dev/null || true
