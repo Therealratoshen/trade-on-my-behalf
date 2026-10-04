@@ -15,13 +15,23 @@ env:
   # setup-anchor prepends the "v" to solana-cli-version itself, so the value is
   # the bare version.
   #
-  # 2.2.20, not 2.2.21: there is no 2.2.21 release. The highest 2.2.x on Anza's
-  # release server is v2.2.20 (https://release.anza.xyz/v2.2.21/install returns
-  # 404), and v2.2.21 is not a tag on anza-xyz/agave either. Asking for it made
-  # setup-anchor's `sh -c "$(curl -sSfL ...)"` print "curl: (22) ... 404" and
-  # move on, leaving no `solana` binary at all — a second silent failure of the
-  # same shape as the Anchor one, one step earlier.
-  SOLANA_CLI_VERSION: 2.2.20
+  # 3.1.1, and the reason is the SBF compiler, not the CLI features.
+  #
+  # `anchor build` compiles the program with cargo build-sbf, which uses the
+  # rustc bundled in platform-tools — NOT the host Rust from
+  # dtolnay/rust-toolchain. The committed Cargo.lock resolves
+  # anchor-lang 0.31.2, which pulls crypto-common 0.2.2; that crate's manifest
+  # uses edition2024, which Cargo can only parse from 1.85 onward. Any Solana
+  # CLI shipping an older platform-tools therefore dies with:
+  #
+  #   feature `edition2024` is required
+  #   ... not stabilized in this version of Cargo (1.84.0 ...)
+  #
+  # Measured platform-tools per CLI: 2.2.20 -> v1.48 (rustc 1.84.0, fails),
+  # 3.0.x -> v1.51 (rustc 1.84.1, fails), 3.1.1 -> v1.52 (rustc 1.89.0, works).
+  # 3.1.1 is the lowest release that carries a new-enough compiler, so it is
+  # the minimum bump that makes `anchor build` succeed from a cold cache.
+  SOLANA_CLI_VERSION: 3.1.1
   ANCHOR_VERSION: 0.31.1
 
 jobs:
@@ -87,9 +97,14 @@ jobs:
       # much later as "command not found" in the validator step. Prove the CLI
       # is really here, at the pinned version, before anything depends on it.
       #
-      # `solana --version` prints a bare `solana-cli 2.2.20 (src:...)`. The "v"
+      # `solana --version` prints a bare `solana-cli 3.1.1 (src:...)`. The "v"
       # is prepended by setup-anchor to build the release URL, and is not part
       # of the version string, so match without it.
+      #
+      # Also print the platform-tools the SBF compiler comes from. That is the
+      # rustc `anchor build` actually uses — not the host toolchain from
+      # dtolnay/rust-toolchain — and it is exactly what the 2.2.20 failure
+      # turned on, so it belongs in the log.
       - name: Verify the Solana CLI
         run: |
           set -x
@@ -97,6 +112,7 @@ jobs:
           solana --version
           solana --version | grep -q "solana-cli $SOLANA_CLI_VERSION" || {
             echo "::error::expected solana-cli $SOLANA_CLI_VERSION"; exit 1; }
+          cargo-build-sbf --version
 
       # ---------------------------------------------------------------------
       # Why Anchor is installed with cargo instead of trusting setup-anchor's
