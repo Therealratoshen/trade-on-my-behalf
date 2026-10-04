@@ -4,16 +4,18 @@ Updated 2026-10-03. All 43 existing project Markdown files were reviewed for thi
 
 ## Start here
 
-1. [PRD](../PRD.md): product, roles, devnet-only scope, acceptance and release gates.
-2. [TRD](../TRD.md): implemented contracts versus required execution/risk/identity/recovery changes.
-3. [Devnet readiness](devnet-readiness.md): dated read-only observations and open venue selection.
-4. [Testing status](testing-plan.md), [unit plan](unit-testing.md), [E2E plan](e2e-testing.md): actual source inventory and planned tests.
-5. [User sessions](user-tests.md), [receipts](demo-receipts.md), [submission](../SUBMISSION.md): actual evidence, not expectations.
+1. [AGENTS.md](../AGENTS.md): repository workflow, safety boundaries and current verification commands for coding agents.
+2. [PRD](../PRD.md): product, roles, devnet-only scope, acceptance and release gates.
+3. [TRD](../TRD.md): implemented contracts versus required execution/risk/identity/recovery changes.
+4. [Devnet readiness](devnet-readiness.md): dated read-only observations and open venue selection.
+5. [Testing status](testing-plan.md), [unit plan](unit-testing.md), [E2E plan](e2e-testing.md): actual source inventory and planned tests.
+6. [User sessions](user-tests.md), [receipts](demo-receipts.md), [submission](../SUBMISSION.md): actual evidence, not expectations.
 
 ## Current references
 
 | File | Authority |
 |---|---|
+| [AGENTS.md](../AGENTS.md) | Agent workflow guidance; current product scope and test evidence remain in the authoritative references below |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [PRD.md](../PRD.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
 | [README.md](../README.md) | Current scope/contract/plan; does not imply runtime delivery or test pass |
