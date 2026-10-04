@@ -4,6 +4,10 @@ Updated 2026-10-03. Revised 2026-10-04: added "What the gate does and
 does not do" and the `close()` finding, after an audit found the
 "cannot be bypassed" framing carried in the frozen D6 GTM and
 design-thinking drafts was false against the shipped program.
+Re-verified 2026-10-04 after `f9c2569`: all `file:line` citations
+below were re-read against the current `authorize_spend.rs`, which
+gained two `require!` bounds and several comment blocks, and the
+drifted ranges were corrected. No prose claim was changed.
 [PRD](../PRD.md) defines scope; [TRD](../TRD.md) defines contracts.
 
 ## Implemented path
@@ -35,15 +39,20 @@ committed.
 - Holds the caps on chain, mutable only by the policy owner
   (`instructions/update_policy.rs`, owner-only signer).
 - Emits an `AuditEvent` for every call, approved or denied, with the
-  committed `at_slot` (`instructions/authorize_spend.rs:104-113`).
+  committed `at_slot`. Three emit sites: the drawdown kill-switch
+  denial (`instructions/authorize_spend.rs:98-107`), the leverage-cap
+  denial (`:150-159`) and the unconditional final emit carrying the
+  full ladder verdict (`:167-176`).
 - Consumes `day_spent_usdc` on approval only
-  (`authorize_spend.rs:101-103`), with a 216 000-slot rolling window
+  (`authorize_spend.rs:163-165`), with a 216 000-slot rolling window
   from `last_reset_slot` (`state/mod.rs:40`).
 - Is the only path that can raise `peak_equity_usdc`, so a runtime lie
   about current equity cannot widen the kill-switch
-  (`record_pnl.rs`, and the note in `lib.rs:48-53`).
+  (`record_pnl.rs`, and the note in `lib.rs:49-53`).
 - Rejects an unauthorised signer, so the agent key or the owner must
-  sign each call (`authorize_spend.rs:10-11`).
+  sign each call (`authorize_spend.rs:16-17`, the `constraint` that
+  raises `TreasuryError::Unauthorized`; `authority` is a
+  `Signer<'info>` at `:21`).
 
 **Does not — also verifiable:**
 
@@ -64,9 +73,15 @@ committed.
   which currently records that the design cannot claim the bypass
   attempt passes ([e2e-testing](e2e-testing.md)).
 - **Denial is not an exception.** Denials `return Ok(())` with a
-  denied `AuditEvent` (`authorize_spend.rs:57-67`, `84-97`) so the
-  runtime can surface a risk flag. A denied transaction still
-  succeeds on chain; the refusal is data, not a failed instruction.
+  denied `AuditEvent` — the two early-return denials are the
+  drawdown kill-switch (`authorize_spend.rs:98-108`) and the
+  leverage cap (`:150-160`); the remaining ladder denials fall
+  through to the final emit (`:167-176`) with `approved: false` and
+  `Ok(())` at `:178`. The runtime can therefore surface a risk flag.
+  A denied transaction still succeeds on chain; the refusal is data,
+  not a failed instruction. The exceptions are the two malformed-input
+  guards at `:72` and `:75`, which are deliberately `Err!` — see
+  "Malformed arguments fail the transaction" below.
 - **Equity is a soft input.** The drawdown kill-switch consumes
   runtime-reported `implied_current_equity_usdc`; it is not verified
   venue equity.
@@ -78,11 +93,39 @@ authorisation was load-bearing. Binding policy to the action requires
 an app-managed account or custody wrapper — the "Required additions"
 column above and [security-model](security-model.md).
 
+### Malformed arguments fail the transaction
+
+Two `require!` guards run before the check ladder
+(`instructions/authorize_spend.rs:72-75`):
+
+- `leverage_bps >= MIN_LEVERAGE_BPS` (`= 100`, i.e. 1x;
+  `authorize_spend.rs:8`) → `InvalidLeverage`
+- `amount_usdc > 0` → `InvalidAmount`
+
+These are the one case where the program returns `Err` rather than
+`Ok(())` with a denied event, and the distinction is deliberate. Every
+`REASON_*` code describes a *policy* decision — the caps, TTL, vendor
+list or risk state said no — and overloading the ladder with malformed
+input would make the `AuditEvent` lie about why. Zero leverage or a zero
+amount is not a policy denial; it is an argument no valid policy could
+authorise. It also matters economically: without the guard,
+`amount_usdc == 0` would make the `day_spent_usdc` increment a no-op
+while still emitting `approved: true` — a free, unaccounted-for
+approval.
+
+The same comment block records the one deliberate non-bound: with
+`max_leverage_bps == 0` a request above the cap is still approved.
+`0` means "no leverage cap" by contract, and changing that would
+silently convert uncapped policies to capped ones. Leverage
+*enforcement* belongs to the venue; what this kernel bounds is the
+collateral it authorises.
+
 ### The `close()` path skips `authorize_spend`
 
 `packages/agent/src/runtime.ts:114-118` — `close()` calls
-`venue.closePosition()`, then `syncEquity()`. It never calls
-`authorizeSpend`, unlike `handle()` (`runtime.ts:87-94`).
+`venue.closePosition()` (`:115`), then `syncEquity()` (`:116`). It
+never calls `authorizeSpend`, unlike `handle()`
+(`runtime.ts:88-94`).
 
 **Verdict: correct by design, not a gap.** The reasoning:
 
@@ -102,7 +145,7 @@ column above and [security-model](security-model.md).
   adding risk, eroding the cap's meaning.
 
 What still applies to a close is the one thing `close()` does keep:
-`syncEquity()` → `recordPnl` (`runtime.ts:117`), so a realised gain
+`syncEquity()` → `recordPnl` (`runtime.ts:116`), so a realised gain
 raises the peak watermark and a realised loss feeds the next
 kill-switch comparison. The equity bookkeeping is preserved.
 

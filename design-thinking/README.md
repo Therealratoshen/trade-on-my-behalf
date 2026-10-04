@@ -100,10 +100,11 @@ money.
 ## What judges will see in the demo
 
 A rule that demonstrably denies. I run a command that pushes an intent
-that would breach `maxLeverage: 1`. The kernel denies it. The
-`AuditEvent` emits on-chain. The webapp's audit-log panel lights up
-with the red row: `approved: false, reason_code: 6, slot: <real slot
-number>`.
+that would breach `max_leverage_bps: 100` (1x) with `--raw`, at 5x.
+The kernel denies it. The `AuditEvent` emits on-chain. The webapp's
+audit-log panel lights up with the red row: `approved: false,
+reason_code: 6, slot: <real slot number>`. That is a poll every 2 s,
+not a push.
 
 > **Correction (2026-10-04), three things.** The original text here
 > said this happened "Without me touching anything" and called it "the
@@ -147,10 +148,13 @@ real names where they're willing.
 ## One risk I'm watching
 
 The webapp UX must show audit events within ~2 s of a runtime
-push. If the SWR refresh interval is too slow or the indexer drops
-events, the demo loses its punch. Test on D11 that the
-"rule fires" demo actually shows the red row in the webapp
-without manual refresh.
+push. The audit panel polls RPC every 2 s (`AUDIT_POLL_MS = 2_000` in
+`apps/dashboard/components/Dashboard.tsx`); there is no push channel,
+no websocket and no Helius DAS audit indexer behind it. If the poll is
+too slow the demo loses its punch. Test on D11 that the "rule fires"
+demo actually shows the red row in the webapp without a manual
+refresh. If the latency is too high, lowering the poll interval is the
+only current lever.
 
 ## What I'm cutting from v1
 

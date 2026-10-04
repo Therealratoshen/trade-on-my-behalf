@@ -162,8 +162,8 @@ the corrected wedge above, not a boundary the kernel enforces:
 - Anchor `treasury` program. Compiles. Size measured off the built
   `treasury.so` on 2026-10-04: 224,392 bytes (~219KB); the "209KB"
   this line used to carry was a 2026-09-26 measurement, stale since
-  the D9 argument validation was added. The program test file has 16
-  cases; 11 SDK and 21 agent unit tests alongside it, 48 total.
+  the D9 argument validation was added. The program test file has 20
+  cases; 16 SDK and 21 agent unit tests alongside it, 57 total.
   The SDK and agent suites are pure offline unit tests
   (`node --test`) and need no validator. The program suite does:
   `tests/treasury.ts` calls `anchor.AnchorProvider.env()` and reads

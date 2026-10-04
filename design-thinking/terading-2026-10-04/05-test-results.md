@@ -9,6 +9,19 @@ implying validation.
 
 ## What was actually tested
 
+> **Superseded counts (2026-10-04, later pass).** The three automated suites
+> in the table below were recorded at the time of this pass and are left
+> exactly as they ran. Re-counting the committed test source later the same
+> day gives **20 program / 16 SDK / 21 agent = 57** defined cases
+> (`programs/treasury/tests/treasury.ts` 20 `it`;
+> `packages/sdk/tests/{derivePolicyPda,decode,ensurePolicyOwnership}.test.ts`
+> 8 + 3 + 5 `test`; `packages/agent/tests/{evaluator,runtime}.test.ts` 12 + 9
+> `test`). The growth is real committed work — agent-consent enforcement and
+> argument bounds (`f9c2569`) added 8 program cases and a new SDK ownership
+> suite. **57 is a DEFINED count, not a result**: no exit status is recorded
+> against the current revision, so nothing here is marked PASS. The
+> design-system findings below are unaffected.
+
 Machine checks, with real exit codes:
 
 | Check | Command | Result |
