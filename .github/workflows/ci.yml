@@ -234,11 +234,25 @@ jobs:
             echo "::error::local validator never became reachable"; exit 1; }
 
       # Proves the --bpf-program preload actually took, rather than assuming it.
+      #
+      # `--keypair` is required, and the throwaway test wallet is the right one
+      # to pass: Solana CLI 3.1's `program show` loads a signer even for this
+      # read-only query and aborts with
+      #   "No default signer found, run \"solana-keygen new -o ~/.config/solana/id.json\""
+      # on a runner that has no default keypair. Passing ANCHOR_WALLET satisfies
+      # it without ever creating a default wallet.
+      # (`solana cluster-version` in the step above does NOT need a keypair.)
       - name: Verify the program is loaded at PROGRAM_ID
-        run: solana program show "$PROGRAM_ID" --url http://127.0.0.1:8899
+        run: |
+          solana program show "$PROGRAM_ID" --url http://127.0.0.1:8899 \
+            --keypair "$ANCHOR_WALLET"
 
+      # --keypair for the same reason; the airdrop signs a request for the
+      # receiver's account. Airdrop goes to the local test validator only.
       - name: Fund the test wallet
-        run: solana airdrop 10 "$(cat "$RUNNER_TEMP/wallet-pubkey")" --url http://127.0.0.1:8899
+        run: |
+          solana airdrop 10 "$(cat "$RUNNER_TEMP/wallet-pubkey")" \
+            --url http://127.0.0.1:8899 --keypair "$ANCHOR_WALLET"
 
       # Anchor.toml's provider.cluster is "devnet", so `anchor test` would try
       # to DEPLOY to devnet (and fail on insufficient funds). The validator is
