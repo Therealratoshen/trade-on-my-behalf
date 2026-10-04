@@ -4,7 +4,7 @@ Updated 2026-10-03. Static findings plus read-only devnet observation, not a fre
 
 ## Existing foundation
 
-Anchor policy instructions, SDK, agent classifier/evaluator/runtime, CLI, Jupiter paper adapter and wallet/policy/audit viewer with owner-signed edits exist in source. Existing tests define 12 validator, 11 SDK and 17 agent cases; none were rerun for this update.
+Anchor policy instructions, SDK, agent classifier/evaluator/runtime, CLI, Jupiter paper adapter and wallet/policy/audit viewer with owner-signed edits exist in source. The suite defines **20 validator, 31 SDK and 62 agent** cases, and all three run green: CI job `SDK + agent tests` and job `Anchor program tests` both reported `success` on revision `993b421` (<https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37205967172>). The same suites were re-run locally on 2026-10-04 against a local validator with a throwaway wallet; see the executed-run record in [testing-plan](testing-plan.md).
 
 ## Gaps and priority
 
@@ -19,7 +19,7 @@ Anchor policy instructions, SDK, agent classifier/evaluator/runtime, CLI, Jupite
 | High | Owner/agent/account lookup and private paper isolation | Dashboard assumes wallet as agent; shared positions route exposes demo state/path |
 | High | Atomic validated persistence and coherent position snapshots | File races; fallback can duplicate snapshots or reuse wrong entry mark |
 | High | Reliable audit reads | meta.err, transient missing data, pagination/backfill and completeness |
-| Product | Market chart, trade ticket, fresh quote contract, supported reduction/order lifecycle | Not implemented; cannot claim current viewer is a terminal |
+| Product | Market chart, trade ticket, fresh quote contract, supported reduction/order lifecycle | Chart and ticket exist as a live quote view and a `preview only` surface; neither submits an order and the order lifecycle is still missing |
 | Evidence | Browser E2E harness and expanded unit/local tests | Plans in unit/E2E docs, not implemented suite |
 | Evidence | Public signatures and three outside-developer sessions | NOT CAPTURED / NOT RUN |
 | Delivery | Actual recordings and final event/link verification | Unknown; no placeholder-as-complete claims |

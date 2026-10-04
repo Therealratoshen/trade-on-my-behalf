@@ -8,6 +8,15 @@ Read-only devnet observation: Treasury absent at configured address; Jupiter ven
 
 Defined source cases: 12 Anchor/validator, 11 SDK, 17 agent. No tests rerun here; no browser suite/CI test workflow checked in. Three human sessions NOT RUN; public-devnet receipts NOT CAPTURED. Historical September demo reports below remain dated engineering reports, not current public-devnet evidence.
 
+> **Superseded by later checkpoints.** The counts above are the 2026-10-03 state and are
+> corrected in [testing-plan](docs/testing-plan.md): current source defines **20 / 31 / 62 =
+> 113** cases, all three suites executed green, and the `Anchor program tests` and
+> `SDK + agent tests` CI jobs both reported `success` on revision `993b421`
+> (<https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37205967172>). Chart and
+> ticket now exist as a live quote view and a `preview only` surface, and execution is bound to
+> the approval by an off-chain `SpendPermit`. Everything below this line is the retained
+> historical record.
+
 ---
 
 ## Retained historical draft/log — superseded where inconsistent
