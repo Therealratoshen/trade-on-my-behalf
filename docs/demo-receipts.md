@@ -6,15 +6,17 @@ Updated 2026-10-03. **Public-devnet policy receipts: NOT CAPTURED. Real venue fi
 
 PM-LOG historically reports a 2026-09-29 local-validator nine-step demonstration. Existing demo transcript/HTML/PNG assets are historical local engineering evidence; they were not rerun or authenticated as public-devnet venue execution in this documentation update.
 
+The three decision outcomes in the register below — approval, leverage denial and the drawdown comparison — are also covered by named cases in `programs/treasury/tests/treasury.ts`, which pass in CI (see the [testing plan](testing-plan.md) executed-run record). **That is behavioural coverage on a local validator, not a receipt.** It does not supply a signature, a slot, an explorer link, or any public-devnet observation, so the `NOT CAPTURED` column below stays empty.
+
 Three outside-developer sessions are [NOT RUN](user-tests.md). Read-only devnet account checks in [readiness](devnet-readiness.md) are observations, not transaction receipts.
 
 ## Planned receipt register
 
 | Case | Expected observation, not an actual result | Signature / slot | Status |
 |---|---|---|---|
-| Compliant authorization | Committed `approved: true`, code 0 and correct collateral-budget increment | NOT CAPTURED | NOT RUN |
-| Leverage denial | Committed `approved: false`, code 6; no same-window budget increment or venue attempt | NOT CAPTURED | NOT RUN |
-| Drawdown comparison denial | Code 7 when supplied equity below threshold; explicitly not independent venue-equity proof | NOT CAPTURED | NOT RUN |
+| Compliant authorization | Committed `approved: true`, code 0 and correct collateral-budget increment | NOT CAPTURED | Behaviour covered in CI by `creates a policy and authorizes a spend below cap`; no receipt captured |
+| Leverage denial | Committed `approved: false`, code 6; no same-window budget increment or venue attempt | NOT CAPTURED | Behaviour covered in CI by `approves leverage at max_leverage_bps and denies leverage above it`; no receipt captured |
+| Drawdown comparison denial | Code 7 when supplied equity below threshold; explicitly not independent venue-equity proof | NOT CAPTURED | Behaviour covered in CI by `trips on-chain kill-switch when implied equity falls below threshold (REASON_DRAWDOWN_KILLSWITCH=7)`; caller-supplied equity, so not independent venue proof, and no receipt captured |
 | Real venue order/fill | Actual supported devnet order/fill and reconciled position | NOT CAPTURED | BLOCKED |
 | Reduce/close | Actual devnet venue signature and residual position/account state | NOT CAPTURED | BLOCKED |
 

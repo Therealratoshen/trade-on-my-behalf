@@ -2,7 +2,7 @@
   "name": "@trade-on-my-behalf/agent",
   "version": "0.1.0",
   "private": true,
-  "description": "Trade On My Behalf runtime: signal -> on-chain policy gate -> perps venue.",
+  "description": "Terading runtime: signal -> on-chain policy gate -> perps venue.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

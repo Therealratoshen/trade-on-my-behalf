@@ -1,4 +1,4 @@
-# PRD — Trade On My Behalf
+# PRD — Terading
 
 Updated 2026-10-03. **Product requirements, not a claim that the target is implemented.**
 
@@ -10,7 +10,7 @@ Default market: **SOL-PERP**. Additional markets must be explicitly supported by
 
 **Network requirement:** all account creation, deposits, trading, policy changes and withdrawals in this product use **Solana devnet** and test assets. A local validator is permitted for isolated automated tests. Solana's separate public `testnet` cluster is not a substitute for a devnet venue. Mainnet is out of scope; a mainnet-derived reference-price feed is market data, not permission to submit a mainnet transaction.
 
-Keep the existing name **Trade On My Behalf**. Trading-oriented branding uses the existing dark terminal language and clear typography. No unconfirmed alternate brand name is adopted.
+The product name is **Terading**, matching the dashboard and design system. The GitHub repository slug and the `@trade-on-my-behalf/*` package names retain the original working name, *Trade On My Behalf*; those are stable identifiers, not branding. Trading-oriented branding uses the existing dark terminal language and clear typography.
 
 ## Current implementation versus target
 
@@ -23,7 +23,7 @@ Keep the existing name **Trade On My Behalf**. Trading-oriented branding uses th
 | Wallet identity | Dashboard derives policy from connected wallet; separate owner/agent lookup is unresolved | Explicit owner, agent and app-managed trading account |
 | Chart and ticket | Not implemented | Source-labelled market chart and validated preview/submit flow |
 | Safety | Gate checks caller-supplied authorization fields; it cannot constrain a separate venue call | Venue action bound to checked intent and app-controlled authority |
-| Test evidence | Existing test source and historical local-demo report; no rerun in this documentation update | Recorded results tied to source revision, cluster and artifacts |
+| Test evidence | 20/20 Anchor cases green in CI and 31/31 SDK plus 37/37 agent cases executed 2026-10-04, recorded in the [testing plan](docs/testing-plan.md); browser E2E, devnet receipts and human sessions still absent | Recorded results tied to source revision, cluster and artifacts |
 | Devnet/human demo | Treasury address not found in the read-only devnet observation; outside sessions NOT RUN | Deployment, public receipts and three actual outside-developer sessions |
 
 Current behavior is described in [TRD.md](TRD.md). Deployment observation and venue-selection gate are in [docs/devnet-readiness.md](docs/devnet-readiness.md).
