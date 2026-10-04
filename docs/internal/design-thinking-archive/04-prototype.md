@@ -196,6 +196,19 @@ Notes on the wireframe (not on screen — for the team's reference):
 > 9X...Y, approved: false, reason_code: 12, vendor: jupiter-perps,
 > amount_usdc: 500_000_000 }`. Cursor holds on `approved: false`
 > for one beat.
+>
+> **Correction note (2026-10-04) — added by later review; the draft
+> above is left as written.** The `reason_code: 12` in the log line
+> (and `reason code 12` / `reason code 11` in the wireframe at
+> lines 122–123) are not real values. The on-chain ladder in
+> `state/mod.rs` runs 0–7 only: 7 drawdown kill-switch, 1 vendor
+> denied, 2 per-tx cap, 3 per-day cap, 4 expired, 6 leverage cap.
+> There is no 11 and no 12. The leverage story in this scene is
+> `REASON_LEVERAGE_CAP` = **6**; the `maxPositionUsd` breach is
+> `REASON_PER_TX_CAP` = **2**. The same scene also asserts an
+> auto-skip on timeout and a distinct reason code for a user tap,
+> which the program does not have — it emits only the codes above.
+> Nothing in the original passage has been edited.
 
 > Why this scene lands (per the skill's feeling-currency rule):
 > it is **the single moment the founder persona stops feeling

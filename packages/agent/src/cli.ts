@@ -32,6 +32,10 @@ Commands
 
 Global flags
   --url <rpc>            RPC endpoint (default $RPC_URL or http://127.0.0.1:8899)
+  --local-validator      Allow writes to a loopback test validator. Off by
+                         default: every write is gated on getGenesisHash, so
+                         devnet is the only public cluster that passes. A
+                         mainnet node on 127.0.0.1 is still refused.
   --paper-state <file>   Paper account file (default ~/.tomb/paper-<agent>.json)
   --paper-cash <usd>     Starting paper cash for a new account (default 1000)
   --price M=P[,M=P]      Override oracle prices, e.g. SOL-PERP=90 (simulate a crash)
@@ -104,7 +108,7 @@ function setup(flags: Flags) {
   const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
   const connection = new Connection(url, 'confirmed');
   const agentKp = loadKeypair(str(flags, 'agent'));
-  const trader = withTrader({ connection, wallet: agentKp, policy: agentKp.publicKey });
+  const trader = withTrader({ connection, wallet: agentKp, policy: agentKp.publicKey, allowLocalValidator: flags['local-validator'] === true });
   const statePath = str(flags, 'paper-state', join(homedir(), '.tomb', `paper-${agentKp.publicKey.toBase58()}.json`));
   const venue = new JupiterPerpsPaperVenue(priceFeed(flags), new FileStore(statePath), num(flags, 'paper-cash', 1000));
   const runtime = createRuntime({
@@ -155,7 +159,18 @@ async function main(argv: string[]): Promise<number> {
       const connection = new Connection(url, 'confirmed');
       const ownerKp = loadKeypair(str(flags, 'owner'));
       const agentKp = loadKeypair(str(flags, 'agent'));
-      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey });
+      // The agent is the key being governed, so create_policy requires the
+      // agent to co-sign alongside the owner. Both keyfiles are therefore
+      // needed here, and `init-policy` must run on the host holding the agent
+      // key. The owner never needs custody of it in steady state — only for
+      // this one provisioning transaction.
+      const owner = withTrader({
+        connection,
+        wallet: ownerKp,
+        policy: agentKp.publicKey,
+        agentSigner: agentKp,
+        allowLocalValidator: flags['local-validator'] === true,
+      });
       const res = await owner.ensurePolicy({
         agent: agentKp.publicKey,
         vendors: [JUPITER_PERPS_PROGRAM_ID],
@@ -176,7 +191,7 @@ async function main(argv: string[]): Promise<number> {
       const connection = new Connection(url, 'confirmed');
       const ownerKp = loadKeypair(str(flags, 'owner'));
       const agentKp = loadKeypair(str(flags, 'agent'));
-      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey });
+      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey, allowLocalValidator: flags['local-validator'] === true });
       const opt = (k: string) => (flags[k] === undefined ? undefined : num(flags, k));
       const lev = opt('max-leverage');
       const days = opt('ttl-days');

@@ -88,22 +88,46 @@ for v2 pricing but not for v1 GTM.
 
 Three words: **on-chain rules**. Not "AI agent," not "perps bot,"
 not "telegram bot." Every existing project has at most two of those
-three. We have all three, and the rules are enforced at the wallet's
-signing layer so they cannot be bypassed by a rogue signal, a
-compromised dependency, or a buggy runtime.
+three.
+
+> **Superseded (2026-10-04).** This draft originally read: *"We have
+> all three, and the rules are enforced at the wallet's signing layer
+> so they cannot be bypassed by a rogue signal, a compromised
+> dependency, or a buggy runtime."* **That was false against the shipped
+> code and is not claimed anywhere today.** Kept above as the record of
+> what we believed on D6. The corrected claim is the next paragraph.
+
+The defensible version is narrower and still worth saying: the caps are
+**on-chain and owner-editable only**, so they cannot be quietly widened
+by the agent, a vendor, or a compromised dependency — and every
+authorisation decision, including a denial, is a durable `AuditEvent`
+with a committed slot. What the program does **not** do is enforce
+anything: it holds no keys, custodies no funds, makes no CPI and
+signs nothing, so it cannot stop a caller from trading at the venue
+without ever asking it. Authorising and executing are two separate
+steps in two separate processes. See
+[architecture](docs/architecture.md#what-the-gate-does-and-does-not-do).
 
 The wedge is the *one statement* that combines all three:
 
-> "I trade for you, and I cannot break your rules."
+> **Superseded:** "I trade for you, and I cannot break your rules."
+> **Corrected:** "I trade for you, and every decision — including the
+> ones that stop me — is a public record I cannot edit."
+
+The original is stronger, and the original is not true. The corrected
+line is the one to say out loud, because it survives a judge who opens
+the program.
 
 **Updated framing (D8.5+, see `docs/skills-and-algorithms.md`):**
 the wedge is *for specialists who already have a setup*. The
-algorithm enforces their rules; the skill decides what to trade;
-the runtime samples. We don't promise AI — we promise discipline.
+algorithm enforces their rules; the skill decides what to trade.
+**The runtime does not sample — there is no scheduler and no sampler
+in the shipped code, and every capability is a human keystroke on the
+`tomb` CLI.** We don't promise AI — we promise discipline.
 That's the SAS model: Specialist, Algorithm, Skill.
 
-No existing perps bot can say both halves of that sentence truthfully
-because none of them has an on-chain policy gate.
+No existing perps bot can say the first half truthfully because none of
+them has an on-chain policy gate.
 
 ## Pricing model
 
@@ -191,9 +215,18 @@ pubkey; the policy caps "spend per contractor per day" instead of
 
 ## One-line pitch
 
-> "When my conditions fire, take *this* trade, with *these*
-> constraints. If a trade would break a rule, don't take it — even
-> if the signal says to."
+> **Superseded (2026-10-04):** "When my conditions fire, take *this*
+> trade, with *these* constraints. If a trade would break a rule, don't
+> take it — even if the signal says to." Kept as the D6 draft. **"When
+> my conditions fire" is not what ships:** nothing fires on its own.
+> Today a human runs `tomb trade`; the chain then decides, and a
+> breach is denied and written on-chain.
 
-This is the pitch. If the slide title is longer than this, the
-slide is wrong.
+> **Corrected:** "I set the caps. I submit the trade. The chain checks
+> it before anyone fills it — and if it breaks a rule, the refusal is
+> public, even if the signal really wanted it."
+
+The first half of the old line was always true and is the reason the
+product is worth building. The second half — that the denial is
+*enforced* against a determined caller — is the part that was never
+built. See [architecture](docs/architecture.md#what-the-gate-does-and-does-not-do).

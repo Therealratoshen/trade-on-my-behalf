@@ -22,9 +22,22 @@ Do not use “physically cannot break your rules,” “wallet signing-layer enf
 | Budget misunderstanding | Approved collateral counted, even if subsequent venue step fails | Clear budget semantics; do not promise a daily loss ceiling or automatic refund |
 | Arithmetic overflow | Saturating addition may approve overflow at max cap | Checked arithmetic and adversarial maximum-value tests |
 | Paper data leakage/lost writes | Shared unauthenticated demo state; non-atomic file writes and async races | Account isolation, no filesystem disclosure, validated atomic transactional storage |
-| Wrong cluster/program | Frontend allows mainnet and arbitrary RPC; no complete devnet gate | Verify genesis/program/mint/market before signature, reject mismatch |
+| Wrong cluster/program | Writes now gated on `getGenesisHash` (SDK + dashboard); deployed program identity and upgrade authority still unverified | Verify genesis/program/mint/market before signature, reject mismatch |
 | False receipt completeness | Missing transactions cached empty; bounded scans; failed logs unchecked | Retry/backfill/check meta.err; show verified completeness and provenance |
 | False venue fidelity | Paper omits liquidation/funding and uses spot reference with simplified fees | Explicit simulation limits; live risk/fees from selected venue, not paper formulas |
+
+## Cluster identity — what is enforced, and what is not
+
+**Enforced.** The SDK gates every wallet write (`ensurePolicy`, `authorizeSpend`, `recordPnl`, `updatePolicy`) and the dashboard's own `updatePolicy` path on the node's `getGenesisHash`. Anything that is not Solana devnet is refused. A local validator is permitted only when the caller passes `allowLocalValidator` (`--local-validator` on the `tomb` CLI), and only on a loopback host whose genesis is not one of the three public clusters — so a mainnet node proxied onto `127.0.0.1` is still refused. See `packages/sdk/src/registration.ts` and `packages/sdk/tests/registration.test.ts`.
+
+The comparison is `startsWith`, not `===`, and the reason is worth stating because the reverse is a silent failure: the shortened Wallet Standard chain id `EtWTRABZaYq6iMfeYKouRu166VU2xqa1` is a **prefix** of the full 44-char RPC value `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`. An exact comparison against the full hash would reject devnet; an exact comparison against the short id would never match a real node. A guard written that way looks present and never fires.
+
+**Not enforced, and the exposure that remains.** The guard proves *which cluster* is being written to. It does not prove *what* is being written:
+
+- **The program address is not verified on the far side.** The guard confirms the endpoint is devnet; it does not confirm that devnet has the treasury program deployed, or that the deployed binary matches this source. A devnet RPC proxying a different program at the same address would pass. Verifying the on-chain program account's executable status and upgrade authority against a known value is still open.
+- **A malicious or compromised RPC can lie.** `getGenesisHash` is answered by the node the SDK is configured to trust. An RPC that reports devnet while relaying to mainnet defeats this check entirely. Only an independent second data source (a different provider, or a client-side check) would raise the bar; nothing here does that.
+- **Read paths are ungated.** Only writes are checked. A misconfigured endpoint will show a viewer real-looking mainnet state for the same address with no error.
+- **The dashboard's `CLUSTER` is still a build-time label.** `NEXT_PUBLIC_CLUSTER` selects the endpoint at build time and is what the explorer links are built from. The write guard does not read it, so a `mainnet-beta` build now fails at the write rather than silently signing — but a bad build still looks correct until someone clicks save.
 
 ## Custody and scope of any future guarantee
 

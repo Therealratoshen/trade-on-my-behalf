@@ -19,7 +19,7 @@ Keep the existing name **Trade On My Behalf**. Trading-oriented branding uses th
 | Policy kernel | Anchor create, authorize, update and record-PnL instructions | Validated, devnet-deployed policy and execution boundary |
 | SDK/runtime | Keypair-based SDK, local evaluator, CLI, authorize-then-paper-fill | Durable intent/order lifecycle with reconciliation |
 | Venue | Jupiter paper adapter only; no Jupiter order is submitted | One independently verified devnet-compatible execution adapter |
-| Webapp | Next.js wallet/policy/audit viewer, paper positions, owner policy editor; Phantom adapter configured | One market terminal with chart, trade ticket, positions and receipts |
+| Webapp | Next.js wallet/policy/audit viewer, paper positions, owner policy editor; Phantom adapter configured; uncommitted work-in-progress adds a spot chart, a preview-only trade ticket and a quote route | One market terminal with chart, trade ticket, positions and receipts |
 | Wallet identity | Dashboard derives policy from connected wallet; separate owner/agent lookup is unresolved | Explicit owner, agent and app-managed trading account |
 | Chart and ticket | Not implemented | Source-labelled market chart and validated preview/submit flow |
 | Safety | Gate checks caller-supplied authorization fields; it cannot constrain a separate venue call | Venue action bound to checked intent and app-controlled authority |
@@ -37,19 +37,21 @@ Current behavior is described in [TRD.md](TRD.md). Deployment observation and ve
 
 ## Requirements and acceptance
 
+"Exists in the working tree" is source-verified presence, not delivery. Uncommitted, unbuilt or untested work stays below `Not implemented` in effect: it may be named as in progress, never counted as satisfied, and never used to soften the release gate.
+
 | ID | Requirement | Acceptance condition | Current status |
 |---|---|---|---|
 | P01 | Devnet-only signing | Verify RPC genesis/network and deployed program identities before signatures; reject mainnet, mismatched RPC and non-executable programs | Not enforced end to end |
 | P02 | Wallet/account identity | Distinguish disconnected, switched, owner, non-owner and agent; clear old previews/data on switch | Partial; separate-agent lookup missing |
-| P03 | Chart and market selection | Default SOL-PERP; supported-market selector; timestamped data with source, timeframe and stale/unavailable state | Not implemented |
-| P04 | Trade ticket | Validate side, collateral, leverage and supported market; show notional, quote asset, modeled costs, price source and freshness | Not implemented |
+| P03 | Chart and market selection | Default SOL-PERP; supported-market selector; timestamped data with source, timeframe and stale/unavailable state | In-progress unverified: spot chart with source/stale labelling exists in the working tree; no market selector, no timeframe, no committed or test evidence |
+| P04 | Trade ticket | Validate side, collateral, leverage and supported market; show notional, quote asset, modeled costs, price source and freshness | In-progress unverified: preview-only ticket with validation and modelled cost exists in the working tree; no submit path, no committed or test evidence |
 | P05 | Truthful policy verdict | Local preview is an estimate; only a verified committed AuditEvent is an on-chain decision; no human override of a denial | Gate exists; complete terminal flow missing |
 | P06 | Bound execution | Denied, altered, replayed or unauthorized intents cannot open an app-managed venue position; approval alone never means filled | Missing |
 | P07 | Budget and lifetime | Explain approved-collateral budget, used/remaining amount and slot-window reset; edits preserve usage; expiry is not silently renewed | Kernel behavior exists; visibility incomplete |
 | P08 | Position management | Show correct account/market position; distinguish order states; provide supported cancel/reduce/close flows without increasing exposure | Paper CLI open/close only |
 | P09 | Recovery and receipts | Separate policy, chain and venue outcomes; reconcile unknown status before retry; expose provenance and receipt completeness | Partial; durable reconciliation missing |
-| P10 | Privacy and test truth | Isolate paper ledgers; no server path/key disclosure; separate planned tests from recorded results | Shared demo route unresolved; evidence docs corrected |
-| P11 | Accessible terminal design | Keyboard-operable forms and focus; readable chart/table alternatives; responsive layout; decision colors never imply a fill or profit | Existing palette; target terminal unbuilt |
+| P10 | Privacy, consent and test truth | Isolate paper ledgers; no server path/key disclosure; a policy may only be created with the named agent's own consent; separate planned tests from recorded results | Consent clause met: policy creation now requires the named agent's own signature (`create_policy.rs`:39) and is covered by regression tests. Shared demo route unresolved; evidence docs corrected |
+| P11 | Accessible terminal design | Keyboard-operable forms and focus; readable chart/table alternatives; responsive layout; decision colors never imply a fill or profit | Partial: chart has an SVG role/label plus a data table alternative in the working tree; keyboard focus, responsive behavior and the unbuilt terminal remain unverified |
 | P12 | Drawdown disclosure | Show unarmed/disabled/stale risk state; never describe supplied equity as verified venue equity | Soft check exists; verified equity missing |
 
 ## Budget semantics — do not call this a maximum-loss guarantee
@@ -80,4 +82,4 @@ Mainnet orders, real-money deposits, an invented Jupiter devnet venue, silent cr
 
 Do not label the app a functioning devnet perps terminal until P01–P12 are verified for the selected execution mode. If execution remains paper, release wording must remain **devnet policy demo with simulated positions**. A paper demo cannot pass the real-venue release gate.
 
-[Unit testing](docs/unit-testing.md), [E2E testing](docs/e2e-testing.md), [testing status](docs/testing-plan.md) and [user sessions](docs/user-tests.md) define the evidence needed.
+[Unit testing](docs/unit-testing.md), [E2E testing](docs/e2e-testing.md), [testing status](docs/testing-plan.md) and [user sessions](docs/user-tests.md) define the evidence needed. Business framing, market context and the open founder questions are in [BRD.md](BRD.md); where the two disagree, this document wins.

@@ -1,0 +1,1602 @@
+/*
+ * Paper practice — a local-only concept surface.
+ *
+ * WHY THIS FILE LOOKS LIKE NOTHING ELSE IN THE APP
+ * ------------------------------------------------
+ * The first version of this feature declared 12 private `--pp-*` colours in
+ * a `.pp-app` scope and about forty more hexes inline. That is the exact
+ * mistake docs/design-system.md exists to prevent: a colour that is not in
+ * `:root` is a colour scripts/check-cvd.mjs never simulated and
+ * scripts/check-tokens.mjs R1 fails on. It shipped 144 guard violations.
+ *
+ * So there are no `--pp-*` colours here. Every value below is a `:root`
+ * token, and the mapping was made per meaning rather than per look:
+ *
+ *   the old "acid" lime   ->  var(--accent)     interactive / emphasis
+ *   the old "cyan"         ->  var(--viz-up)     price movement, positive P&L
+ *   the old "coral"        ->  var(--viz-down)   price movement, negative P&L
+ *
+ * The cyan/coral pair was already doing the viz family's job — it was just
+ * a private name for it. That is why the direction colours are correct
+ * here and were NOT correct before: `--viz-up` and `--viz-down` are the
+ * tokens the CVD simulation measured.
+ *
+ * Three colour mistakes the guard could not catch, fixed in the same pass
+ * (see docs/design-system.md "Accessibility commitments"):
+ *
+ *  1. `.pp-positive` / `.pp-negative` painted a UNIT LABEL and an eyebrow
+ *     in the price-movement hue. A number that is not a price movement
+ *     must not wear a viz colour, so both now use the global `.pos` /
+ *     `.neg` classes and every non-price label moved to `--fg-dim` /
+ *     `--fg-faint`.
+ *  2. The selected LONG/SHORT buttons were teal and orange — market
+ *     direction painted onto the user's own intent, which is the R3b
+ *     defect one level down. They now reuse the app's `.side-toggle`,
+ *     whose pressed state is `--accent`, and keep their `↗`/`↘` glyph.
+ *  3. Every viz-toned number now carries a `▲`/`▼` glyph as well as its
+ *     label, because `--viz-up` and `--viz-down` are ΔE 2.8 apart under
+ *     achromatopsia and colour alone is not a cue (WCAG 1.4.1).
+ *
+ * The advisory boxes (notice, disclaimer, model warnings, authority note)
+ * use the `.ticket-blocked` recipe — warn wash, warn line, warn ink — which
+ * is what the rest of the app already uses for "this is stopped/clamped,
+ * here is why". The invalid-input boxes use the `.err` recipe. Neither is a
+ * kernel verdict, and both carry their meaning in words.
+ *
+ * Spacing is the 4px scale, type is the `--t-*` scale, radii are `--r-*`.
+ * Component dimensions are expressed in scale tokens or in `em`/`ch`, which
+ * also makes them respond to a reader's font size. Reduced motion is not
+ * overridden here: globals.css already covers transition, animation,
+ * animation-iteration-count and scroll-behavior in one block, and a second
+ * block in a feature file is how the next animation escapes it.
+ */
+
+.pp-app {
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: var(--t-md);
+  line-height: 1.45;
+}
+.pp-app * {
+  box-sizing: border-box;
+}
+.pp-app :is(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+.pp-app button {
+  cursor: pointer;
+}
+.pp-app a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ------------------------------------------------------------------ chrome */
+
+.pp-top {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  min-height: var(--s9);
+  padding: 0 var(--s6);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.pp-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: calc(var(--s9) * 3);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.pp-mark {
+  display: grid;
+  place-items: center;
+  width: var(--s7);
+  height: var(--s7);
+  color: var(--accent);
+  border: 1px solid var(--line-focus);
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
+  font-family: var(--mono);
+  font-size: var(--t-base);
+  font-weight: 700;
+}
+.pp-brand small {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+}
+.pp-top-nav {
+  display: flex;
+  align-self: stretch;
+  gap: var(--s1);
+  margin-left: auto;
+}
+.pp-top-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s3);
+  border-bottom: 1px solid transparent;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.05em;
+}
+.pp-top-nav a.pp-current {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.pp-top-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+}
+
+/* Reuses the global `.pill` chip. The dot is the only thing added. */
+.pp-pill-sample {
+  color: var(--warn);
+  border-color: var(--warn-line);
+  background: var(--warn-wash);
+}
+.pp-pill-sample i {
+  display: inline-block;
+  flex: none;
+  width: var(--s2);
+  height: var(--s2);
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+.pp-layout {
+  display: grid;
+  grid-template-columns: calc(var(--s9) * 3) minmax(0, 1fr);
+  min-height: calc(100dvh - var(--s9));
+}
+.pp-rail {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s6) var(--s3);
+  border-right: 1px solid var(--line);
+  background: var(--bg-inset);
+}
+.pp-rail-kicker {
+  padding: var(--s1) var(--s2) var(--s3);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pp-rail-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--s8);
+  padding: 0 var(--s2);
+  border-radius: var(--r-sm);
+  color: var(--fg-dim) !important;
+  font-size: var(--t-base);
+}
+.pp-rail-link:hover {
+  background: var(--panel-hover);
+}
+.pp-rail-active {
+  background: var(--panel-2);
+  color: var(--accent) !important;
+}
+.pp-principles {
+  margin-top: var(--s5);
+}
+.pp-rail-principle {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--s7);
+  padding: 0 var(--s2);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-rail-principle b {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-rail-note {
+  margin-top: auto;
+  padding: var(--s3) var(--s2);
+  border-top: 1px solid var(--line);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-rail-note strong {
+  display: block;
+  margin-bottom: var(--s2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+
+.pp-main {
+  width: 100%;
+  max-width: 100em;
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--s5) var(--s6) var(--s7);
+}
+
+/* ------------------------------------------------------------------ head */
+
+.pp-skip {
+  position: absolute;
+  top: calc(var(--s8) * -3);
+  left: var(--s3);
+  z-index: 10;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--accent);
+  background: var(--bg-inset);
+  color: var(--fg) !important;
+}
+.pp-skip:focus {
+  top: var(--s3);
+}
+
+/* One recipe for every advisory box, matching `.ticket-blocked`. */
+.pp-notice,
+.pp-risk-disclaimer,
+.pp-warnings,
+.pp-policy-note {
+  border: 1px solid var(--warn-line);
+  background: var(--warn-wash);
+  color: var(--warn);
+  border-radius: var(--r-md);
+}
+
+.pp-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--s8);
+  margin-bottom: var(--s6);
+  padding: var(--s2) var(--s3);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.pp-notice strong {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.pp-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s6);
+  margin-bottom: var(--s5);
+}
+.pp-eyebrow {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.14em;
+}
+.pp-title-row h1 {
+  margin: var(--s2) 0;
+  font-size: clamp(var(--t-2xl), 3.2vw, var(--t-3xl));
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 1.03;
+}
+.pp-title-row p {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: var(--t-base);
+  line-height: 1.55;
+}
+.pp-heading-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+.pp-market-picker {
+  display: grid;
+  min-width: calc(var(--s9) * 3);
+  gap: var(--s2);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.09em;
+}
+.pp-market-picker select {
+  min-height: var(--s8);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-sm);
+  padding: 0 var(--s6) 0 var(--s2);
+  background: var(--bg-inset);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-base);
+}
+
+.pp-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: var(--s5);
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+}
+.pp-stats > div {
+  min-width: 0;
+  padding: var(--s3);
+  border-right: 1px solid var(--line);
+}
+.pp-stats > div:last-child {
+  border-right: 0;
+}
+.pp-stats label {
+  display: block;
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pp-stats strong {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-md);
+  white-space: nowrap;
+}
+/* A unit suffix is not a price movement, so it takes ink, not a viz colour. */
+.pp-stats em {
+  margin-left: var(--s1);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+  font-style: normal;
+}
+
+/* -------------------------------------------------------------- workspace */
+
+.pp-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(var(--s9) * 4) calc(var(--s9) * 5);
+  align-items: start;
+  gap: var(--s3);
+}
+.pp-col {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--s3);
+}
+.pp-panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.pp-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-height: calc(var(--s8) + var(--s2));
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--panel-2);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.pp-quote-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s4);
+}
+.pp-pair {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.pp-pair small {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-price {
+  margin-top: var(--s2);
+  font-family: var(--mono);
+  font-size: var(--t-2xl);
+  letter-spacing: -0.04em;
+}
+.pp-price span {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+}
+
+.pp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: var(--s8);
+  padding: 0 var(--s3);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--fg-on-accent) !important;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.pp-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.pp-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pp-button-secondary {
+  border-color: var(--line-focus);
+  background: transparent;
+  color: var(--fg) !important;
+  font-weight: 500;
+}
+.pp-panel .pp-button-secondary {
+  min-height: var(--s8);
+}
+
+.pp-timeframes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+.pp-timeframe {
+  min-height: var(--s8);
+  padding: 0 var(--s2);
+  border-color: transparent;
+  background: transparent;
+  color: var(--fg-dim) !important;
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+.pp-timeframe-active {
+  border-color: var(--line-focus);
+  background: var(--bg-inset);
+  color: var(--accent) !important;
+}
+
+.pp-chart {
+  position: relative;
+  height: 26vh;
+  min-height: var(--s10);
+  padding: 0 var(--s3) var(--s2);
+}
+.pp-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* Area fill under a price series: viz, never a decision colour. */
+.pp-chart-area {
+  fill: var(--viz-up);
+  opacity: 0.05;
+}
+.pp-chart-label {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s3);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-chart-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-top: 1px solid var(--line-soft);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-frame-note {
+  color: var(--warn);
+}
+
+.pp-book-heading,
+.pp-book-row {
+  display: grid;
+  grid-template-columns: 1.15fr 0.72fr 0.68fr 0.8fr;
+  align-items: center;
+  gap: var(--s1);
+  padding: 0 var(--s3);
+}
+.pp-book-heading {
+  height: var(--s7);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+}
+.pp-book-row {
+  position: relative;
+  height: var(--s6);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-book-row > span {
+  position: relative;
+  z-index: 1;
+}
+.pp-book-row > span:nth-child(n + 2) {
+  text-align: right;
+}
+.pp-book-row > span:first-of-type {
+  text-align: left;
+}
+/* Ask sits above the spread, bid below: side is carried by position and by
+   the row's accessible name, so the hue is redundant rather than load-bearing. */
+.pp-book-ask > span:nth-child(2) {
+  color: var(--viz-down);
+}
+.pp-book-bid > span:nth-child(2) {
+  color: var(--viz-up);
+}
+.pp-book-row i {
+  position: absolute;
+  top: var(--s1);
+  right: 0;
+  bottom: var(--s1);
+  z-index: 0;
+  background: var(--viz-up);
+  opacity: 0.12;
+}
+.pp-book-ask i {
+  background: var(--viz-down);
+}
+.pp-spread {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: var(--s2) var(--s3);
+  padding: var(--s2) 0;
+  border-top: 1px dashed var(--line-focus);
+  border-bottom: 1px dashed var(--line-focus);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-spread strong {
+  color: var(--fg);
+  font-weight: 500;
+}
+.pp-book-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: var(--s3);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+
+.pp-budget {
+  padding: var(--s3);
+}
+.pp-panel-title {
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.075em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.pp-budget-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: var(--s2) 0;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-budget-line strong {
+  color: var(--fg);
+  font-size: var(--t-base);
+}
+.pp-progress {
+  height: var(--s1);
+  background: var(--line);
+}
+.pp-progress span {
+  display: block;
+  width: 34%;
+  height: 100%;
+  background: var(--accent);
+}
+.pp-budget p {
+  margin: var(--s2) 0 0;
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+}
+
+/* ------------------------------------------------------------------ ticket */
+
+.pp-ticket-col {
+  scroll-margin-top: var(--s4);
+}
+.pp-ticket {
+  padding: var(--s3);
+}
+/* The global `.side-toggle` owns the long/short vocabulary: neutral until
+   pressed, `--accent` after, and never a market-direction colour. Only the
+   monospaced type and the 44px target are local. */
+.pp-side {
+  min-height: calc(var(--s8) + var(--s1));
+  font-family: var(--mono);
+  font-size: var(--t-base);
+}
+.pp-field {
+  display: grid;
+  gap: var(--s2);
+  margin: var(--s3) 0;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-field input,
+.pp-field select {
+  width: 100%;
+  min-height: calc(var(--s8) + var(--s1));
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-md);
+  padding: 0 var(--s2);
+  background: var(--bg-inset);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-base);
+}
+.pp-input-wrap {
+  position: relative;
+}
+.pp-input-wrap input {
+  padding-right: calc(var(--s9) - var(--s1));
+}
+.pp-input-wrap b {
+  position: absolute;
+  top: 50%;
+  right: var(--s2);
+  transform: translateY(-50%);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-ticket-math {
+  display: grid;
+  gap: var(--s2);
+  margin: var(--s3) 0;
+  padding: var(--s3) 0;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.pp-ticket-math > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  color: var(--fg-dim);
+  font-size: var(--t-sm);
+}
+.pp-ticket-math strong {
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  text-align: right;
+}
+.pp-caption {
+  margin: var(--s2) 0 0;
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+}
+.pp-policy-note {
+  margin-top: var(--s2);
+  padding: var(--s3);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+}
+.pp-policy-note strong {
+  display: block;
+  margin-bottom: var(--s1);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-preview-button,
+.pp-clear-button {
+  width: 100%;
+  min-height: calc(var(--s8) + var(--s2));
+  margin-top: var(--s2);
+  font-size: var(--t-base);
+}
+.pp-clear-button {
+  margin-top: var(--s2);
+}
+
+/* "The local preview is ready" is a fact about this tab, not a decision
+   anyone made, so it is built the way the `state` family is built: accent
+   and neutral ink, never --ok. */
+.pp-preview-status {
+  margin-top: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--state-line);
+  border-radius: var(--r-md);
+  background: var(--state-wash);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+}
+.pp-preview-status strong {
+  display: block;
+  margin-bottom: var(--s1);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-stale-note {
+  margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ ledger */
+
+.pp-ledger {
+  margin-top: var(--s1);
+}
+.pp-tabs {
+  display: flex;
+  gap: var(--s4);
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line);
+}
+.pp-tab {
+  min-height: calc(var(--s8) + var(--s1));
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-tab[aria-selected='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pp-tab span {
+  color: var(--fg-faint);
+}
+.pp-empty {
+  padding: var(--s5) var(--s3);
+  color: var(--fg-dim);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.pp-empty strong {
+  display: block;
+  margin-bottom: var(--s1);
+  color: var(--fg);
+}
+.pp-table-wrap {
+  overflow-x: auto;
+}
+.pp-table {
+  width: 100%;
+  min-width: calc(var(--s9) * 8);
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-table th {
+  padding: var(--s2) var(--s3);
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+  font-weight: 400;
+  text-align: left;
+  text-transform: uppercase;
+}
+.pp-table td {
+  padding: var(--s2) var(--s3);
+  border-top: 1px solid var(--line-soft);
+  color: var(--fg-dim);
+  white-space: normal;
+}
+
+/* ------------------------------------------------------------------- tools */
+
+.pp-tools {
+  margin-top: var(--s5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.pp-tools > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--s8);
+  padding: var(--s3) var(--s5);
+  cursor: pointer;
+  list-style: none;
+}
+.pp-tools > summary::-webkit-details-marker {
+  display: none;
+}
+.pp-tools-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--s8);
+  height: var(--s8);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-sm);
+  background: var(--state-wash);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--t-lg);
+}
+.pp-tools summary strong {
+  display: block;
+  color: var(--fg);
+  font-size: var(--t-md);
+  letter-spacing: -0.02em;
+}
+.pp-tools summary small {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--fg-dim);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+.pp-tools summary > i {
+  flex: none;
+  width: var(--s3);
+  height: var(--s3);
+  margin-left: auto;
+  border-right: 1px solid var(--fg-dim);
+  border-bottom: 1px solid var(--fg-dim);
+  transform: rotate(45deg) translateY(calc(var(--s1) * -1));
+  transition: transform 120ms ease;
+}
+.pp-tools[open] summary > i {
+  transform: rotate(225deg) translateY(calc(var(--s1) * -1));
+}
+.pp-tools-content {
+  padding: 0 var(--s4) var(--s5);
+}
+
+.pp-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s4);
+  margin-top: var(--s5);
+  padding: var(--s3) 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  text-align: center;
+}
+.pp-mobile-nav {
+  display: none;
+}
+
+/* ------------------------------------------------------- risk workbench */
+
+.pp-workbench-root {
+  padding-top: var(--s1);
+}
+.pp-risk-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s5);
+  margin: var(--s5) 0;
+}
+.pp-risk-heading h2 {
+  margin: var(--s2) 0 var(--s1);
+  font-size: clamp(var(--t-xl), 2.3vw, var(--t-2xl));
+  letter-spacing: -0.04em;
+}
+.pp-risk-heading p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: var(--t-base);
+}
+.pp-badge {
+  flex: none;
+  border: 1px solid var(--warn-line);
+  padding: var(--s1) var(--s2);
+  color: var(--warn);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+}
+.pp-risk-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+  padding: var(--s3);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+.pp-risk-disclaimer > span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--s5);
+  height: var(--s5);
+  border: 1px solid var(--warn-line);
+  border-radius: 50%;
+  font-weight: 700;
+}
+.pp-risk-disclaimer p {
+  margin: 0;
+}
+.pp-risk-disclaimer strong {
+  color: var(--fg);
+}
+
+.pp-risk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  align-items: start;
+  gap: var(--s3);
+}
+.pp-risk-panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.pp-risk-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-height: calc(var(--s8) + var(--s2));
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--panel-2);
+}
+.pp-risk-panel-head > div {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.pp-index {
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-risk-panel-head h3 {
+  margin: 0;
+  color: var(--fg);
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+.pp-market-label {
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-risk-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+  padding: var(--s3);
+}
+.pp-risk-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--s2);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-risk-field select {
+  width: 100%;
+  min-height: var(--s8);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-sm);
+  padding: 0 var(--s2);
+  background: var(--bg-inset);
+  color: var(--fg);
+}
+.pp-risk-control {
+  position: relative;
+  display: block;
+}
+.pp-risk-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--s8);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-sm);
+  padding: 0 calc(var(--s9) + var(--s3)) 0 var(--s2);
+  background: var(--bg-inset);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+.pp-risk-control i {
+  position: absolute;
+  top: 50%;
+  right: var(--s2);
+  transform: translateY(-50%);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  font-style: normal;
+}
+/* An input the model refused to accept. The message carries the meaning; the
+   colour repeats the `.err` recipe rather than inventing a fifth state. */
+.pp-field-error {
+  color: var(--no-fg);
+  font-size: var(--t-xs);
+}
+.pp-risk-input-note {
+  padding: var(--s2) var(--s3);
+  border-top: 1px solid var(--line-soft);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-risk-input-note strong {
+  color: var(--fg);
+}
+.pp-risk-output {
+  padding-bottom: var(--s3);
+}
+.pp-risk-output .pp-risk-panel-head {
+  margin-bottom: var(--s3);
+}
+.pp-status {
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-status-stale {
+  color: var(--warn);
+}
+.pp-risk-highlight {
+  display: grid;
+  gap: var(--s1);
+  margin: 0 var(--s3) var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-md);
+  background: var(--bg-inset);
+}
+.pp-risk-highlight > span {
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-risk-highlight > strong {
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-xl);
+}
+.pp-risk-highlight small {
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-risk-highlight i {
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+  font-style: normal;
+}
+.pp-risk-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+  padding: 0 var(--s3);
+}
+.pp-metric {
+  display: grid;
+  min-width: 0;
+  gap: var(--s1);
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-inset);
+}
+.pp-metric > span {
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+  line-height: 1.35;
+}
+.pp-metric > strong {
+  overflow-wrap: anywhere;
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+.pp-metric-emphasis {
+  border-color: var(--line-focus);
+}
+.pp-metric-emphasis > strong {
+  color: var(--fg);
+}
+/* Modelled loss and modelled reward are P&L, so they are viz — and because
+   the two viz colours collapse under achromatopsia, each value arrives with
+   the ▲/▼ glyph from PaperRiskWorkbench.tsx. */
+.pp-tone-down > strong {
+  color: var(--viz-down);
+}
+.pp-tone-up > strong {
+  color: var(--viz-up);
+}
+.pp-break-even-note {
+  margin: var(--s2) var(--s3) 0;
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.pp-warnings {
+  margin: var(--s3) var(--s3) 0;
+  padding: var(--s2);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.pp-warnings strong {
+  font-family: var(--mono);
+}
+.pp-warnings ul {
+  margin: var(--s2) 0 0;
+  padding-left: var(--s4);
+}
+.pp-warnings li + li {
+  margin-top: var(--s1);
+}
+.pp-entry-mismatch {
+  margin: var(--s3) var(--s3) 0;
+  color: var(--warn);
+  font-size: var(--t-xs);
+}
+.pp-apply {
+  display: block;
+  width: calc(100% - var(--s7));
+  min-height: var(--s8);
+  margin: var(--s3) var(--s3) 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--fg-on-accent) !important;
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+.pp-apply:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pp-apply-note {
+  margin: var(--s2) var(--s3) 0;
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-applied {
+  margin: var(--s2) var(--s3) 0;
+  color: var(--accent);
+  font-size: var(--t-xs);
+}
+.pp-invalid,
+.pp-blocked {
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
+}
+/* The `.err` recipe: the plan could not be computed. */
+.pp-invalid {
+  border: 1px solid var(--no-line);
+  border-radius: var(--r-md);
+  background: var(--no-wash);
+  color: var(--no-fg);
+}
+.pp-invalid p,
+.pp-blocked p {
+  margin: var(--s1) 0 0;
+  color: var(--fg-dim);
+  line-height: 1.5;
+}
+.pp-blocked {
+  display: grid;
+  gap: var(--s1);
+  color: var(--warn);
+}
+.pp-blocked > span {
+  font-size: var(--t-lg);
+}
+
+.pp-pattern-panel {
+  margin-top: var(--s3);
+  padding-bottom: var(--s3);
+}
+.pp-pattern-intro {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s2) var(--s5);
+  padding: var(--s3) var(--s3) var(--s2);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-pattern-intro p {
+  margin: 0;
+}
+.pp-pattern-intro span {
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-history-label {
+  display: block;
+  margin: var(--s2) var(--s3) var(--s1);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+.pp-pattern-panel textarea {
+  display: block;
+  width: calc(100% - var(--s7));
+  margin: 0 var(--s3);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-sm);
+  padding: var(--s2);
+  background: var(--bg-inset);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  resize: vertical;
+}
+.pp-pattern-panel textarea::placeholder {
+  color: var(--fg-faint);
+}
+.pp-pattern-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: var(--s2) var(--s3) 0;
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+}
+.pp-analyze {
+  min-height: var(--s8);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-sm);
+  background: var(--panel-2);
+  color: var(--fg) !important;
+  font-size: var(--t-xs);
+}
+.pp-analyze:hover {
+  border-color: var(--accent);
+}
+.pp-pattern-error {
+  margin: var(--s2) var(--s3) 0;
+  color: var(--no-fg);
+  font-size: var(--t-xs);
+}
+.pp-pattern-empty {
+  margin: var(--s2) var(--s3) 0;
+  padding: var(--s3);
+  border: 1px dashed var(--line-focus);
+  border-radius: var(--r-md);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-pattern-empty strong {
+  display: block;
+  margin-bottom: var(--s1);
+  color: var(--fg);
+}
+.pp-pattern-result {
+  margin: var(--s3) var(--s3) 0;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-inset);
+}
+.pp-pattern-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s2);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+}
+.pp-pattern-summary strong {
+  color: var(--fg);
+}
+.pp-pattern-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.pp-pattern-result > p {
+  margin: var(--s2) 0 0;
+  color: var(--fg-faint);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.pp-risk-footer {
+  margin-top: var(--s3);
+  padding: var(--s3) var(--s1) 0;
+  border-top: 1px solid var(--line);
+  color: var(--fg-dim);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.pp-risk-footer p {
+  margin: 0 0 var(--s2);
+}
+.pp-risk-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+}
+.pp-risk-footer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ------------------------------------------------------------- responsive
+ *
+ * Breakpoints are in `em`, not `px`: a reader who raises their font size or
+ * zooms gets the stacked layout at the point where the text stops fitting,
+ * not at a pixel count that assumes 16px. `globals.css` already does this for
+ * the 940px ticket collapse. */
+
+@media (max-width: 72em) {
+  .pp-layout {
+    grid-template-columns: calc(var(--s9) * 2) minmax(0, 1fr);
+  }
+  .pp-workspace {
+    grid-template-columns: minmax(0, 1fr) calc(var(--s9) * 5);
+  }
+  .pp-market-col {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .pp-ticket-col {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .pp-book-col {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+@media (max-width: 56em) {
+  .pp-risk-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 40em) {
+  .pp-top {
+    justify-content: space-between;
+    gap: var(--s2);
+    padding: 0 var(--s3);
+  }
+  .pp-brand {
+    min-width: 0;
+  }
+  .pp-top-nav,
+  .pp-mainnet-note,
+  .pp-rail {
+    display: none;
+  }
+  .pp-top-right {
+    margin-left: auto;
+  }
+  .pp-layout {
+    display: block;
+  }
+  .pp-main {
+    padding: var(--s3) var(--s3) calc(var(--s10) + var(--s3) + env(safe-area-inset-bottom));
+  }
+  .pp-notice {
+    align-items: flex-start;
+    margin-bottom: var(--s5);
+  }
+  .pp-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s4);
+    margin-bottom: var(--s4);
+  }
+  .pp-heading-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .pp-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: var(--s3);
+  }
+  .pp-stats > div {
+    padding: var(--s2);
+    border-bottom: 1px solid var(--line);
+  }
+  .pp-stats > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .pp-stats > div:nth-child(3) {
+    border-right: 1px solid var(--line);
+  }
+  .pp-stats > div:last-child {
+    border-bottom: 0;
+  }
+  .pp-stats strong {
+    overflow-wrap: anywhere;
+    white-space: normal;
+    font-size: var(--t-base);
+  }
+  .pp-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+  }
+  .pp-ticket-col {
+    order: 1;
+    width: 100%;
+    scroll-margin-top: var(--s2);
+  }
+  .pp-market-col {
+    order: 2;
+    width: 100%;
+  }
+  .pp-book-col {
+    order: 3;
+    width: 100%;
+  }
+  .pp-panel .pp-button-secondary {
+    max-width: calc(var(--s9) * 3);
+    padding-inline: var(--s2);
+    font-size: var(--t-xs);
+  }
+  .pp-timeframe {
+    padding-inline: var(--s2);
+    font-size: var(--t-xs);
+  }
+  .pp-chart-foot {
+    font-size: var(--t-xs);
+  }
+  .pp-tools {
+    margin-top: var(--s4);
+  }
+  .pp-tools > summary {
+    padding: var(--s3);
+  }
+  .pp-tools-content {
+    padding: 0 var(--s2) var(--s3);
+  }
+  .pp-pattern-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pp-mobile-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: space-around;
+    gap: var(--s1);
+    padding: var(--s2) var(--s1) calc(var(--s2) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .pp-mobile-nav a {
+    display: grid;
+    min-width: var(--s10);
+    min-height: calc(var(--s8) + var(--s1));
+    place-items: center;
+    align-content: center;
+    gap: var(--s1);
+    color: var(--fg-dim);
+    font-family: var(--mono);
+    font-size: var(--t-md);
+  }
+  .pp-mobile-nav a span {
+    font-size: var(--t-xs);
+  }
+  .pp-mobile-nav a.pp-mobile-active {
+    color: var(--accent);
+  }
+  .pp-risk-heading {
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .pp-risk-fields {
+    gap: var(--s2);
+    padding: var(--s3);
+  }
+  .pp-risk-results {
+    padding-inline: var(--s2);
+  }
+  .pp-risk-output .pp-risk-panel-head {
+    margin-bottom: var(--s2);
+  }
+  .pp-risk-highlight {
+    margin-inline: var(--s2);
+  }
+  .pp-risk-footer nav {
+    gap: var(--s2) var(--s3);
+  }
+}
+@media (max-width: 24em) {
+  .pp-pill {
+    font-size: var(--t-xs);
+  }
+  .pp-heading-actions {
+    align-items: flex-start;
+  }
+  .pp-pair {
+    font-size: var(--t-md);
+  }
+  .pp-price {
+    font-size: var(--t-2xl);
+  }
+  .pp-book-heading,
+  .pp-book-row {
+    grid-template-columns: 1.1fr 0.65fr 0.62fr 0.7fr;
+    gap: var(--s1);
+  }
+  .pp-risk-fields {
+    grid-template-columns: 1fr;
+  }
+  .pp-pattern-intro {
+    display: grid;
+  }
+}

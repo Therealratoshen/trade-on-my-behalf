@@ -6,7 +6,7 @@ import './globals.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 export const metadata: Metadata = {
-  title: 'Trade On My Behalf — Control Surface',
+  title: 'Terading — Control Surface',
   description:
     'Read-mostly viewer and rule editor for the on-chain policy kernel. The kernel decides; this shows the receipts.',
 };

@@ -1,6 +1,6 @@
 /*
- * Design tokens
- * --------------
+ * Terading design tokens
+ * ----------------------
  * Every colour and step in the app resolves to a token here. If a rule
  * needs a new value, add a token — do not inline a hex. The 9 ad-hoc
  * hexes that used to live in the rules below have been folded in, and
@@ -8,6 +8,24 @@
  *
  * The same palette is mirrored in scripts/render-demo.mjs for the
  * standalone receipts page. Change both or neither.
+ *
+ * Four families, and the split is the whole point of this file:
+ *   surface  — where things sit.            Carries no meaning.
+ *   ink      — how things are read.          Carries no meaning.
+ *   decision — green/red/amber.             ONLY a kernel verdict.
+ *   viz      — teal/orange.                 ONLY price movement.
+ * A chart that uses --ok for a rising candle is a bug, because a judge
+ * reading it thinks the kernel approved something. viz tokens exist so
+ * price data never has to borrow the decision palette.
+ *
+ * A fifth, added 2026-10-04: `state` — a neutral, non-decision vocabulary
+ * for the lifecycle of the policy account itself (live / unarmed / expired /
+ * unowned / no policy). It is deliberately built from --accent, --fg and
+ * --line rather than from the decision palette, because "your policy is
+ * live" is NOT a verdict the kernel made about a trade. Colouring it green
+ * would claim the program approved something; the program never evaluated
+ * anything. The rule: state describes the ACCOUNT, verdict describes a
+ * DECISION, and only the second may wear --ok/--no/--warn.
  */
 :root {
   /* surfaces, darkest to lightest */
@@ -17,6 +35,7 @@
   --panel-2: #161a22; /* nested cards, table header */
   --panel-hover: #14171f; /* table row hover */
   --badge-bg: #1b1f28; /* muted pill background */
+  --overlay: rgba(4, 5, 8, 0.78); /* modal backdrop */
 
   /* lines */
   --line: #232833;
@@ -27,17 +46,59 @@
   /* text */
   --fg: #e6e9ef;
   --fg-dim: #8b93a4;
-  --fg-faint: #5b6373;
+  --fg-faint: #767e90; /* 4.89:1 on --bg — was #5b6373 at 3.30:1, AA large only */
   --fg-on-accent: #06070a; /* text on a filled accent button */
+  --fg-on-decision: #06070a; /* text on a filled decision badge */
 
-  /* semantic */
+  /* semantic — the only colours that carry a verdict */
   --ok: #3ddc97;
   --ok-fg: #a6f0cf; /* approved text on a 7%-alpha ok wash */
   --no: #ff5c72;
   --no-fg: #ffb3be; /* denied text on an 8%-alpha no wash */
   --warn: #ffc857;
+  --warn-fg: #ffdf9e; /* clamped text on a 10%-alpha warn wash */
   --accent: #6f8bff;
   --accent-hover: #8399ff; /* filled button on hover */
+
+  /* decision washes — alpha, not new hexes, so a badge can't drift */
+  --ok-wash: rgba(61, 220, 151, 0.13);
+  --ok-line: rgba(61, 220, 151, 0.35);
+  --no-wash: rgba(255, 92, 114, 0.13);
+  --no-line: rgba(255, 92, 114, 0.35);
+  --warn-wash: rgba(255, 200, 87, 0.1);
+  --warn-line: rgba(255, 200, 87, 0.28);
+
+  /*
+   * viz — price movement only. Deliberately NOT green/red: a green candle
+   * means "price rose", and borrowing --ok would imply the kernel
+   * approved a trade. Contrast vs --panel: teal 9.12:1, orange 6.90:1.
+   */
+  --viz-up: #3fc9bd;
+  --viz-down: #e8834f;
+  --viz-up-wash: rgba(63, 201, 189, 0.13);
+  --viz-down-wash: rgba(232, 131, 79, 0.13);
+  --viz-grid: #1a1e27; /* chart gridlines — same as --line-soft, named for intent */
+  --viz-axis: #5b6373; /* price axis labels, non-text-critical */
+  --viz-crosshair: #3a4356; /* hover guide, matches --line-focus */
+
+  /*
+   * state — the lifecycle of the policy ACCOUNT, never of a trade.
+   *
+   * Why this family exists, and why it is not a fifth colour family with its
+   * own hues: "your policy is live" is not something the kernel decided. The
+   * program never approved or denied anything when it holds a policy; it
+   * simply holds one. Painting that green would put a verdict colour on a
+   * fact that no verdict produced — the exact defect R3b exists to catch,
+   * one level up.
+   *
+   * So state is expressed with weight, dash and a glyph, using the neutral
+   * ink and --accent. The reader gets the fact; no colour claims authority
+   * the chain did not exercise. The armed/unarmed distinction is a border
+   * style (solid vs dashed), which survives greyscale, achromatopsia and a
+   * projector.
+   */
+  --state-line: #3a4356; /* the "live" marker rail — same as --line-focus */
+  --state-wash: rgba(111, 139, 255, 0.1); /* --accent at 10%, live surface */
 
   /* spacing — 4px base */
   --s1: 4px;
@@ -48,6 +109,8 @@
   --s6: 24px;
   --s7: 32px;
   --s8: 40px;
+  --s9: 56px;
+  --s10: 72px;
 
   /* type scale */
   --t-xs: 10px;
@@ -56,6 +119,15 @@
   --t-md: 14px;
   --t-lg: 16px;
   --t-xl: 20px;
+  --t-2xl: 26px;
+  --t-3xl: 34px; /* market price readout */
+
+  /* radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px; /* panel */
+  --r-xl: 12px; /* modal */
+  --r-pill: 999px;
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -71,9 +143,10 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
+  font-family: var(--sans);
+  font-size: var(--t-md);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -84,20 +157,54 @@ a:hover {
   text-decoration: underline;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* A2/A4: the focus ring is the only affordance a keyboard-only tester has,
+   and on a 10px badge in a dark table a 2px ring at 2px offset can be lost
+   against a neighbouring cell. Two rules, both cheap:
+     - a ring on anything focusable, not just the elements that already had
+       one (the ticket's number inputs set `outline: none` on :focus, which
+       silently removed the keyboard path until :focus-visible put it back);
+     - an offset of 1px on dense rows, where 2px clips against the cell edge.
+   `--line-focus` is a token, so this is R2-clean: no raw px. */
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input:focus-visible {
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+.table-dense :focus-visible {
+  outline-offset: 1px;
+}
+/* Never remove the ring without replacing it. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .shell {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: var(--s6) var(--s5) var(--s10);
 }
 
 .masthead {
   border-bottom: 1px solid var(--line);
-  padding-bottom: 18px;
-  margin-bottom: 22px;
+  padding-bottom: var(--s5);
+  margin-bottom: var(--s6);
 }
 .masthead h1 {
-  margin: 0 0 4px;
-  font-size: 20px;
+  margin: 0 0 var(--s1);
+  font-size: var(--t-xl);
   letter-spacing: -0.01em;
 }
 .masthead p {
@@ -108,28 +215,28 @@ a:hover {
 .masthead .tagline {
   color: var(--fg-faint);
   font-family: var(--mono);
-  font-size: 12px;
-  margin-top: 8px;
+  font-size: var(--t-sm);
+  margin-top: var(--s2);
 }
 
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  margin-bottom: 18px;
+  border-radius: var(--r-lg);
+  margin-bottom: var(--s5);
   overflow: hidden;
 }
 .panel > header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 14px;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
   border-bottom: 1px solid var(--line-soft);
   background: var(--panel-2);
 }
 .panel > header h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--t-base);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -137,11 +244,14 @@ a:hover {
 }
 .panel > header .n {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--t-sm);
   color: var(--fg-faint);
 }
+.panel > header .spacer {
+  flex: 1;
+}
 .panel .body {
-  padding: 14px;
+  padding: var(--s4);
 }
 
 .grid {
@@ -151,19 +261,19 @@ a:hover {
 }
 
 .field .k {
-  font-size: 11px;
+  font-size: var(--t-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--fg-faint);
 }
 .field .v {
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: var(--t-lg);
   margin-top: 2px;
   word-break: break-all;
 }
 .field .sub {
-  font-size: 11px;
+  font-size: var(--t-sm);
   color: var(--fg-faint);
   font-family: var(--mono);
 }
@@ -171,24 +281,24 @@ a:hover {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--t-base);
 }
 th {
   text-align: left;
-  font-size: 10px;
+  font-size: var(--t-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--fg-faint);
   font-weight: 600;
-  padding: 6px 10px;
+  padding: var(--s2) var(--s3);
   border-bottom: 1px solid var(--line-soft);
   white-space: nowrap;
 }
 td {
-  padding: 7px 10px;
+  padding: var(--s2) var(--s3);
   border-bottom: 1px solid var(--line-soft);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--t-sm);
   white-space: nowrap;
 }
 tbody tr:hover {
@@ -203,27 +313,29 @@ td.wrap {
 
 .badge {
   display: inline-block;
-  padding: 1px 7px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 1px var(--s2);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
   font-weight: 700;
   font-family: var(--mono);
   letter-spacing: 0.04em;
 }
+/* Verdict badges. Green means the kernel approved, red means it denied.
+   These three classes are the only place --ok/--no/--warn may appear. */
 .badge.yes {
-  background: rgba(61, 220, 151, 0.13);
+  background: var(--ok-wash);
   color: var(--ok);
-  border: 1px solid rgba(61, 220, 151, 0.35);
+  border: 1px solid var(--ok-line);
 }
 .badge.no {
-  background: rgba(255, 92, 114, 0.13);
+  background: var(--no-wash);
   color: var(--no);
-  border: 1px solid rgba(255, 92, 114, 0.35);
+  border: 1px solid var(--no-line);
 }
 .badge.reason {
-  background: rgba(255, 200, 87, 0.1);
+  background: var(--warn-wash);
   color: var(--warn);
-  border: 1px solid rgba(255, 200, 87, 0.28);
+  border: 1px solid var(--warn-line);
   font-weight: 500;
 }
 .badge.mute {
@@ -232,11 +344,41 @@ td.wrap {
   border: 1px solid var(--line);
   font-weight: 500;
 }
+
+/* Side badges. Long/short is intent, not a verdict — these are deliberately
+   neutral. They previously reused `.yes`, which painted a LONG position in
+   the same green as an APPROVED authorization. */
+.badge.side-long {
+  background: var(--bg-inset);
+  color: var(--fg);
+  border: 1px solid var(--line-strong);
+  font-weight: 500;
+}
+.badge.side-short {
+  background: var(--bg-inset);
+  color: var(--fg-dim);
+  border: 1px dashed var(--line-strong);
+  font-weight: 500;
+}
+
+/* Market state. Price movement, never a verdict. Distinct from --ok/--no
+   on purpose: a rising candle is not an approval. */
+.badge.up {
+  background: var(--viz-up-wash);
+  color: var(--viz-up);
+  border: 1px solid var(--viz-up-wash);
+}
+.badge.down {
+  background: var(--viz-down-wash);
+  color: var(--viz-down);
+  border: 1px solid var(--viz-down-wash);
+}
+
 .pos {
-  color: var(--ok);
+  color: var(--viz-up);
 }
 .neg {
-  color: var(--no);
+  color: var(--viz-down);
 }
 
 .mono {
@@ -250,37 +392,37 @@ td.wrap {
 }
 
 .empty {
-  padding: 26px 14px;
+  padding: var(--s7) var(--s4);
   text-align: center;
   color: var(--fg-dim);
 }
 .empty strong {
   display: block;
   color: var(--fg);
-  margin-bottom: 6px;
-  font-size: 14px;
+  margin-bottom: var(--s2);
+  font-size: var(--t-md);
 }
 .empty code,
 code.cmd {
   font-family: var(--mono);
   background: var(--bg-inset);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 12px;
+  border-radius: var(--r-sm);
+  padding: 1px var(--s2);
+  font-size: var(--t-sm);
   color: var(--fg);
 }
 code.cmd {
   display: inline-block;
-  margin-top: 8px;
+  margin-top: var(--s2);
   user-select: all;
 }
 
 .note {
   border-left: 2px solid var(--line);
-  padding: 2px 0 2px 12px;
+  padding: 2px 0 2px var(--s3);
   color: var(--fg-dim);
-  font-size: 13px;
+  font-size: var(--t-base);
 }
 
 button.btn {
@@ -288,9 +430,10 @@ button.btn {
   background: var(--panel-2);
   color: var(--fg);
   border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 7px 13px;
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
   cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
 }
 button.btn:hover:not(:disabled) {
   border-color: var(--line-focus);
@@ -314,19 +457,19 @@ button.btn.ghost {
   background: transparent;
 }
 button.btn.danger {
-  border-color: rgba(255, 92, 114, 0.4);
+  border-color: var(--no-line);
   color: var(--no);
 }
 
 button.linkish {
   font: inherit;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--t-sm);
   background: none;
   border: 1px solid var(--line);
   color: var(--fg-dim);
-  border-radius: 4px;
-  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  padding: 1px var(--s2);
   cursor: pointer;
 }
 button.linkish:hover {
@@ -337,52 +480,52 @@ button.linkish:hover {
 .copyrow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   flex-wrap: wrap;
 }
 .copyrow .val {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--t-sm);
   background: var(--bg-inset);
   border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 5px 9px;
+  border-radius: var(--r-md);
+  padding: var(--s1) var(--s2);
   word-break: break-all;
 }
 
 .formgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 14px;
+  gap: var(--s4);
 }
 .formgrid label {
   display: block;
-  font-size: 11px;
+  font-size: var(--t-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--fg-faint);
-  margin-bottom: 5px;
+  margin-bottom: var(--s1);
 }
 .formgrid input {
   width: 100%;
   font: inherit;
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: var(--t-md);
   background: var(--bg-inset);
   color: var(--fg);
   border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 7px 9px;
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s2);
 }
 .formgrid input:focus {
   outline: none;
   border-color: var(--accent);
 }
 .formgrid .hint {
-  font-size: 11px;
+  font-size: var(--t-sm);
   color: var(--fg-faint);
   font-family: var(--mono);
-  margin-top: 4px;
+  margin-top: var(--s1);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -393,19 +536,19 @@ button.linkish:hover {
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--s2);
   align-items: center;
-  padding: 10px 14px;
+  padding: var(--s3) var(--s4);
   border-bottom: 1px solid var(--line-soft);
 }
 .toolbar select {
   font: inherit;
-  font-size: 12px;
+  font-size: var(--t-sm);
   background: var(--bg-inset);
   color: var(--fg);
   border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 4px 8px;
+  border-radius: var(--r-md);
+  padding: var(--s1) var(--s2);
 }
 .toolbar .sep {
   width: 1px;
@@ -419,42 +562,42 @@ button.linkish:hover {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 5, 8, 0.78);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: var(--s5);
   z-index: 50;
 }
 .modal {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-xl);
   max-width: 620px;
   width: 100%;
   max-height: 86vh;
   overflow: auto;
 }
 .modal header {
-  padding: 13px 16px;
+  padding: var(--s3) var(--s4);
   border-bottom: 1px solid var(--line-soft);
   background: var(--panel-2);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--s3);
 }
 .modal header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--t-md);
 }
 .modal .body {
-  padding: 16px;
+  padding: var(--s4);
 }
 .modal footer {
-  padding: 12px 16px;
+  padding: var(--s3) var(--s4);
   border-top: 1px solid var(--line-soft);
   display: flex;
-  gap: 10px;
+  gap: var(--s3);
   justify-content: flex-end;
   align-items: center;
 }
@@ -468,26 +611,26 @@ button.linkish:hover {
 }
 
 .err {
-  border: 1px solid rgba(255, 92, 114, 0.35);
-  background: rgba(255, 92, 114, 0.08);
+  border: 1px solid var(--no-line);
+  background: var(--no-wash);
   color: var(--no-fg);
-  border-radius: 6px;
-  padding: 8px 11px;
-  font-size: 12px;
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
   font-family: var(--mono);
   word-break: break-word;
-  margin-top: 10px;
+  margin-top: var(--s3);
 }
 .ok-note {
-  border: 1px solid rgba(61, 220, 151, 0.3);
-  background: rgba(61, 220, 151, 0.07);
+  border: 1px solid var(--ok-line);
+  background: var(--ok-wash);
   color: var(--ok-fg);
-  border-radius: 6px;
-  padding: 8px 11px;
-  font-size: 12px;
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
   font-family: var(--mono);
   word-break: break-all;
-  margin-top: 10px;
+  margin-top: var(--s3);
 }
 
 .spin {
@@ -506,22 +649,50 @@ button.linkish:hover {
   }
 }
 
+/*
+ * Reduced motion, completed 2026-10-04.
+ *
+ * The previous version stopped `transition-duration` and killed `.spin`, but
+ * left `animation-duration` and `scroll-behavior` alone. Anything added later
+ * that animates would therefore ignore the user's OS setting until someone
+ * remembered to patch this block again — the same "it works until it is
+ * extended" failure the guard rules exist to prevent.
+ *
+ * The spinner is deliberately NOT hidden: it keeps its partial ring, which
+ * still reads as "working" when static. Hiding a loading indicator would
+ * trade a motion preference for a state-ambiguity bug, which is the worse
+ * trade.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .topbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--s3);
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: var(--s5);
 }
 .topbar .spacer {
   flex: 1;
 }
 .pill {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--t-sm);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  padding: var(--s1) var(--s3);
   color: var(--fg-dim);
   background: var(--panel);
   white-space: nowrap;
@@ -552,4 +723,573 @@ button.linkish:hover {
 }
 .wallet-slot .wallet-adapter-button {
   font-family: inherit !important;
+}
+
+/* ==========================================================================
+   Terading terminal primitives
+   --------------------------------------------------------------------------
+   The market workspace, price readout, chart and trade ticket. These are the
+   target-terminal components from docs/design-system.md. Colour rule holds
+   here too: the chart uses --viz-* only, and the ticket never paints a
+   verdict colour — the kernel's answer arrives as an AuditEvent, not a style.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Information hierarchy.
+
+   Five panels in one column gives every fact the same weight, so the page
+   reads as a flat list and the reader has to decide what matters. Three
+   tiers instead:
+
+     tier 1  verdict      the kernel's answers. Highest contrast, the
+                           only place a decision colour is allowed.
+     tier 2  exposure     money at risk right now. Present but quieter.
+     tier 3  reference    configuration and provenance. Recedes.
+
+   Implemented with a left rail, not a heavier border: a verdict panel
+   carries --accent, everything else is --line. Weight without decoration.
+   -------------------------------------------------------------------------- */
+.tier-verdict {
+  border-left: 3px solid var(--accent);
+}
+.tier-exposure {
+  border-left: 3px solid var(--line);
+}
+.tier-reference {
+  border-left: 3px solid transparent;
+}
+/* A tier-1 panel is the page's answer, so it gets the surface lift too.
+   No gradient — the design system forbids them; weight comes from the rail. */
+.tier-verdict > header {
+  background: var(--panel-2);
+  border-bottom-color: var(--accent);
+}
+.tier-verdict > header h2 {
+  color: var(--fg);
+}
+
+.ticket-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  gap: var(--s5);
+  align-items: start;
+}
+@media (max-width: 940px) {
+  .ticket-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.workspace-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin-bottom: var(--s3);
+}
+.market-id {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  min-width: 0;
+}
+.market-id .sym {
+  font-family: var(--mono);
+  font-size: var(--t-2xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.market-id .venue {
+  font-size: var(--t-sm);
+  color: var(--fg-faint);
+  font-family: var(--mono);
+}
+
+/* Price readout. Large, mono, and signed — a market is not a verdict, so
+   this uses --viz-*, never --ok/--no. */
+.price-readout {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  font-family: var(--mono);
+}
+.price-readout .px {
+  font-size: var(--t-3xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.price-readout .chg {
+  font-size: var(--t-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.price-readout .chg.up {
+  color: var(--viz-up);
+}
+.price-readout .chg.down {
+  color: var(--viz-down);
+}
+
+/* Provenance strip. Every number a judge reads has to say where it came
+   from and how old it is, or it is decoration. */
+.provenance {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  margin-top: var(--s2);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--fg-faint);
+}
+.provenance .sep {
+  width: 1px;
+  height: var(--s3);
+  background: var(--line);
+}
+.provenance .stale {
+  color: var(--warn);
+  border: 1px solid var(--warn-line);
+  background: var(--warn-wash);
+  border-radius: var(--r-sm);
+  padding: 0 var(--s1);
+}
+.provenance .fresh {
+  color: var(--fg-dim);
+}
+
+/* Mode strip: Policy cluster and Positions execution mode, always visible,
+   always literal. PAPER must never read as a live fill. */
+.mode-strip {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--s2) 0 var(--s5);
+}
+.mode {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg-dim);
+}
+.mode b {
+  color: var(--fg);
+  font-weight: 600;
+}
+.mode .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}.mode.paper .dot {
+  background: var(--warn);
+}
+.mode.paper b {
+  color: var(--warn);
+}
+
+/* Chart frame. Gridlines are named, not borrowed. */
+.chart-frame {
+  position: relative;
+  background: var(--bg-inset);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.chart-frame svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.chart-grid line {
+  stroke: var(--viz-grid);
+  stroke-width: 1;
+}
+.chart-axis text {
+  fill: var(--viz-axis);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.chart-area {
+  fill: var(--accent);
+  opacity: 0.08;
+}
+.chart-candle.up {
+  stroke: var(--viz-up);
+  fill: var(--viz-up);
+}
+.chart-candle.down {
+  stroke: var(--viz-down);
+  fill: var(--viz-down);
+}
+.chart-crosshair {
+  stroke: var(--viz-crosshair);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+/* The accessible alternative the design system requires: a chart you cannot
+   see is still fully readable as a table of the same numbers. */
+.chart-alt {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  margin-top: var(--s3);
+}
+.chart-alt caption {
+  text-align: left;
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+  color: var(--fg-faint);
+  padding-bottom: var(--s2);
+}
+.chart-alt th,
+.chart-alt td {
+  padding: var(--s1) var(--s2);
+  border-bottom: 1px solid var(--line-soft);
+  text-align: right;
+}
+.chart-alt th:first-child,
+.chart-alt td:first-child {
+  text-align: left;
+}
+.chart-alt .dir {
+  text-align: left;
+  font-weight: 600;
+}
+
+/* Trade ticket */
+.ticket {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.ticket > header {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.ticket > header h2 {
+  margin: 0;
+  font-size: var(--t-base);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.ticket .body {
+  padding: var(--s4);
+}
+
+.side-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+/* Long/short are market intent, not verdicts. They use --accent and a
+   neutral, deliberately NOT --ok/--no. */
+.side-toggle button {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: var(--t-base);
+  font-weight: 600;
+  padding: var(--s2);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+  color: var(--fg-dim);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.side-toggle button:hover:not(:disabled) {
+  border-color: var(--line-focus);
+  color: var(--fg);
+}
+.side-toggle button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--fg-on-accent);
+}
+.side-toggle button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quote-lines {
+  border-top: 1px solid var(--line-soft);
+  margin-top: var(--s4);
+  padding-top: var(--s3);
+}
+.quote-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s1) 0;
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+.quote-line .k {
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--t-xs);
+}
+.quote-line .v {
+  color: var(--fg);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.quote-line.total {
+  border-top: 1px solid var(--line-soft);
+  margin-top: var(--s1);
+  padding-top: var(--s2);
+}
+.quote-line.total .v {
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+
+/* A disabled submit must say why, or it reads as a broken app. */
+.ticket-blocked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--warn-line);
+  background: var(--warn-wash);
+  color: var(--warn);
+  font-size: var(--t-sm);
+  font-family: var(--mono);
+  text-align: left;
+  width: 100%;
+}
+
+/* Quote lifecycle states. Order state is never a policy verdict, so this
+   vocabulary is intentionally neutral + informational. */
+.lifecycle {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+.lifecycle .step {
+  color: var(--fg-faint);
+  padding: 0 var(--s2);
+}
+.lifecycle .step.done {
+  color: var(--fg-dim);
+}
+.lifecycle .step.current {
+  color: var(--accent);
+  font-weight: 600;
+}
+.lifecycle .arrow {
+  color: var(--line-focus);
+}
+
+/* --------------------------------------------------------------------------
+   Policy state — the A2 vocabulary.
+
+   The corrected claim is "caps live on chain and only the owner can change
+   them; every decision is an unfalsifiable record". That is a claim about a
+   RECORD, so the visual language must talk about a record's state and must
+   never imply a boundary. Five states, and the distinctions are real:
+
+     .state-live      the account exists, is unexpired, and you are its owner.
+     .state-unarmed   live, but a kill-switch cannot fire yet.
+     .state-expired   created_at_slot + ttl_slots has passed; the chain would
+                      answer REASON_EXPIRED.
+     .state-unowned   the account exists but the connected wallet is not the
+                      owner, so it is read-only here.
+     .state-none      no account at the derived PDA.
+
+   `unarmed` is the one that earns its place. A policy is created with
+   peak_equity_usdc = 0, and the drawdown switch is checked against peak
+   equity, so a fresh policy's kill-switch is genuinely disarmed until the
+   first record_pnl. Rendering that as "healthy green" tells a tester the
+   switch works when it is in fact not yet armed; rendering it as a warning
+   tells them something is broken. Neither is true. It is a distinct,
+   neutral, named state.
+   -------------------------------------------------------------------------- */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+.state .glyph {
+  color: var(--fg-faint);
+  font-weight: 700;
+}
+.state b {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Live: a solid --accent rail. Weight, not hue — see the state family note. */
+.state-live {
+  border-color: var(--state-line);
+  background: var(--state-wash);
+}
+.state-live .glyph {
+  color: var(--accent);
+}
+
+/* Unarmed: dashed. Dashes read as "not yet" under greyscale and CVD, and
+   deliberately do not use --warn, which is reserved for a kernel clamp. */
+.state-unarmed {
+  border-style: dashed;
+  border-color: var(--line-focus);
+}
+.state-unarmed .glyph {
+  color: var(--fg-dim);
+}
+
+/* Expired / unowned / none: recede. These are not failures, so they get
+   neither a decision colour nor a raised alarm. */
+.state-expired,
+.state-unowned,
+.state-none {
+  border-style: dotted;
+  color: var(--fg-faint);
+}
+.state-expired .glyph,
+.state-unowned .glyph,
+.state-none .glyph {
+  color: var(--fg-faint);
+}
+
+/* The one-line explanation under a state chip. Says what the state MEANS
+   and what it is not, so nobody has to infer enforcement from the styling. */
+.state-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+}
+.state-note {
+  color: var(--fg-faint);
+  font-size: var(--t-sm);
+  font-family: var(--mono);
+}
+.state-note b {
+  color: var(--fg-dim);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   A3 primitive: the claim boundary.
+
+   One component, because the corrected pitch has exactly one thing a reader
+   can get wrong: whether the program is *enforced* or merely *recorded*.
+   Every candidate below was considered (see
+   design-thinking/kit-hardening-2026-10-04/03-ideas.md); this one won
+   because it is the only one that carries the specific claim this repo now
+   has to defend. A stat tile optimises scanning a number; a reason-code
+   table optimises reading a denial; a receipt link optimises leaving. None
+   of them state the scope of the guarantee.
+
+   It states the limit in the same type as the fact, so the two are read
+   together and neither can be quoted alone.
+   -------------------------------------------------------------------------- */
+.claim {
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--state-line);
+  border-radius: var(--r-md);
+  background: var(--bg-inset);
+  padding: var(--s3) var(--s4);
+}
+.claim .claim-k {
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+}
+/* The true claim, and the false one it displaces, set as adjacent lines so
+   the correction is visible instead of silently applied. */
+.claim .claim-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  font-family: var(--mono);
+  font-size: var(--t-base);
+  color: var(--fg);
+  margin-top: var(--s1);
+}
+.claim .claim-line .mark {
+  color: var(--fg-faint);
+  flex: none;
+}
+.claim .claim-line.is-not {
+  color: var(--fg-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-focus);
+}
+/* The absence of a capability. A hole in the product, stated with the same
+   weight as the capability next to it. */
+.claim .claim-absent {
+  color: var(--fg-dim);
+  font-size: var(--t-sm);
+  margin-top: var(--s2);
+}
+.claim .claim-absent b {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Order state badge vocabulary — distinct from verdict badges on purpose. */
+.badge.pending {
+  background: var(--badge-bg);
+  color: var(--warn);
+  border: 1px solid var(--warn-line);
+  font-weight: 500;
+}
+.badge.filled {
+  background: var(--ok-wash);
+  color: var(--ok-fg);
+  border: 1px solid var(--ok-line);
+  font-weight: 500;
+}
+.badge.failed {
+  background: var(--no-wash);
+  color: var(--no-fg);
+  border: 1px solid var(--no-line);
+  font-weight: 500;
 }

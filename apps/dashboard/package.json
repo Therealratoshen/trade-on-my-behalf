@@ -2,12 +2,14 @@
   "name": "@trade-on-my-behalf/dashboard",
   "version": "0.1.0",
   "private": true,
-  "description": "Trade On My Behalf control surface: read-mostly viewer + rule editor. The kernel decides; this shows the receipts.",
+  "description": "Terading control surface: read-mostly viewer + rule editor. The kernel decides; this shows the receipts.",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start --port 3000",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "tokens": "node ../../scripts/check-tokens.mjs",
+    "check": "pnpm lint && pnpm tokens"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

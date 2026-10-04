@@ -20,12 +20,21 @@
 
 export {
   withTrader,
+  assertPolicyOwnership,
   decodePolicy,
   derivePolicyPda,
+  ForeignPolicyError,
   micro,
   parseAuditEvents,
 } from './withTrader.js';
 export { reasonCodeName } from './types.js';
+
+export {
+  assertDevnetWrite,
+  isDevnetGenesis,
+  DEVNET_GENESIS_HASH,
+  type GenesisReadable,
+} from './registration.js';
 
 export { IDL as TREASURY_IDL } from './treasury.idl.js';
 

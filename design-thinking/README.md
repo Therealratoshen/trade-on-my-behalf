@@ -45,14 +45,36 @@ end up chasing.
 ## What I want
 
 Software that watches the market for me, executes trades I would have
-taken, and physically cannot break the rules I set. The rules live at
-the wallet's signing layer, not in a vendor's server. If a trade would
-break a rule, the Anchor program refuses to sign — regardless of what
-the signal source, the runtime, or a compromised dependency tried to
-do.
+taken, and physically cannot break the rules I set.
 
-That's the wedge in one sentence: **I trade for you, and I cannot
-break your rules.**
+> **Correction (2026-10-04).** This paragraph originally said the rules
+> live "at the wallet's signing layer," and that the Anchor program
+> "refuses to sign — regardless of what the signal source, the
+> runtime, or a compromised dependency tried to do." **That is not
+> what I built, and I'm not claiming it.** The program holds no keys,
+> custodies nothing, and signs nothing. I checked the source: there is
+> no `invoke`, no `invoke_signed`, no transfer anywhere in it. It
+> cannot touch my money because it never has a way to.
+>
+> What is true, and what I will actually defend: the caps live on
+> chain and only I can change them, so nobody — not the signal, not a
+> vendor, not a dependency — can quietly raise my limits without me
+> approving it. And every call, approved or denied, leaves a receipt
+> with a real slot number that neither side can edit afterwards.
+>
+> The honest version of my one-liner: **"I trade for you, and every
+> decision — including the ones that stop me — is a public record I
+> cannot edit."** The version I wanted to say, "and I cannot break
+> your rules," is a promise about *enforcement*. Enforcement is the
+> thing I have not built yet. An authorisation I record is not a
+> boundary I enforce.
+
+That's the wedge, as far as it is honestly true today. **What this is
+not:** a boundary between my rules and a determined caller. Anyone
+holding a key can still trade at a venue without ever asking the
+program. The gate is a leash I can see, not one that holds. Closing
+that gap is the whole point of the next build — see
+[architecture](../docs/architecture.md#what-the-gate-does-and-does-not-do).
 
 ## Who else this is for
 
@@ -77,14 +99,37 @@ money.
 
 ## What judges will see in the demo
 
-A rule that demonstrably denies. The runtime pushes an intent that
-would breach `maxLeverage: 1`. The kernel denies it. The `AuditEvent`
-emits on-chain. The webapp's audit-log panel lights up with the red
-row: `approved: false, reason_code: 12, slot: <real slot number>`.
-Within two seconds. Without me touching anything.
+A rule that demonstrably denies. I run a command that pushes an intent
+that would breach `max_leverage_bps: 100` (1x) with `--raw`, at 5x.
+The kernel denies it. The `AuditEvent` emits on-chain. The webapp's
+audit-log panel lights up with the red row: `approved: false,
+reason_code: 6, slot: <real slot number>`. That is a poll every 2 s,
+not a push.
 
-That's the wedge. The rule fires whether I'm watching or not. The
-webapp just shows the receipts.
+> **Correction (2026-10-04), three things.** The original text here
+> said this happened "Without me touching anything" and called it "the
+> wedge." I want to be precise, because this is the exact place I
+> oversold myself:
+>
+> 1. **I do touch it.** There is no scheduler and no sampler in the
+>    code. Nothing runs unless I type a command. That was the plan —
+>    the sampler is real work I have not done. The receipt is real; the
+>    autonomy is not.
+> 2. **The reason code is 6, not 12.** `reason_code: 12` never existed.
+>    Codes run 0–7 (`REASON_LEVERAGE_CAP` = 6 is the red row for a
+>    leverage denial). I had written a number I had not checked.
+> 3. **"That is the wedge" was the wrong sentence.** What this
+>    demonstrates is that a *correct, current, on-chain policy* makes
+>    a breach visible and unfalsifiable. It does not demonstrate that a
+>    breach is *impossible* — the same rogue process that pushed the
+>    denied trade could have gone straight to the venue, and the program
+>    would not have known or stopped it. The gate is not on the path of
+>    the money. It is next to it, taking notes.
+>
+> What I actually think is the wedge: I own the caps, the caps live on
+> chain, and nobody can quietly move them. Everything past that is
+> work in progress, and I would rather show a judge a smaller true
+> thing than a bigger one I have to walk back.
 
 ## Three outside-dev testers, D11
 
@@ -103,10 +148,13 @@ real names where they're willing.
 ## One risk I'm watching
 
 The webapp UX must show audit events within ~2 s of a runtime
-push. If the SWR refresh interval is too slow or the indexer drops
-events, the demo loses its punch. Test on D11 that the
-"rule fires" demo actually shows the red row in the webapp
-without manual refresh.
+push. The audit panel polls RPC every 2 s (`AUDIT_POLL_MS = 2_000` in
+`apps/dashboard/components/Dashboard.tsx`); there is no push channel,
+no websocket and no Helius DAS audit indexer behind it. If the poll is
+too slow the demo loses its punch. Test on D11 that the "rule fires"
+demo actually shows the red row in the webapp without a manual
+refresh. If the latency is too high, lowering the poll interval is the
+only current lever.
 
 ## What I'm cutting from v1
 
@@ -125,12 +173,16 @@ demo. That's the v1.
 
 ## What I want judges to feel
 
-Trust. The on-chain gate is real. The rules are enforced. The wedge
-line is true.
+Trust. The on-chain policy is real and only I can change it. Every
+decision, including the denials, is a receipt I cannot edit. The
+kernel is the wedge, not the surface, and the kernel is *for*
+specialists who already have a setup — see
+`docs/skills-and-algorithms.md`.
 
-Not "this is another AI agent." Not "another webapp." The wedge is
-the kernel, not the surface, and the kernel is *for* specialists
-who already have a setup — see `docs/skills-and-algorithms.md`.
+What I will not claim, because I have not built it: that the rules stop
+me. They are checked and recorded, not enforced. The gap is not a
+detail — it is the next build, and the corrections above are how I
+want to talk about it.
 
 ---
 

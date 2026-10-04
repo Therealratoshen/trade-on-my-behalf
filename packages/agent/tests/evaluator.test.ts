@@ -79,4 +79,38 @@ test('daily counter resets after SLOTS_PER_DAY, like the program', () => {
 
 test('max_leverage_bps = 0 means no leverage cap', () => {
   assert.equal(evaluate(policy({ max_leverage_bps: 0 }), { ...base, leverageBps: 10_000 }).approved, true);
+  // D9: uncapped stays uncapped — no hidden ceiling is introduced at the top
+  // of the range. Mirrors the on-chain decision in authorize_spend.rs.
+  assert.equal(evaluate(policy({ max_leverage_bps: 0 }), { ...base, leverageBps: 65_535 }).approved, true);
+});
+
+// ---------- D9: request well-formedness (mirror of the on-chain Err! guards) ----------
+
+test('sub-1x leverage is not approved', () => {
+  assert.equal(evaluate(policy(), { ...base, leverageBps: 0 }).approved, false);
+  assert.equal(evaluate(policy(), { ...base, leverageBps: 99 }).approved, false);
+  // The 1x floor itself is fine.
+  assert.equal(evaluate(policy(), { ...base, leverageBps: 100 }).approved, true);
+});
+
+test('a zero-amount request is not approved', () => {
+  assert.equal(evaluate(policy(), { ...base, amountUsd: 0 }).approved, false);
+  // Even on an uncapped policy and a valid vendor — the amount guard runs first.
+  assert.equal(evaluate(policy({ max_leverage_bps: 0 }), { ...base, amountUsd: 0 }).approved, false);
+});
+
+test('a malformed request is not a policy denial', () => {
+  // On-chain these throw, so no AuditEvent and no reason code is consumed.
+  // The mirror cannot throw, so it reports reasonCode OK with approved:false
+  // rather than borrowing a policy reason code it did not earn.
+  assert.deepEqual(evaluate(policy(), { ...base, leverageBps: 0 }), { approved: false, reasonCode: REASON_CODES.OK });
+  assert.deepEqual(evaluate(policy(), { ...base, amountUsd: 0 }), { approved: false, reasonCode: REASON_CODES.OK });
+});
+
+test('the well-formedness guards run before the policy ladder', () => {
+  // Vendor is wrong AND leverage is sub-1x. The chain would throw before
+  // ever reading the vendor list, so the mirror must not answer VENDOR_DENIED.
+  const d = evaluate(policy(), { ...base, leverageBps: 0, vendor: PublicKey.unique() });
+  assert.equal(d.approved, false);
+  assert.notEqual(d.reasonCode, REASON_CODES.VENDOR_DENIED);
 });

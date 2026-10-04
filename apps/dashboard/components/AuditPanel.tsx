@@ -64,6 +64,7 @@ export function AuditPanel({
     <Panel
       n={3}
       title="Audit log"
+      tier="verdict"
       bare
       aside={
         <>
@@ -130,7 +131,7 @@ export function AuditPanel({
           </Empty>
         ) : (
           <Empty title="No events match these filters.">
-            <button type="button" className="btn ghost" style={{ marginTop: 10 }} onClick={() => { setOutcome('all'); setReason('all'); setWindowKey('all'); }}>
+            <button type="button" className="btn ghost" style={{ marginTop: 'var(--s3)' }} onClick={() => { setOutcome('all'); setReason('all'); setWindowKey('all'); }}>
               reset filters
             </button>
           </Empty>
@@ -157,7 +158,12 @@ export function AuditPanel({
                 <td title={e.vendor.toBase58()}>{shortAddress(e.vendor.toBase58(), 4, 4)}</td>
                 <td className="num">{fmtUsd(microToUsd(e.amountUsdc))}</td>
                 <td>
+                  {/* Glyph + text, not colour alone. Under protanopia and
+                      deuteranopia --ok and --no separate only by luminance, and
+                      achromatopsia collapses them entirely (scripts/check-cvd.mjs).
+                      The ▲/▼ and the word carry the meaning without hue. */}
                   <span className={`badge ${e.approved ? 'yes' : 'no'}`}>
+                    <span aria-hidden="true">{e.approved ? '▲' : '■'}</span>{' '}
                     {e.approved ? 'APPROVED' : 'DENIED'}
                   </span>
                 </td>

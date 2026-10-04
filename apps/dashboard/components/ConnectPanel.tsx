@@ -53,11 +53,11 @@ export function ConnectPanel() {
       </div>
 
       {connected && publicKey ? (
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 'var(--s4)' }}>
           {pda ? (
             <>
               <CopyRow label="policy PDA" value={pda} />
-              <div className="note" style={{ marginTop: 10 }}>
+              <div className="note" style={{ marginTop: 'var(--s3)' }}>
                 Derived at <code className="mono">[b&quot;policy&quot;, wallet_pubkey]</code> under the treasury
                 program. This is the account every panel below reads.
                 {explorerIsIndexed(CLUSTER) ? (
@@ -78,18 +78,19 @@ export function ConnectPanel() {
         </div>
       ) : (
         <div className="note">
-          <p style={{ margin: '0 0 6px' }}>
+          <p style={{ margin: '0 0 var(--s2)' }}>
             Connect the wallet that <em>owns</em> the policy. The dashboard is a viewer: it reads the on-chain
             rules and the decision log, and it never asks you to confirm a trade.
           </p>
           <p style={{ margin: 0 }}>
-            <strong>The kernel decides.</strong> Your rules fire whether or not this tab is open, and whether
-            or not you are looking at it.
+            <strong>The kernel records the decision.</strong> Your rules are checked and written to the
+            log whether or not this tab is open, and whether or not you are looking at it. The log is a
+            record, not a boundary — see the claim above.
           </p>
         </div>
       )}
 
-      <div style={{ marginTop: 14 }}>
+      <div style={{ marginTop: 'var(--s4)' }}>
         <span className="pill">
           RPC <b>{RPC_ENDPOINT}</b>
         </span>

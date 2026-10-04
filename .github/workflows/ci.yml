@@ -1,0 +1,314 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROGRAM_ID: 4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph
+  # setup-anchor prepends the "v" to solana-cli-version itself, so the value is
+  # the bare version.
+  #
+  # 3.1.1, and the reason is the SBF compiler, not the CLI features.
+  #
+  # `anchor build` compiles the program with cargo build-sbf, which uses the
+  # rustc bundled in platform-tools — NOT the host Rust from
+  # dtolnay/rust-toolchain. The committed Cargo.lock resolves
+  # anchor-lang 0.31.2, which pulls crypto-common 0.2.2; that crate's manifest
+  # uses edition2024, which Cargo can only parse from 1.85 onward. Any Solana
+  # CLI shipping an older platform-tools therefore dies with:
+  #
+  #   feature `edition2024` is required
+  #   ... not stabilized in this version of Cargo (1.84.0 ...)
+  #
+  # Measured platform-tools per CLI: 2.2.20 -> v1.48 (rustc 1.84.0, fails),
+  # 3.0.x -> v1.51 (rustc 1.84.1, fails), 3.1.1 -> v1.52 (rustc 1.89.0, works).
+  # 3.1.1 is the lowest release that carries a new-enough compiler, so it is
+  # the minimum bump that makes `anchor build` succeed from a cold cache.
+  SOLANA_CLI_VERSION: 3.1.1
+  ANCHOR_VERSION: 0.31.1
+
+jobs:
+  workspace:
+    name: SDK + agent tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` input — the root package.json `packageManager` field is
+      # the single source of truth. Passing both makes pnpm/action-setup
+      # abort with "Multiple versions of pnpm specified".
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm -r test
+
+  program:
+    name: Anchor program tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # NOTE: actions/cache requires the singular `path:` input. The plural
+      # `paths:` is silently ignored and the step fails with
+      # "Input required and not supplied: path".
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            programs/treasury/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('programs/treasury/**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Installs the Solana CLI (and Node) only. Its Anchor install is
+      # deliberately overridden below — see the note on the cargo step.
+      #
+      # `node-version: 20` here is deliberate. Do NOT pin 20.11.0 (or any
+      # 20.x < 20.19): the test suite is TypeScript run through ts-mocha, and
+      # on those versions Node's `require(esm)` support intercepts a `.ts` file
+      # before ts-node's require.extensions hook can compile it. The suite then
+      # dies at load time with
+      #   TypeError: Unknown file extension ".ts" for tests/treasury.ts
+      # regardless of how the file is globbed. On 20.19+ (Node resolved `20` to
+      # 20.20.2 in the workspace job's log) the hook runs and the suite loads.
+      #
+      # This also keeps both jobs on the same Node: setup-anchor provisions Node
+      # first, and actions/setup-node below then reuses the same 20.x instead of
+      # switching toolchains underneath pnpm.
+      #
+      # Do NOT also run the Anza `install` script: two competing installs of the
+      # same toolchain leave an unpredictable one first on PATH.
+      - uses: metadaoproject/setup-anchor@v3.4
+        with:
+          solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
+          node-version: "20"
+
+      # setup-anchor pipes the Anza installer through `sh -c "$(curl -sSfL
+      # ...)"; a bad version string therefore fails the download, not the
+      # action, and the missing solana-keygen/solana-test-validator only surfaces
+      # much later as "command not found" in the validator step. Prove the CLI
+      # is really here, at the pinned version, before anything depends on it.
+      #
+      # `solana --version` prints a bare `solana-cli 3.1.1 (src:...)`. The "v"
+      # is prepended by setup-anchor to build the release URL, and is not part
+      # of the version string, so match without it.
+      #
+      # Also print the platform-tools the SBF compiler comes from. That is the
+      # rustc `anchor build` actually uses — not the host toolchain from
+      # dtolnay/rust-toolchain — and it is exactly what the 2.2.20 failure
+      # turned on, so it belongs in the log.
+      - name: Verify the Solana CLI
+        run: |
+          set -x
+          command -v solana solana-keygen solana-test-validator cargo-build-sbf
+          solana --version
+          solana --version | grep -q "solana-cli $SOLANA_CLI_VERSION" || {
+            echo "::error::expected solana-cli $SOLANA_CLI_VERSION"; exit 1; }
+          cargo-build-sbf --version
+
+      # ---------------------------------------------------------------------
+      # Why Anchor is installed with cargo instead of trusting setup-anchor's
+      # own `npm i -g @coral-xyz/anchor-cli@0.31.1`.
+      #
+      # That npm package is broken. Its tarball ships the prebuilt `anchor`
+      # ELF with mode 0644 — npm says so during install:
+      #
+      #   npm WARN deprecated @coral-xyz/anchor-cli@0.31.1: broken cli build
+      #
+      # The package's `anchor.js` shim then runs
+      # spawnSync("<pkg>/anchor", ["--version"]) to sanity-check the binary,
+      # gets EACCES, falls through to scanning $PATH for a cargo-installed
+      # anchor, finds none, and calls process.exit() — with code 0. So
+      # `anchor build` prints three lines of complaint, exits 0, and the step
+      # goes GREEN having compiled nothing. The failure only surfaces in the
+      # next step as "Cannot find module './target/idl/treasury.json'".
+      #
+      # A cargo install has neither problem: it produces a real executable in
+      # ~/.cargo/bin (on PATH), and --tag pins it to the same ANCHOR_VERSION
+      # the repo already declares. `--locked` keeps anchor's own dependency
+      # resolution reproducible, matching the Cargo.lock that is cached.
+      # ---------------------------------------------------------------------
+      - name: Install the Anchor CLI with cargo
+        run: |
+          cargo install --locked --git https://github.com/coral-xyz/anchor.git \
+            --tag "v$ANCHOR_VERSION" anchor-cli
+
+      # setup-anchor installs into the Node toolchain it provisions itself, and
+      # it runs before actions/setup-node below. So assert the real binary
+      # resolves and reports the expected version, rather than letting a broken
+      # install pass silently again.
+      - name: Verify the Anchor CLI
+        run: |
+          set -x
+          command -v anchor
+          anchor --version
+          anchor --version | grep -qx "anchor-cli $ANCHOR_VERSION" || {
+            echo "::error::expected anchor-cli $ANCHOR_VERSION"; exit 1; }
+
+      # No `version:` input — see the note in the workspace job above.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # The suite is TypeScript run through ts-mocha. Node < 20.19 intercepts
+      # `require()` of a .ts file through its require(esm) support, before
+      # ts-node's require.extensions hook can compile it, so the tests fail to
+      # even load ("Unknown file extension .ts"). Assert the floor here so that
+      # shows up as a clear message instead.
+      - name: Verify the Node runtime
+        run: |
+          set -x
+          node --version
+          node -e 'const [M,m]=process.versions.node.split(".").map(Number);
+            if (M < 20 || (M === 20 && m < 19)) {
+              console.error("::error::node " + process.versions.node +
+                " cannot run the ts-mocha suite; need >= 20.19");
+              process.exit(1);
+            }'
+
+      # programs/treasury is NOT a member of the root workspace (the root
+      # pnpm-workspace.yaml only globs apps/* and packages/*), so it has its own
+      # committed pnpm-lock.yaml and installs standalone.
+      #
+      # --ignore-workspace is required, not cosmetic: the program directory
+      # ships a scaffolded pnpm-workspace.yaml containing only `allowBuilds:`
+      # and no `packages:` key. Without this flag pnpm reads that file and
+      # aborts with ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION.
+      - name: Install program deps
+        working-directory: programs/treasury
+        run: pnpm install --frozen-lockfile --ignore-workspace
+
+      # `anchor build` is a purely local operation: it compiles with
+      # cargo build-sbf, then generates target/idl + target/types. It makes no
+      # devnet or registry call, and it does not need provider.cluster to be
+      # localnet. The provider.cluster = "devnet" in Anchor.toml therefore does
+      # not affect this step (deploying is what reads it, and we never deploy).
+      #
+      # `anchor build` is NOT trusted to signal failure on its own: the broken
+      # npm install above exits 0 after doing nothing. The explicit artifact
+      # checks are what make a silent no-op build impossible.
+      - name: Build program
+        working-directory: programs/treasury
+        run: |
+          set -euo pipefail
+          anchor build
+          for artifact in target/idl/treasury.json \
+                          target/types/treasury.ts \
+                          target/deploy/treasury.so; do
+            test -f "$artifact" || {
+              echo "::error::anchor build did not produce $artifact"; exit 1; }
+          done
+
+      # The test suite reaches the program through `anchor.workspace`, which
+      # reads Anchor.toml, looks up [programs.<provider.cluster>], and finds no
+      # [programs.devnet] entry — so it falls back to the IDL address, which
+      # `anchor build` writes from declare_id!(). That must equal PROGRAM_ID,
+      # which is where the .so gets preloaded below. Fail loudly if it drifts.
+      - name: Verify the built IDL targets PROGRAM_ID
+        working-directory: programs/treasury
+        run: |
+          IDL_ADDR=$(node -e "console.log(require('./target/idl/treasury.json').address)")
+          echo "IDL address:   $IDL_ADDR"
+          echo "PROGRAM_ID:    $PROGRAM_ID"
+          test "$IDL_ADDR" = "$PROGRAM_ID" || {
+            echo "::error::Built IDL address does not match PROGRAM_ID"; exit 1; }
+
+      # A throwaway wallet under RUNNER_TEMP. Never the repo or the runner's
+      # default keypair path. The tests read ANCHOR_WALLET + ANCHOR_PROVIDER_URL.
+      #
+      # `> "$RUNNER_TEMP/wallet-pubkey"` runs solana-keygen and redirects its
+      # stdout. Writing the command itself (e.g. with `echo "solana-keygen
+      # pubkey ...">`) leaves the literal text in the file, and every later
+      # consumer then passes that sentence to solana-keygen/airdrop as an
+      # address, which fails as "unrecognized signer source".
+      - name: Create test wallet
+        run: |
+          solana-keygen new --no-bip39-passphrase --silent --force -o "$RUNNER_TEMP/test-wallet.json"
+          echo "ANCHOR_WALLET=$RUNNER_TEMP/test-wallet.json" >> "$GITHUB_ENV"
+          echo "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899" >> "$GITHUB_ENV"
+          solana-keygen pubkey "$RUNNER_TEMP/test-wallet.json" > "$RUNNER_TEMP/wallet-pubkey"
+          # A base58 pubkey is 44 chars. If this is not 44, the file holds
+          # something other than a pubkey and the airdrop below will fail with
+          # a confusing error; fail here instead, where the cause is obvious.
+          test "$(tr -d '\r\n' < "$RUNNER_TEMP/wallet-pubkey" | wc -c)" -eq 44 || {
+            echo "::error::wallet-pubkey does not contain a pubkey: $(cat "$RUNNER_TEMP/wallet-pubkey")"
+            exit 1; }
+
+      - name: Start local validator with program preloaded
+        run: |
+          LEDGER="$RUNNER_TEMP/ledger"
+          solana-test-validator --reset --quiet --ledger "$LEDGER" \
+            --bpf-program "$PROGRAM_ID" programs/treasury/target/deploy/treasury.so \
+            > "$RUNNER_TEMP/validator.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/validator.pid"
+          for _ in $(seq 1 60); do
+            solana cluster-version --url http://127.0.0.1:8899 >/dev/null 2>&1 && break
+            sleep 1
+          done
+          # Do not let a validator that never came up look like a passing step:
+          # the test step would then fail with a confusing connection error.
+          solana cluster-version --url http://127.0.0.1:8899 || {
+            echo "::error::local validator never became reachable"; exit 1; }
+
+      # Proves the --bpf-program preload actually took, rather than assuming it.
+      #
+      # `--keypair` is required, and the throwaway test wallet is the right one
+      # to pass: Solana CLI 3.1's `program show` loads a signer even for this
+      # read-only query and aborts with
+      #   "No default signer found, run \"solana-keygen new -o ~/.config/solana/id.json\""
+      # on a runner that has no default keypair. Passing ANCHOR_WALLET satisfies
+      # it without ever creating a default wallet.
+      # (`solana cluster-version` in the step above does NOT need a keypair.)
+      - name: Verify the program is loaded at PROGRAM_ID
+        run: |
+          solana program show "$PROGRAM_ID" --url http://127.0.0.1:8899 \
+            --keypair "$ANCHOR_WALLET"
+
+      # --keypair for the same reason; the airdrop signs a request for the
+      # receiver's account. Airdrop goes to the local test validator only.
+      - name: Fund the test wallet
+        run: |
+          solana airdrop 10 "$(cat "$RUNNER_TEMP/wallet-pubkey")" \
+            --url http://127.0.0.1:8899 --keypair "$ANCHOR_WALLET"
+
+      # Anchor.toml's provider.cluster is "devnet", so `anchor test` would try
+      # to DEPLOY to devnet (and fail on insufficient funds). The validator is
+      # already running with the program preloaded, so invoke the test script
+      # directly instead — the exact command proven to run the suite against a
+      # preloaded .so. It must be run from programs/treasury: the suite resolves
+      # `../target/types/treasury` and anchor.workspace reads ./Anchor.toml.
+      - name: Program tests
+        working-directory: programs/treasury
+        run: pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
+
+      - name: Validator log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/validator.log" || true
+
+      - name: Stop validator
+        if: always()
+        run: kill "$(cat "$RUNNER_TEMP/validator.pid")" 2>/dev/null || true

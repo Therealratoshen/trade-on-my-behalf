@@ -186,7 +186,7 @@ export function EditPolicyPanel({
       aside={<span className="n">owner-signed · update_policy</span>}
     >
       {!isOwner ? (
-        <div className="note" style={{ marginBottom: 14 }}>
+        <div className="note" style={{ marginBottom: 'var(--s4)' }}>
           The connected wallet is not this policy&rsquo;s owner, so the form below is read-only. Switch to the
           owner wallet to change the rules — the program rejects the signature otherwise.
         </div>
@@ -227,7 +227,7 @@ export function EditPolicyPanel({
         ))}
       </div>
 
-      <div className="topbar" style={{ marginTop: 16, marginBottom: 0 }}>
+      <div className="topbar" style={{ marginTop: 'var(--s4)', marginBottom: 0 }}>
         <button
           type="button"
           className="btn primary"
@@ -272,9 +272,10 @@ export function EditPolicyPanel({
             </header>
             <div className="body">
               <p className="dim" style={{ marginTop: 0 }}>
-                These values become enforceable by the kernel the moment this transaction lands. The next
-                intent the runtime submits is checked against them — tighter rules deny sooner, looser rules
-                let more through.
+                These values become the caps the kernel checks against the moment this transaction lands.
+                The next intent the runtime submits is measured against them — tighter values are recorded
+                as denied sooner, looser values let more through. They are a rule the kernel applies and
+                writes down; they do not block a trade placed without it.
               </p>
               <table>
                 <thead>
@@ -289,7 +290,7 @@ export function EditPolicyPanel({
                     <tr key={d.key}>
                       <td>
                         {d.label}
-                        <div className="faint" style={{ fontSize: 11 }}>
+                        <div className="faint" style={{ fontSize: 'var(--t-sm)' }}>
                           {d.hint}
                         </div>
                       </td>
@@ -299,7 +300,7 @@ export function EditPolicyPanel({
                   ))}
                 </tbody>
               </table>
-              <p className="faint" style={{ fontSize: 11, marginBottom: 0 }}>
+              <p className="faint" style={{ fontSize: 'var(--t-sm)', marginBottom: 0 }}>
                 policy PDA <span className="mono">{policyPda.toBase58()}</span>
               </p>
             </div>

@@ -66,4 +66,12 @@ pub enum TreasuryError {
     LeverageCapExceeded,
     #[msg("drawdown kill-switch tripped")]
     DrawdownKillSwitchTripped,
+    // D9: malformed-input errors. These are NOT policy denials — a policy
+    // denial returns Ok(()) and emits a denied AuditEvent so the runtime can
+    // surface a RiskFlag. A malformed argument fails the transaction
+    // outright, so it gets a distinct error and never consumes a reason code.
+    #[msg("leverage must be >= 100 bps (1x)")]
+    InvalidLeverage,
+    #[msg("amount must be > 0")]
+    InvalidAmount,
 }

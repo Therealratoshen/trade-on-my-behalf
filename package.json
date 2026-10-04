@@ -8,11 +8,13 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "dev": "pnpm -r --parallel dev",
-    "lint": "pnpm -r lint",
+    "lint": "pnpm -r lint && pnpm tokens && pnpm a11y:color",
     "anchor:build": "anchor build",
     "anchor:test": "anchor test",
     "demo": "bash scripts/demo.sh local",
-    "devnet:demo": "bash scripts/demo.sh devnet"
+    "devnet:demo": "bash scripts/demo.sh devnet",
+    "tokens": "node scripts/check-tokens.mjs",
+    "a11y:color": "node scripts/check-cvd.mjs"
   },
   "engines": {
     "node": ">=20"

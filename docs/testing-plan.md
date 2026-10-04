@@ -1,6 +1,6 @@
 # Testing Plan — Source Inventory, Required Coverage and Evidence
 
-Updated 2026-10-03. **No code tests were executed in this documentation update.** Test-source counts below are not pass counts. Historical local-demo reports do not substitute for current automated runs, public devnet receipts or human sessions.
+Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source (20 / 16 / 21 = 57 `it`/`test` cases) and the CI row updated. **No code tests were executed in either update.** Test-source counts below are not pass counts. Historical local-demo reports do not substitute for current automated runs, public devnet receipts or human sessions.
 
 ## Authoritative links
 
@@ -10,16 +10,18 @@ Updated 2026-10-03. **No code tests were executed in this documentation update.*
 
 | Layer | Existing files | Defined cases | Current run status |
 |---|---|---|---|
-| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 12 `it` cases | NOT RUN in this update |
-| SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts` | 11 `test` cases | NOT RUN in this update |
-| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts` | 17 `test` cases | NOT RUN in this update |
+| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 20 `it` cases | NOT RUN in this update |
+| SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts`, `ensurePolicyOwnership.test.ts` | 16 `test` cases | NOT RUN in this update |
+| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts` | 21 `test` cases | NOT RUN in this update |
 | Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | Historical report only; NOT RERUN |
 | Browser E2E | No checked-in browser test harness/suite | None | NOT IMPLEMENTED |
 | Public devnet venue E2E | No implemented real venue adapter | None | BLOCKED |
 | Outside-developer sessions | Three planned cases in `user-tests.md` | None recorded | NOT RUN |
-| CI execution workflow | No `.github/workflows` test workflow in reviewed source | None | NOT IMPLEMENTED; separate CI work remains |
+| CI execution workflow | `.github/workflows/ci.yml` — committed, `workspace` (SDK + agent) and `program` (Anchor) jobs | None | DEFINED |
 
 Earlier references to `tests/litesvm.rs`, `tests/surfpool/*.spec.ts`, `pnpm test:surfpool`, nightly integration or already-measured coverage were plans, not implemented evidence. LiteSVM/Mollusk/Surfpool can be evaluated later; they are not the present harness.
+
+**These are DEFINED cases, not results.** The 57 cases are counted by reading the test source; no exit status is recorded against the current revision for any of the three suites, so per the release rule below none of them is marked PASS or FAIL. The superseding run — with a recorded revision, command and exit status per suite — is still owed.
 
 ## Pyramid and isolation
 

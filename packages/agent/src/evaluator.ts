@@ -18,6 +18,13 @@ const big = (v: { toString(): string } | number | bigint): bigint => BigInt(v.to
 const toMicro = (usd: number): bigint => BigInt(Math.round(usd * 1_000_000));
 
 /**
+ * D9: lowest leverage a request may express, 1x in bps. Mirrors
+ * `MIN_LEVERAGE_BPS` in `instructions/authorize_spend.rs` and the
+ * `leverageBps >= 100` floor in `classify()`.
+ */
+const MIN_LEVERAGE_BPS = 100;
+
+/**
  * Off-chain mirror of `authorize_spend`. Same check order and the same
  * integer math, so a disagreement with the chain means the mirror or the
  * policy snapshot is stale — the chain's answer always wins.
@@ -29,6 +36,21 @@ export function evaluate(policy: PolicyLike, i: EvalInput): Decision {
 
   let daySpent = big(policy.day_spent_usdc);
   if (slot - big(policy.last_reset_slot) >= BigInt(SLOTS_PER_DAY)) daySpent = 0n;
+
+  // D9: argument well-formedness. On-chain these two are `Err!` (a failed
+  // transaction) rather than a reason-coded denial, because they are
+  // malformed arguments, not a policy decision. The mirror cannot throw —
+  // it returns a preflight verdict — so it reports them as a non-approval
+  // instead. Reason code is OK (0) on purpose: these are not one of the
+  // policy denials, and inventing a new REASON_* would desync the wire
+  // format from the chain, which emits no AuditEvent at all here.
+  //
+  // In practice `classify()` already drops both before this runs, so these
+  // branches are the belt-and-braces path that keeps the mirror honest if
+  // `evaluate` is ever called with a raw, unclamped intent.
+  if (i.leverageBps < MIN_LEVERAGE_BPS || amount <= 0n) {
+    return { approved: false, reasonCode: REASON_CODES.OK };
+  }
 
   const peak = big(policy.peak_equity_usdc);
   const killPct = BigInt(policy.kill_switch_drawdown_pct);
@@ -47,5 +69,8 @@ export function evaluate(policy: PolicyLike, i: EvalInput): Decision {
   if (policy.max_leverage_bps !== 0 && i.leverageBps > policy.max_leverage_bps) {
     return { approved: false, reasonCode: REASON_CODES.LEVERAGE_CAP };
   }
+  // `max_leverage_bps === 0` means "no leverage cap" and stays uncapped here,
+  // matching the on-chain guard on purpose — no hidden ceiling. See the
+  // D9 note in `instructions/authorize_spend.rs` for the full reasoning.
   return { approved: true, reasonCode: REASON_CODES.OK };
 }
