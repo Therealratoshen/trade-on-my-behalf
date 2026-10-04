@@ -12,7 +12,10 @@ concurrency:
 
 env:
   PROGRAM_ID: 4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph
-  SOLANA_VERSION: v1.18.26
+  # setup-anchor prepends the "v" to solana-cli-version itself, so the value
+  # is the bare version. 2.2.21 matches the toolchain this repo builds with
+  # (cargo build-sbf) and is what the action defaults to.
+  SOLANA_CLI_VERSION: 2.2.21
   ANCHOR_VERSION: 0.31.1
 
 jobs:
@@ -22,9 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` input — the root package.json `packageManager` field is
+      # the single source of truth. Passing both makes pnpm/action-setup
+      # abort with "Multiple versions of pnpm specified".
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -58,24 +62,17 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Solana CLI
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/solana
-            ~/.local/share/solana/install
-          key: ${{ runner.os }}-solana-${{ env.SOLANA_VERSION }}
-
-      - name: Install Solana CLI
-        run: sh -c "$(curl -sSfL https://release.anza.xyz/${{ env.SOLANA_VERSION }}/install)"
-
-      - uses: coral-xyz/anchor/action@v1
+      # Installs Anchor CLI + Solana CLI + Node in one step. Do NOT also run the
+      # Anza `install` script: two competing installs of the same toolchain
+      # leave an unpredictable one first on PATH.
+      - uses: metadaoproject/setup-anchor@v3.4
         with:
           anchor-version: ${{ env.ANCHOR_VERSION }}
+          solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
+          node-version: 20.11.0
 
+      # No `version:` input — see the note in the workspace job above.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -84,18 +81,39 @@ jobs:
 
       - name: Install program deps
         working-directory: programs/treasury
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
+      # `anchor build` is a purely local operation: it compiles with
+      # cargo build-sbf, then generates target/idl + target/types. It makes no
+      # devnet or registry call, and it does not need provider.cluster to be
+      # localnet. The provider.cluster = "devnet" in Anchor.toml therefore does
+      # not affect this step (deploying is what reads it, and we never deploy).
       - name: Build program
         working-directory: programs/treasury
         run: anchor build
 
+      # The test suite reaches the program through `anchor.workspace`, which
+      # reads Anchor.toml, looks up [programs.<provider.cluster>], and finds no
+      # [programs.devnet] entry — so it falls back to the IDL address, which
+      # `anchor build` writes from declare_id!(). That must equal PROGRAM_ID,
+      # which is where the .so gets preloaded below. Fail loudly if it drifts.
+      - name: Verify the built IDL targets PROGRAM_ID
+        working-directory: programs/treasury
+        run: |
+          IDL_ADDR=$(node -e "console.log(require('./target/idl/treasury.json').address)")
+          echo "IDL address:   $IDL_ADDR"
+          echo "PROGRAM_ID:    $PROGRAM_ID"
+          test "$IDL_ADDR" = "$PROGRAM_ID" || {
+            echo "::error::Built IDL address does not match PROGRAM_ID"; exit 1; }
+
+      # A throwaway wallet under RUNNER_TEMP. Never the repo or the runner's
+      # default keypair path. The tests read ANCHOR_WALLET + ANCHOR_PROVIDER_URL.
       - name: Create test wallet
         run: |
-          solana-keygen new --no-bip39-passphrase --silent --force -o "$HOME/.config/solana/id.json"
-          solana config set --keypair "$HOME/.config/solana/id.json" --url http://127.0.0.1:8899
-          echo "ANCHOR_WALLET=$HOME/.config/solana/id.json" >> "$GITHUB_ENV"
+          solana-keygen new --no-bip39-passphrase --silent --force -o "$RUNNER_TEMP/test-wallet.json"
+          echo "ANCHOR_WALLET=$RUNNER_TEMP/test-wallet.json" >> "$GITHUB_ENV"
           echo "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899" >> "$GITHUB_ENV"
+          echo "solana-keygen pubkey \"$RUNNER_TEMP/test-wallet.json\"" > "$RUNNER_TEMP/wallet-pubkey"
 
       - name: Start local validator with program preloaded
         run: |
@@ -110,9 +128,19 @@ jobs:
           done
           solana cluster-version --url http://127.0.0.1:8899
 
-      - name: Fund the test wallet
-        run: solana airdrop 10 "$(solana-keygen pubkey "$HOME/.config/solana/id.json")" --url http://127.0.0.1:8899
+      # Proves the --bpf-program preload actually took, rather than assuming it.
+      - name: Verify the program is loaded at PROGRAM_ID
+        run: solana program show "$PROGRAM_ID" --url http://127.0.0.1:8899
 
+      - name: Fund the test wallet
+        run: solana airdrop 10 "$(cat "$RUNNER_TEMP/wallet-pubkey")" --url http://127.0.0.1:8899
+
+      # Anchor.toml's provider.cluster is "devnet", so `anchor test` would try
+      # to DEPLOY to devnet (and fail on insufficient funds). The validator is
+      # already running with the program preloaded, so invoke the test script
+      # directly instead — the exact command proven to run the suite against a
+      # preloaded .so. It must be run from programs/treasury: the suite resolves
+      # `../target/types/treasury` and anchor.workspace reads ./Anchor.toml.
       - name: Program tests
         working-directory: programs/treasury
         run: pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
