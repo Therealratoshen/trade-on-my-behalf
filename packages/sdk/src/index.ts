@@ -20,8 +20,10 @@
 
 export {
   withTrader,
+  assertPolicyOwnership,
   decodePolicy,
   derivePolicyPda,
+  ForeignPolicyError,
   micro,
   parseAuditEvents,
 } from './withTrader.js';

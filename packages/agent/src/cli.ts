@@ -155,7 +155,17 @@ async function main(argv: string[]): Promise<number> {
       const connection = new Connection(url, 'confirmed');
       const ownerKp = loadKeypair(str(flags, 'owner'));
       const agentKp = loadKeypair(str(flags, 'agent'));
-      const owner = withTrader({ connection, wallet: ownerKp, policy: agentKp.publicKey });
+      // The agent is the key being governed, so create_policy requires the
+      // agent to co-sign alongside the owner. Both keyfiles are therefore
+      // needed here, and `init-policy` must run on the host holding the agent
+      // key. The owner never needs custody of it in steady state — only for
+      // this one provisioning transaction.
+      const owner = withTrader({
+        connection,
+        wallet: ownerKp,
+        policy: agentKp.publicKey,
+        agentSigner: agentKp,
+      });
       const res = await owner.ensurePolicy({
         agent: agentKp.publicKey,
         vendors: [JUPITER_PERPS_PROGRAM_ID],

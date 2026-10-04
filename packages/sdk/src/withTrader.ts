@@ -6,14 +6,25 @@
  * on every trade. Both handles point at the same policy PDA, which is keyed
  * by the agent pubkey.
  *
+ * Creating the policy needs BOTH keys, because the agent is the key being
+ * governed: the owner's handle must be given `agentSigner` so the agent
+ * co-signs. Without the agent's signature no policy can come into existence,
+ * which is what stops a third party from squatting the PDA and choosing caps
+ * for someone else's agent key.
+ *
  * ```ts
  * import { withTrader } from "@trade-on-my-behalf/sdk";
  * import { Connection } from "@solana/web3.js";
  *
  * const connection = new Connection("https://api.devnet.solana.com");
  *
- * // Owner, once:
- * const owner = withTrader({ connection, wallet: ownerKeypair, policy: agentKeypair.publicKey });
+ * // Owner, once. Needs the agent keypair: both parties consent.
+ * const owner = withTrader({
+ *   connection,
+ *   wallet: ownerKeypair,
+ *   policy: agentKeypair.publicKey,
+ *   agentSigner: agentKeypair,
+ * });
  * await owner.ensurePolicy({
  *   agent: agentKeypair.publicKey,
  *   vendors: [JUPITER_PERPS_PROGRAM_ID],
@@ -183,8 +194,81 @@ export interface WithTraderOptions {
   wallet: Keypair;
   /** The agent pubkey the policy is bound to (PDA seed). */
   policy: PublicKey;
+  /**
+   * The agent's keypair, required only to call `ensurePolicy`.
+   *
+   * `create_policy` requires the *agent* to sign as well as the owner: the
+   * agent is the key being governed, and without its signature anyone could
+   * `init` the policy PDA for a victim's agent key and choose the vendor
+   * whitelist and caps. See `ensurePolicy` for the full rationale.
+   *
+   * Supply it whenever you hold it. When it is absent `ensurePolicy` still
+   * works for the common, harmless case — the policy already exists and is
+   * owned by you — but it refuses to create a new one rather than fail deep
+   * inside the RPC layer.
+   */
+  agentSigner?: Keypair;
   /** Commitment level. Default 'confirmed'. */
   commitment?: Commitment;
+}
+
+/**
+ * Raised when the policy PDA for `agent` already exists but is governed by
+ * somebody else's owner key.
+ *
+ * This is the client-side half of the PDA-squatting fix. On-chain,
+ * `create_policy` now demands the agent's signature so an attacker cannot
+ * *create* a hostile policy. But a policy created before this fix — or one the
+ * agent itself accepted under an attacker-controlled owner — can still sit on
+ * the PDA. The old SDK swallowed that: `fetchPolicy()` returned something
+ * truthy, so `ensurePolicy` returned `{ createdNew: false }` and the caller
+ * went on believing it had set the caps it asked for. Throwing is the only
+ * safe behaviour: `update_policy` is owner-gated, so a foreign owner cannot be
+ * evicted, and rotating to a fresh agent key is the documented recovery.
+ */
+export class ForeignPolicyError extends Error {
+  constructor(
+    /** The owner key that actually controls the policy. */
+    readonly onChainOwner: PublicKey,
+    /** The agent the policy is bound to. */
+    readonly agent: PublicKey,
+    /** The owner key the caller believed it was using. */
+    readonly expectedOwner: PublicKey,
+  ) {
+    super(
+      `policy for agent ${agent.toBase58()} already exists and is owned by ` +
+        `${onChainOwner.toBase58()}, not by ${expectedOwner.toBase58()}. ` +
+        `Refusing to continue under rules you did not set. ` +
+        `update_policy is owner-gated, so the existing owner cannot be replaced. ` +
+        `The agent must either accept these rules explicitly or rotate to a fresh keypair ` +
+        `(keygen -> init-policy) — the policy PDA is derived from the agent key.`,
+    );
+    this.name = 'ForeignPolicyError';
+  }
+}
+
+/**
+ * Pure ownership check behind `ensurePolicy`'s `createdNew: false` path.
+ *
+ * Split out from the RPC path so the rule is unit-testable offline — the SDK
+ * test suite never talks to a validator. Takes the already-fetched policy (or
+ * `null` when the PDA does not exist yet) and the expected owner, and throws
+ * `ForeignPolicyError` if the policy belongs to someone else.
+ *
+ * @param existing decoded policy, or `null` if the PDA is uninitialized
+ * @param expectedOwner the owner key the caller is acting as
+ * @param agent the agent the policy is bound to, for the error message
+ */
+export function assertPolicyOwnership(
+  existing: PolicyLike | null,
+  expectedOwner: PublicKey,
+  agent: PublicKey,
+): void {
+  if (existing === null) return;
+  // `owner` is decoded straight from chain bytes, so compare by value, never
+  // by reference identity.
+  if (existing.owner.equals(expectedOwner)) return;
+  throw new ForeignPolicyError(existing.owner, agent, expectedOwner);
 }
 
 export interface WithTraderHandle {
@@ -208,6 +292,7 @@ export interface WithTraderHandle {
 
 export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   const { connection, wallet, policy } = opts;
+  const { agentSigner } = opts;
   const commitment = opts.commitment ?? 'confirmed';
   const confirmOpts: ConfirmOptions = { commitment, preflightCommitment: commitment };
   const provider = new AnchorProvider(connection, new Wallet(wallet), confirmOpts);
@@ -220,6 +305,19 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
     return decodePolicy(info.data);
   }
 
+  /**
+   * Create the policy if it does not exist yet.
+   *
+   * Two-party consent: `create_policy` requires BOTH the owner (payer) and the
+   * agent to sign, because the agent is the key being governed. The agent
+   * keypair comes from `withTrader({ agentSigner })`; without it we refuse to
+   * create rather than send a transaction the runtime will reject.
+   *
+   * Returns `{ createdNew: false }` when the policy already exists *and* is
+   * owned by this handle's wallet. A policy owned by anyone else throws
+   * `ForeignPolicyError` — silently inheriting foreign caps is the bug this
+   * whole change set exists to close.
+   */
   async function ensurePolicy(input: CreatePolicyInput) {
     if (input.vendors.length > MAX_VENDORS) {
       throw new Error(`vendors array length ${input.vendors.length} > MAX_VENDORS (${MAX_VENDORS})`);
@@ -227,7 +325,27 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
     if (!input.agent.equals(policy)) {
       throw new Error(`input.agent ${input.agent.toBase58()} does not match handle policy ${policy.toBase58()}`);
     }
-    if (await fetchPolicy()) return { signature: '', createdNew: false };
+    const existing = await fetchPolicy();
+    assertPolicyOwnership(existing, wallet.publicKey, input.agent);
+    if (existing !== null) return { signature: '', createdNew: false };
+
+    if (agentSigner === undefined) {
+      throw new Error(
+        `creating a policy for agent ${input.agent.toBase58()} requires the agent's signature, ` +
+          `but this handle was built without agentSigner. ` +
+          `Construct the handle with withTrader({ connection, wallet: ownerKeypair, ` +
+          `policy: agentPubkey, agentSigner: agentKeypair }) — the agent must consent to being ` +
+          `governed. If you do not hold the agent key, the agent runtime must run ` +
+          `init-policy once (tomb init-policy --owner <file> --agent <file>).`,
+      );
+    }
+    if (!agentSigner.publicKey.equals(input.agent)) {
+      throw new Error(
+        `agentSigner public key ${agentSigner.publicKey.toBase58()} does not match ` +
+          `input.agent ${input.agent.toBase58()}`,
+      );
+    }
+
     const signature = await program.methods
       .createPolicy(
         input.vendors,
@@ -243,6 +361,9 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
         owner: wallet.publicKey,
         systemProgram: SystemProgram.programId,
       })
+      // AnchorProvider signs with `wallet`; the agent's co-signature is added
+      // here. Both are required by the program.
+      .signers([agentSigner])
       .rpc(confirmOpts);
     return { signature, createdNew: true };
   }
