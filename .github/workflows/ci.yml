@@ -82,9 +82,17 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      # programs/treasury is NOT a member of the root workspace (the root
+      # pnpm-workspace.yaml only globs apps/* and packages/*), so it has its own
+      # committed pnpm-lock.yaml and installs standalone.
+      #
+      # --ignore-workspace is required, not cosmetic: the program directory
+      # ships a scaffolded pnpm-workspace.yaml containing only `allowBuilds:`
+      # and no `packages:` key. Without this flag pnpm reads that file and
+      # aborts with ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION.
       - name: Install program deps
         working-directory: programs/treasury
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace
 
       # `anchor build` is a purely local operation: it compiles with
       # cargo build-sbf, then generates target/idl + target/types. It makes no
