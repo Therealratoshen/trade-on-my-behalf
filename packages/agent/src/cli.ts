@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
-import { reasonCodeName, withTrader, type AuditEvent } from '@trade-on-my-behalf/sdk';
+import { isDevnetGenesis, reasonCodeName, withTrader, type AuditEvent } from '@trade-on-my-behalf/sdk';
 
 import { createRuntime, type TradeReceipt } from './runtime.js';
 import { isMarket, type Market, type PriceFeed } from './venue/index.js';
@@ -136,6 +136,12 @@ function printReceipt(r: TradeReceipt, url: string): void {
   console.log(`receipt  ${explorerTx(a.signature, url)}`);
   if (r.mismatch) {
     console.log(`WARNING  off-chain preflight said ${reasonCodeName(r.preflight!.reasonCode)}; chain answer used`);
+  }
+  if (r.permit) {
+    console.log(`permit   nonce ${r.permit.nonce} binds this fill to the approval above (off-chain check)`);
+  }
+  if (r.permitError) {
+    console.log(`PERMIT REFUSED  ${r.permitError} — nothing was executed`);
   }
   if (r.fill) {
     console.log(`fill     ${r.fill.venuePositionId} @ ${usd(r.fill.priceUsd)}  fee ${usd(r.fill.feeUsd)}  (paper — simulated at live Jupiter price)`);
@@ -278,12 +284,64 @@ async function main(argv: string[]): Promise<number> {
       const venueName = pos[0] ?? 'jupiter-perps';
       if (venueName !== 'jupiter-perps') throw new Error(`unknown venue ${venueName}; v1 supports jupiter-perps`);
       const url = str(flags, 'url', process.env.RPC_URL ?? 'http://127.0.0.1:8899');
-      const info = await new Connection(url, 'confirmed').getAccountInfo(JUPITER_PERPS_PROGRAM_ID);
+      const connection = new Connection(url, 'confirmed');
+      const info = await connection.getAccountInfo(JUPITER_PERPS_PROGRAM_ID);
+
+      // Which cluster are we actually talking to? The URL is only a label, so
+      // ask the node — the same reasoning as the write guard in
+      // `assertDevnetWrite`. This is what lets us tell "this venue does not
+      // exist here" apart from "this venue is mainnet-only, look there".
+      let cluster: 'devnet' | 'mainnet' | 'testnet' | 'a local validator or private cluster';
+      try {
+        const genesis = await connection.getGenesisHash();
+        if (isDevnetGenesis(genesis)) cluster = 'devnet';
+        else if (genesis.startsWith('5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp')) cluster = 'mainnet';
+        else if (genesis.startsWith('4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z')) cluster = 'testnet';
+        else cluster = 'a local validator or private cluster';
+      } catch {
+        cluster = 'a local validator or private cluster';
+      }
+
       const live = info?.executable === true;
       console.log(JUPITER_PERPS_PROGRAM_ID.toBase58());
-      console.error(live
-        ? `jupiter-perps program is deployed on ${url}`
-        : `jupiter-perps program is NOT deployed on ${url}; the runtime uses paper mode. The pubkey above is still the vendor to whitelist.`);
+      console.log(`cluster ${cluster} (${url})`);
+
+      if (live) {
+        console.error(`jupiter-perps IS deployed on ${cluster} at the pubkey above.`);
+        return 0;
+      }
+
+      // Not deployed here. Say which kind of "not here" it is, and do not
+      // recommend whitelisting a vendor this cluster cannot reach — the old
+      // message told the reader to whitelist an address that does not exist
+      // on the chain they were pointed at, which reads as an instruction to
+      // configure a venue that can never fill.
+      if (cluster === 'mainnet') {
+        console.error(
+          `jupiter-perps is NOT deployed on this validator/local cluster. The Jupiter Perps ` +
+          `program is mainnet-only; it does not exist on devnet or a local validator. ` +
+          `Do not whitelist it for ${url} — nothing there can fill. v1 runs in paper mode.`,
+        );
+        return 0;
+      }
+
+      if (cluster === 'devnet' || cluster === 'testnet') {
+        console.error(
+          `jupiter-perps is NOT deployed on ${cluster}. That is expected: the Jupiter Perps ` +
+          `program is mainnet-only and has never been deployed to ${cluster}. ` +
+          `Do not whitelist it for ${cluster} — nothing there can fill. ` +
+          `v1 runs in paper mode, and no order reaches Jupiter.`,
+        );
+        return 0;
+      }
+
+      console.error(
+        `jupiter-perps is NOT deployed on ${cluster} (${url}). Two different situations look ` +
+        `like this: a venue that has not been deployed to this cluster yet, or Jupiter Perps, ` +
+        `which is mainnet-only and will never appear here. This runtime therefore uses ` +
+        `paper mode, and no order reaches Jupiter. Check a current Jupiter deployment ` +
+        `listing before treating the pubkey above as a vendor to whitelist.`,
+      );
       return 0;
     }
 

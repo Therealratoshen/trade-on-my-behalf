@@ -63,11 +63,16 @@ committed.
   and `update_policy` reference `system_program::ID` solely as an
   `AuditEvent.vendor` label. There is no code path that moves a
   user's funds or calls a venue.
-- **Does not bind the venue action.** Nothing in the policy is bound
-  to a venue account, market or side. `vendor` is caller-supplied, and
+- **Does not bind the venue action on chain.** Nothing in the policy is
+  bound to a venue account, market or side. `vendor` is caller-supplied, and
   the same key that submits the authorisation submits the venue order
   independently. An `approved: true` event is a statement about
   caller-supplied fields, not an execution that occurred.
+- **Binds execution off chain, via a `SpendPermit`.** Since 2026-10-04 the
+  runtime mints a permit from each approval and `Venue.openPosition` requires
+  it, refusing a missing, mismatched or replayed permit. This is enforced by
+  this repository's code, not by the program, and a process that skips the
+  runtime is still unbound. See [security model](security-model.md).
 - **Does not prevent bypass.** A caller holding a key can trade at the
   venue without ever calling `authorize_spend`. This is test **E17**,
   which currently records that the design cannot claim the bypass

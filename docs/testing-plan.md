@@ -1,6 +1,12 @@
 # Testing Plan — Source Inventory, Required Coverage and Evidence
 
-Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source (20 / 31 / 37 = 88 `it`/`test` cases) and all three were executed locally — the Anchor suite against a local validator from a cleaned `target/`, the SDK and agent suites offline — and `pnpm demo` ran end-to-end. The CI run for revision `d293398` was inspected and both jobs report success. Counts and PASS statuses below are backed by the executed-run record in [Executed-run record](#executed-run-record). Historical local-demo reports still do not substitute for public devnet receipts or human sessions.
+Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source and all three were executed locally — the Anchor suite against a local validator from a cleaned `target/`, the SDK and agent suites offline — and `pnpm demo` ran end-to-end. The CI run for revision `d293398` was inspected and both jobs report success. Counts and PASS statuses below are backed by the executed-run record in [Executed-run record](#executed-run-record). Historical local-demo reports still do not substitute for public devnet receipts or human sessions.
+
+Re-verified again on 2026-10-04 after the execution-binding change (a `SpendPermit` is now
+required by `Venue.openPosition`): the agent suite grew from 37 to **62** cases and the Anchor
+suite was re-run unchanged at **20**. Current source total is **20 / 31 / 62 = 113**. The
+`Anchor program tests` and `SDK + agent tests` jobs both reported `success` on revision
+`993b421`, <https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37205967172>.
 
 ## Authoritative links
 
@@ -12,7 +18,7 @@ Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-c
 |---|---|---|---|
 | Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 20 `it` cases | PASS — 20/20 executed locally 2026-10-04, and green in CI — see [run record](#executed-run-record) |
 | SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts`, `ensurePolicyOwnership.test.ts`, `registration.test.ts` | 31 `test` cases | PASS — 31/31 executed 2026-10-04 |
-| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts`, `policyState.test.ts` | 37 `test` cases | PASS — 37/37 executed 2026-10-04 |
+| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts`, `policyState.test.ts`, `permit.test.ts` | 62 `test` cases | PASS — 62/62 executed 2026-10-04 |
 | Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | PASS — ran end-to-end 2026-10-04; see [run record](#executed-run-record) |
 | Browser E2E | No checked-in browser test harness/suite | None | NOT IMPLEMENTED |
 | Public devnet venue E2E | No implemented real venue adapter | None | BLOCKED |
@@ -21,7 +27,7 @@ Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-c
 
 Earlier references to `tests/litesvm.rs`, `tests/surfpool/*.spec.ts`, `pnpm test:surfpool`, nightly integration or already-measured coverage were plans, not implemented evidence. LiteSVM/Mollusk/Surfpool can be evaluated later; they are not the present harness.
 
-**Case counts are read from the test source; PASS statuses are not.** The 88 cases above are counted by reading the test files. The PASS rows are backed by the executed-run record below. The rows marked NOT RUN, NOT IMPLEMENTED, BLOCKED or NOT CAPTURED still have no exit status against the current revision, so per the release rule below none of them is marked PASS or FAIL.
+**Case counts are read from the test source; PASS statuses are not.** The 113 cases above are counted by reading the test files. The PASS rows are backed by the executed-run record below. The rows marked NOT RUN, NOT IMPLEMENTED, BLOCKED or NOT CAPTURED still have no exit status against the current revision, so per the release rule below none of them is marked PASS or FAIL.
 
 <a id="executed-run-record"></a>
 ## Executed-run record
@@ -37,7 +43,7 @@ Per the release rule, PASS/FAIL require actual execution and artifacts. This is 
   revision `d293398`, <https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37203451979>.
   The job runs a local validator; it is not a public-cluster result.
 - **SDK offline unit tests — PASS, 31/31.** `pnpm --filter @trade-on-my-behalf/sdk test`, 2026-10-04, exit 0, `pass 31 / fail 0`.
-- **Agent offline unit tests — PASS, 37/37.** `pnpm --filter @trade-on-my-behalf/agent test`, 2026-10-04, exit 0, `pass 37 / fail 0`.
+- **Agent offline unit tests — PASS, 62/62.** `pnpm --filter @trade-on-my-behalf/agent test`, 2026-10-04, exit 0, `pass 62 / fail 0`. Up from 37: `tests/permit.test.ts` adds 21 execution-binding cases and `tests/runtime.test.ts` adds 4 permit-threading cases. The pre-existing 37 were **not** modified to accommodate the change; the only edit to that file was giving its `FakeChain` test double a strictly increasing nonce, which the real SDK's `nextNonce()` already does — a constant nonce would have made every second trade look like a replayed permit, a property of the double and not of the chain.
 - **`pnpm demo` — PASS, all nine steps.** Run 2026-10-04 with a throwaway `OWNER_KEY`; each step
   produced its documented outcome. The devnet-write guard added in `01940a2` had been blocking every
   write because `scripts/demo.sh` never passed `--local-validator`; fixed there and re-verified.

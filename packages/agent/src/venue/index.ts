@@ -1,5 +1,9 @@
 import type { PublicKey } from '@solana/web3.js';
 
+import type { SpendPermit } from './permit.js';
+
+export type { SpendPermit };
+
 export type Side = 'long' | 'short';
 export type VenueName = 'jupiter-perps';
 
@@ -22,6 +26,15 @@ export interface OpenParams {
   collateralUsd: number;
   /** Leverage in basis points (100 = 1x, 500 = 5x). */
   leverageBps: number;
+  /**
+   * Proof that the on-chain gate approved *this exact* order.
+   *
+   * Required, not optional. `openPosition` throws `PermitError` without it,
+   * or when the permit's vendor/amount/leverage/market/side disagree with the
+   * order, or when its nonce was already spent. See `venue/permit.ts` for
+   * what this does and does not prove.
+   */
+  permit: SpendPermit;
 }
 
 export interface Position {
@@ -52,6 +65,10 @@ export interface Venue {
   readonly mode: 'paper' | 'live';
   /** Pubkey the on-chain policy whitelists as the `vendor` for this venue. */
   readonly programId: PublicKey;
+  /**
+   * Open a position. Refuses unless `p.permit` is a live, unspent
+   * `SpendPermit` that matches every field of `p`.
+   */
   openPosition(p: OpenParams): Promise<Fill>;
   closePosition(venuePositionId: string): Promise<Fill & { realizedPnlUsd: number }>;
   listPositions(): Promise<Position[]>;

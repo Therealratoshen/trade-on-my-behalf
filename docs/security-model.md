@@ -6,19 +6,66 @@ Updated 2026-10-03. Static source review plus the dated read-only checks in [dev
 
 **The Treasury program checks and records an authorization request against stored policy fields. The current runtime respects that decision before a simulated fill. It does not prove that all venue transactions obey those fields.**
 
-Do not use “physically cannot break your rules,” “wallet signing-layer enforcement,” or “every trade is unbypassable” for this implementation. [TRD](../TRD.md) states the authority binding required for that stronger claim.
+Do not use "physically cannot break your rules," "wallet signing-layer enforcement," or "every trade is unbypassable" for this implementation. [TRD](../TRD.md) states the authority binding required for that stronger claim.
+
+## Execution binding — implemented, and the limit it does not cross
+
+Updated 2026-10-04. The gap this closes was real: `authorize_spend` emits an `AuditEvent`
+carrying a `nonce`, and before this change **nothing consumed it**. The runtime gated the venue
+call on the in-memory boolean `audit.approved`, so a different process, a mutated intent or a
+replayed approval could reach the venue unchecked.
+
+**What is implemented now.** The runtime mints a `SpendPermit` from each approved `AuditEvent`
+(`packages/agent/src/venue/permit.ts`) and `Venue.openPosition` requires it. The venue adapter
+recomputes the binding itself before touching any state, and refuses with a `PermitError` on a
+missing or hand-built permit, on any field mismatch (vendor, collateral, leverage, market,
+side), and on a nonce already spent in this process. The permit is frozen, carries the
+`authorize_spend` signature and slot, and a rejected order leaves both the paper account and
+the unspent permit unchanged. The permit is present on the `TradeReceipt` and printed by the
+CLI.
+
+**The claim this supports:** *the runtime will not execute what it did not approve.*
+
+**The claim this does NOT support:** *on-chain, an unapproved execution is impossible.*
+That remains false, for concrete reasons:
+
+1. **The chain does not know a permit exists.** `authorize_spend` is unchanged: it neither
+   consumes the nonce nor stores a permit. `AuditEvent.nonce` is still a caller-supplied `u64`
+   that is logged and never checked, exactly as before.
+2. **The chain's approval covers less than the permit checks.** `AuditEvent` echoes `vendor`
+   and `amount_usdc` only. The program is never passed `market` or `side`, so those two
+   permit fields are bound to what the runtime *recorded* having sent, not to a chain decision.
+   `leverage_bps` is genuinely enforced on chain against the cap, but the permit proves the
+   fill matches the value submitted — the event does not echo it back.
+3. **The enforcement is code in this repository.** The permit's issuer marker is an identity
+   check, not a signature. A process that skips `authorize_spend` and builds its own permit
+   object can still open a position. This defends against substitution and replay *within* the
+   runtime, not against a runtime replacement.
+4. **Replay protection does not survive a restart.** Consumed nonces are an in-memory set, so
+   a process restart re-opens the replay window. An on-chain permit account is required to close
+   that.
+5. **The venue cannot enforce anything.** `JupiterPerpsPaperVenue` is a local simulation, and a
+   live venue enforces its own rules on its own accounts regardless of this process.
+
+**Recorded follow-up (not implemented).** Make the binding a chain property: have
+`authorize_spend` mint an on-chain permit keyed by the policy PDA, carrying the approved
+vendor/amount/leverage plus the market and side the order needs, and have the execution path
+consume that permit exactly once. `Policy` has no spare field for a consumed-nonce set and
+`vendors` is fixed at `create_policy`, so this needs a new `Permit` account rather than a field
+on `Policy`, and a new `REASON_*` code if a denial is to stay on the ladder. It must not add
+custody, transfers or CPI. Until that ships, treat the row above as the ceiling.
 
 ## Threat and limitation ledger
 
 | Risk | Source-backed current behavior | Required mitigation / acceptance |
 |---|---|---|
-| Compromised agent/executor | Cannot update owner policy, but authorization is separate from venue action | Wrapper/custody authority; direct bypass and parameter substitution tests fail |
-| Vendor/size/market substitution | Gate accepts vendor label and reported amount/leverage; no venue/account/side/market binding | Bind exact intent and validated venue accounts; enforce controlled authority |
+| Compromised agent/executor | Cannot update owner policy. Execution is now bound to the approval **by a `SpendPermit`** that the venue verifies, but that binding is off-chain and lives in this repository's code | On-chain spend permit / venue authority so the binding is a chain property, not a code property; direct bypass and parameter substitution tests fail |
+| Vendor/size/market substitution | The permit binds vendor and collateral to the values the chain decided, and binds market/side/leverage to what the runtime submitted — but off-chain. A process that skips the runtime is still unbound | Bind exact intent and validated venue accounts on chain; enforce controlled authority |
 | Denial followed by venue instruction | Policy denial returns `Ok`; unrelated later instruction could run | Wrapper must skip/reject venue action on denial; transaction success is not approval |
 | Stolen owner key | Owner can loosen caps, disable drawdown and update TTL | Explicit owner compromise limitation; evaluate timelock/multisig/revocation; not implemented |
 | Fabricated equity | Overreported current equity bypasses drawdown; supplied peak can be inflated | Verify venue state/oracles; fail closed for new risk on unavailable data |
 | Uninitialized risk | Peak is zero at creation; advertised SDK initial peak is not applied | Explicit unarmed state and verified initialization before claiming drawdown safety |
-| Replay / crash / ambiguous RPC | Nonce only logged; SDK can throw after authorization committed | Durable intent journal and consumed-intent state; reconcile before fresh signature |
+| Replay / crash / ambiguous RPC | Nonce still only logged **on chain**; off-chain the permit makes a nonce single-use within the process, which does not survive a restart. SDK can throw after authorization committed | On-chain nonce consumption in a permit account; durable intent journal and consumed-intent state; reconcile before fresh signature |
 | Budget misunderstanding | Approved collateral counted, even if subsequent venue step fails | Clear budget semantics; do not promise a daily loss ceiling or automatic refund |
 | Arithmetic overflow | Saturating addition may approve overflow at max cap | Checked arithmetic and adversarial maximum-value tests |
 | Paper data leakage/lost writes | Shared unauthenticated demo state; non-atomic file writes and async races | Account isolation, no filesystem disclosure, validated atomic transactional storage |

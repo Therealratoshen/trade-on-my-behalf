@@ -20,7 +20,7 @@ No automatic fallback is implemented or permitted. Select one venue deeply after
 
 ## Existing contract versus needed contract
 
-Current `Venue` exposes `openPosition`, `closePosition`, `listPositions`, `equityUsd`, `programId`, `mode` and name `jupiter-perps`. `Fill` has one signature, position ID, price, fee and simulation flag.
+Current `Venue` exposes `openPosition`, `closePosition`, `listPositions`, `equityUsd`, `programId`, `mode` and name `jupiter-perps`. `Fill` has one signature, position ID, price, fee and simulation flag. `openPosition` additionally **requires a `SpendPermit`** minted from an approved `authorize_spend` and verifies it before filling — vendor, collateral, leverage, market and side must all match, and the nonce is single-use. That binding is off-chain and enforced by this repository's code, not by the program.
 
 Real execution additionally needs explicit environment/account/mint/market, order ID/status, requested and filled quantities, remaining quantity, expiry, execution estimates, exact fees, cancellation/reduction support and reconciliation. Order request accepted is not equivalent to filled.
 

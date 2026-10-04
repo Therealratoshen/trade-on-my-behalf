@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { PublicKey } from '@solana/web3.js';
 
 import type { Fill, Market, OpenParams, Position, PriceFeed, Side, Venue } from './index.js';
+import { consumePermit } from './permit.js';
 
 /** Jupiter Perps mainnet program. Also the `vendor` pubkey the policy whitelists. */
 export const JUPITER_PERPS_PROGRAM_ID = new PublicKey('PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu');
@@ -62,8 +63,16 @@ export function unrealizedPnlUsd(p: PaperPosition, markPriceUsd: number): number
  * Jupiter Perps adapter, paper mode.
  *
  * Fills are simulated at the live Jupiter oracle price with Jupiter Perps'
- * 6 bps fee; no order reaches Jupiter. The on-chain policy check that gates
- * each fill is real. Live mode (building the Jupiter Perps
+ * 6 bps fee; no order reaches Jupiter.
+ *
+ * **Execution binding.** `openPosition` requires a `SpendPermit` minted from
+ * an approved `authorize_spend` and recomputes the binding itself
+ * (`consumePermit`) before touching any state. A missing, forged, mismatched
+ * or replayed permit throws `PermitError` and no position is opened. This is
+ * an off-chain gate inside this process — see `venue/permit.ts` for exactly
+ * what it does and does not prove.
+ *
+ * Live mode (building the Jupiter Perps
  * `createIncreasePositionMarketRequest` transaction) is not implemented:
  * Jupiter Perps is mainnet-only, and v1 targets devnet.
  */
@@ -85,6 +94,17 @@ export class JupiterPerpsPaperVenue implements Venue {
   }
 
   async openPosition(p: OpenParams): Promise<Fill> {
+    // The permit gate runs FIRST, before any validation, state read or
+    // mutation. A rejected order must leave the account byte-identical, and
+    // "was this approved?" is the question that must be asked first.
+    consumePermit(p.permit, {
+      vendor: this.programId.toBase58(),
+      market: p.market,
+      side: p.side,
+      collateralUsd: p.collateralUsd,
+      leverageBps: p.leverageBps,
+    });
+
     if (!(p.collateralUsd > 0)) throw new Error('collateralUsd must be > 0');
     if (p.leverageBps < 100) throw new Error('leverageBps must be >= 100 (1x)');
     const s = this.state();
