@@ -210,12 +210,24 @@ jobs:
 
       # A throwaway wallet under RUNNER_TEMP. Never the repo or the runner's
       # default keypair path. The tests read ANCHOR_WALLET + ANCHOR_PROVIDER_URL.
+      #
+      # `> "$RUNNER_TEMP/wallet-pubkey"` runs solana-keygen and redirects its
+      # stdout. Writing the command itself (e.g. with `echo "solana-keygen
+      # pubkey ...">`) leaves the literal text in the file, and every later
+      # consumer then passes that sentence to solana-keygen/airdrop as an
+      # address, which fails as "unrecognized signer source".
       - name: Create test wallet
         run: |
           solana-keygen new --no-bip39-passphrase --silent --force -o "$RUNNER_TEMP/test-wallet.json"
           echo "ANCHOR_WALLET=$RUNNER_TEMP/test-wallet.json" >> "$GITHUB_ENV"
           echo "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899" >> "$GITHUB_ENV"
-          echo "solana-keygen pubkey \"$RUNNER_TEMP/test-wallet.json\"" > "$RUNNER_TEMP/wallet-pubkey"
+          solana-keygen pubkey "$RUNNER_TEMP/test-wallet.json" > "$RUNNER_TEMP/wallet-pubkey"
+          # A base58 pubkey is 44 chars. If this is not 44, the file holds
+          # something other than a pubkey and the airdrop below will fail with
+          # a confusing error; fail here instead, where the cause is obvious.
+          test "$(tr -d '\r\n' < "$RUNNER_TEMP/wallet-pubkey" | wc -c)" -eq 44 || {
+            echo "::error::wallet-pubkey does not contain a pubkey: $(cat "$RUNNER_TEMP/wallet-pubkey")"
+            exit 1; }
 
       - name: Start local validator with program preloaded
         run: |
