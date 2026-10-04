@@ -86,13 +86,17 @@ jobs:
       # action, and the missing solana-keygen/solana-test-validator only surfaces
       # much later as "command not found" in the validator step. Prove the CLI
       # is really here, at the pinned version, before anything depends on it.
+      #
+      # `solana --version` prints a bare `solana-cli 2.2.20 (src:...)`. The "v"
+      # is prepended by setup-anchor to build the release URL, and is not part
+      # of the version string, so match without it.
       - name: Verify the Solana CLI
         run: |
           set -x
           command -v solana solana-keygen solana-test-validator cargo-build-sbf
           solana --version
-          solana --version | grep -q "v$SOLANA_CLI_VERSION" || {
-            echo "::error::expected solana-cli v$SOLANA_CLI_VERSION"; exit 1; }
+          solana --version | grep -q "solana-cli $SOLANA_CLI_VERSION" || {
+            echo "::error::expected solana-cli $SOLANA_CLI_VERSION"; exit 1; }
 
       # ---------------------------------------------------------------------
       # Why Anchor is installed with cargo instead of trusting setup-anchor's
