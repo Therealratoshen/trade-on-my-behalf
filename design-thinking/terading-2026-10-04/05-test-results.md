@@ -11,16 +11,18 @@ implying validation.
 
 > **Superseded counts (2026-10-04, later pass).** The three automated suites
 > in the table below were recorded at the time of this pass and are left
-> exactly as they ran. Re-counting the committed test source later the same
-> day gives **20 program / 16 SDK / 21 agent = 57** defined cases
-> (`programs/treasury/tests/treasury.ts` 20 `it`;
-> `packages/sdk/tests/{derivePolicyPda,decode,ensurePolicyOwnership}.test.ts`
-> 8 + 3 + 5 `test`; `packages/agent/tests/{evaluator,runtime}.test.ts` 12 + 9
-> `test`). The growth is real committed work — agent-consent enforcement and
-> argument bounds (`f9c2569`) added 8 program cases and a new SDK ownership
-> suite. **57 is a DEFINED count, not a result**: no exit status is recorded
-> against the current revision, so nothing here is marked PASS. The
-> design-system findings below are unaffected.
+> exactly as they ran — those runs are real, and the `11/11`, `17/17` and
+> `12/12` figures below are not restated here. Re-counting the committed test
+> source later the same day gives **20 program / 31 SDK / 37 agent = 88**
+> defined cases (`programs/treasury/tests/treasury.ts` 20 `it`;
+> `packages/sdk/tests/` 8 + 3 + 5 + 15 `test`;
+> `packages/agent/tests/` 12 + 9 + 16 `test`).
+> **A DEFINED count is not a result, and this file still records none.** As of
+> this documentation update the SDK (31/31) and agent (37/37) suites have been
+> executed and pass, and the 20 program cases are green in CI on revision
+> `01940a2`; the run record is in [testing-plan.md](../../docs/testing-plan.md).
+> What remains untested here is unchanged: no human has evaluated this design,
+> and the design-system findings below are unaffected by any of it.
 
 Machine checks, with real exit codes:
 

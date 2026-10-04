@@ -1,6 +1,6 @@
 # Testing Plan — Source Inventory, Required Coverage and Evidence
 
-Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source (20 / 16 / 21 = 57 `it`/`test` cases) and the CI row updated. **No code tests were executed in either update.** Test-source counts below are not pass counts. Historical local-demo reports do not substitute for current automated runs, public devnet receipts or human sessions.
+Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-counted from source (20 / 31 / 37 = 88 `it`/`test` cases), the SDK and agent suites were executed locally, and the CI run for revision `01940a2` was inspected — both CI jobs report success. Counts and PASS statuses below are backed by the executed-run record in [Executed-run record](#executed-run-record). Historical local-demo reports still do not substitute for public devnet receipts or human sessions, and no local-validator run was performed in this documentation update for the Anchor row.
 
 ## Authoritative links
 
@@ -10,18 +10,30 @@ Updated 2026-10-03. Re-verified 2026-10-04: the three automated suites were re-c
 
 | Layer | Existing files | Defined cases | Current run status |
 |---|---|---|---|
-| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 20 `it` cases | NOT RUN in this update |
-| SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts`, `ensurePolicyOwnership.test.ts` | 16 `test` cases | NOT RUN in this update |
-| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts` | 21 `test` cases | NOT RUN in this update |
+| Anchor/validator integration | `programs/treasury/tests/treasury.ts` | 20 `it` cases | PASS in CI; not rerun locally in this update — see [run record](#executed-run-record) |
+| SDK offline unit tests | `packages/sdk/tests/derivePolicyPda.test.ts`, `decode.test.ts`, `ensurePolicyOwnership.test.ts`, `registration.test.ts` | 31 `test` cases | PASS — 31/31 executed 2026-10-04 |
+| Agent offline tests | `packages/agent/tests/evaluator.test.ts`, `runtime.test.ts`, `policyState.test.ts` | 37 `test` cases | PASS — 37/37 executed 2026-10-04 |
 | Local CLI/system demo | `scripts/demo.sh`, `pnpm demo` | Nine-step demonstration, not browser E2E | Historical report only; NOT RERUN |
 | Browser E2E | No checked-in browser test harness/suite | None | NOT IMPLEMENTED |
 | Public devnet venue E2E | No implemented real venue adapter | None | BLOCKED |
 | Outside-developer sessions | Three planned cases in `user-tests.md` | None recorded | NOT RUN |
-| CI execution workflow | `.github/workflows/ci.yml` — committed, `workspace` (SDK + agent) and `program` (Anchor) jobs | None | DEFINED |
+| CI execution workflow | `.github/workflows/ci.yml` — committed, `SDK + agent tests` and `Anchor program tests` jobs | Both jobs execute on every push and pull request | PASS — both jobs success on revision `01940a2` |
 
 Earlier references to `tests/litesvm.rs`, `tests/surfpool/*.spec.ts`, `pnpm test:surfpool`, nightly integration or already-measured coverage were plans, not implemented evidence. LiteSVM/Mollusk/Surfpool can be evaluated later; they are not the present harness.
 
-**These are DEFINED cases, not results.** The 57 cases are counted by reading the test source; no exit status is recorded against the current revision for any of the three suites, so per the release rule below none of them is marked PASS or FAIL. The superseding run — with a recorded revision, command and exit status per suite — is still owed.
+**Case counts are read from the test source; PASS statuses are not.** The 88 cases above are counted by reading the test files. The PASS rows are backed by the executed-run record below. The rows marked NOT RUN, NOT IMPLEMENTED, BLOCKED or NOT CAPTURED still have no exit status against the current revision, so per the release rule below none of them is marked PASS or FAIL.
+
+<a id="executed-run-record"></a>
+## Executed-run record
+
+Per the release rule, PASS/FAIL require actual execution and artifacts. This is the record behind the PASS rows above.
+
+- **Anchor program tests — PASS.** Executed by the `Anchor program tests` CI job, not by hand in this update. The `Anchor program tests` job reported `success` on the `main` push for revision `01940a2`: <https://github.com/Therealratoshen/trade-on-my-behalf/actions/runs/37201121325>. The job runs a local validator; it is not a public-cluster result.
+- **SDK offline unit tests — PASS, 31/31.** `cd packages/sdk && pnpm test`, 2026-10-04, exit 0, `pass 31 / fail 0`.
+- **Agent offline unit tests — PASS, 37/37.** `cd packages/agent && pnpm test`, 2026-10-04, exit 0, `pass 37 / fail 0`.
+- **CI workflow — PASS.** Both jobs (`SDK + agent tests`, `Anchor program tests`) reported `success` on the run cited above.
+
+Still owed, and not claimed here: a rerun of the 20 Anchor cases from a local validator in this documentation update; a browser E2E harness; public devnet receipts; three outside-developer sessions; any real venue adapter.
 
 ## Pyramid and isolation
 
@@ -61,10 +73,10 @@ Rebuild dependent packages before their tests. `pnpm devnet:demo` deploys/uses T
 
 - Every critical requirement must map to positive, negative, boundary and recovery cases.
 - Compare evaluator versus program at exact integer/slot boundaries; line coverage alone cannot prove policy-to-venue enforcement.
-- Gate merges on reproducible offline/local-validator checks after CI is implemented.
+- Gate merges on reproducible offline/local-validator checks. CI now enforces this: `.github/workflows/ci.yml` runs `SDK + agent tests` and `Anchor program tests` on every push and pull request, and the ruleset requires both to pass before merge.
 - Keep opt-in public-devnet checks separate from deterministic merge checks; never put mainnet signing in a test job.
 - Store revision/tool versions, named test cases, command, exit status, logs and environment. Do not publish private keys or participant PII.
-- No numeric coverage percentage or passing-test count is claimed until a real report exists.
+- No numeric coverage percentage is claimed: no coverage report exists. Passing-test counts are claimed only where an executed-run record above backs them.
 
 ## Result vocabulary and release rule
 

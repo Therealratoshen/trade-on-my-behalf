@@ -1,6 +1,6 @@
 # Instructions for coding agents
 
-These instructions help agents work safely and consistently in the Terading source repository. The public project is still named `trade-on-my-behalf`; package names and paths are stable identifiers, not app branding. The user-facing product name is **Terading** — use it in new prose. Note that `README.md`, `CONTRIBUTING.md`, `PRD.md` and the `package.json` descriptions still say "Trade On My Behalf"; that drift is tracked, and docs/ and the dashboard use Terading.
+These instructions help agents work safely and consistently in the Terading source repository. The public project is still named `trade-on-my-behalf`; package names and paths are stable identifiers, not app branding. The user-facing product name is **Terading** — use it in new prose. As of 2026-10-04 the prose and `description` fields in `README.md`, `CONTRIBUTING.md`, `PRD.md`, `SUBMISSION.md` and the `package.json` files say Terading; the earlier naming drift is closed. Deliberately unchanged: every package `name` field, the repository slug and any historical reference to the original working name.
 
 ## Prepare before making changes
 

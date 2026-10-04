@@ -1,6 +1,8 @@
-# Trade On My Behalf
+# Terading
 
 > A Solana devnet-first perps terminal in development, with an existing on-chain policy demo and **simulated** Jupiter positions.
+
+The product name is **Terading**. The GitHub repository slug and the `@trade-on-my-behalf/*` package names still carry the original working name, *Trade On My Behalf*; those are stable identifiers, not current branding.
 
 ## What exists today
 

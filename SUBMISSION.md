@@ -4,9 +4,9 @@ Updated 2026-10-03. **Not a claim of submission, completed videos, human tests o
 
 ## Project
 
-Trade On My Behalf — a Solana devnet-first perps terminal in development. Existing code demonstrates on-chain authorization decisions followed by clearly simulated Jupiter positions.
+Terading — a Solana devnet-first perps terminal in development. Existing code demonstrates on-chain authorization decisions followed by clearly simulated Jupiter positions.
 
-Repository: https://github.com/Therealratoshen/trade-on-my-behalf
+Repository: https://github.com/Therealratoshen/trade-on-my-behalf — the GitHub slug and the `trade-on-my-behalf` package names still carry the original working name; they are stable identifiers, not current branding.
 
 ## What may be claimed
 
@@ -21,7 +21,7 @@ Do **not** claim live Jupiter orders, working devnet venue trading, immutable wa
 
 | Evidence | Status | Source |
 |---|---|---|
-| Current offline/program test rerun | NOT RUN in this documentation update | [testing plan](docs/testing-plan.md) |
+| Current offline/program test rerun | PASS — 31/31 SDK, 37/37 agent executed 2026-10-04; 20/20 Anchor cases green in CI on `01940a2` | [testing plan](docs/testing-plan.md) |
 | Historical local-validator policy/paper demo | Reported historically; not rerun or public-devnet proof | [demo receipts](docs/demo-receipts.md) |
 | Treasury devnet deployment | BLOCKED: configured address absent at dated RPC observation | [readiness](docs/devnet-readiness.md) |
 | Public devnet authorization receipts | NOT CAPTURED | [demo receipts](docs/demo-receipts.md) |

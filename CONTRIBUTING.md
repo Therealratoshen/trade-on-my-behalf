@@ -1,4 +1,4 @@
-# Contributing to Trade On My Behalf
+# Contributing to Terading
 
 Updated 2026-10-03. Start with [PRD](PRD.md), [TRD](TRD.md) and the [documentation index](docs/documentation-index.md).
 
@@ -10,7 +10,7 @@ Do not describe current authorization as venue custody enforcement. Preserve dis
 
 ## Build and test
 
-Use Node 20+ and the repository's pinned package manager. Run documented existing commands in [testing-plan.md](docs/testing-plan.md). Program tests currently use `programs/treasury/tests/treasury.ts` under Anchor/local validator; no claimed LiteSVM/Surfpool/browser suite or CI should be assumed.
+Use Node 20+ and the repository's pinned package manager. Run documented existing commands in [testing-plan.md](docs/testing-plan.md). Program tests use `programs/treasury/tests/treasury.ts` under Anchor/local validator. CI does exist and is enforced: `.github/workflows/ci.yml` runs `SDK + agent tests` and `Anchor program tests` on every push and pull request, and the branch ruleset requires both to pass before merge. Do not assume a LiteSVM/Surfpool/browser suite — none is implemented.
 
 After program changes, rebuild and run SDK `sync-idl`, rebuild dependent packages and verify IDL/program identity. Do not commit private keys or generated key material.
 

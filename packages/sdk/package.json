@@ -2,7 +2,7 @@
   "name": "@trade-on-my-behalf/sdk",
   "version": "0.1.0",
   "private": true,
-  "description": "TypeScript SDK for the Trade On My Behalf Anchor treasury program (on-chain policy gate).",
+  "description": "TypeScript SDK for the Terading Anchor treasury program (on-chain policy gate).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

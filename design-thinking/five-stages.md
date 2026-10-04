@@ -163,7 +163,10 @@ the corrected wedge above, not a boundary the kernel enforces:
   `treasury.so` on 2026-10-04: 224,392 bytes (~219KB); the "209KB"
   this line used to carry was a 2026-09-26 measurement, stale since
   the D9 argument validation was added. The program test file has 20
-  cases; 16 SDK and 21 agent unit tests alongside it, 57 total.
+  cases; 31 SDK and 37 agent unit tests alongside it, 88 total.
+  (Counts re-verified 2026-10-04: the devnet genesis-hash guard added
+  `packages/sdk/tests/registration.test.ts` 15 cases, and the slot-vs-
+  wall-clock fix added `packages/agent/tests/policyState.test.ts` 16.)
   The SDK and agent suites are pure offline unit tests
   (`node --test`) and need no validator. The program suite does:
   `tests/treasury.ts` calls `anchor.AnchorProvider.env()` and reads
