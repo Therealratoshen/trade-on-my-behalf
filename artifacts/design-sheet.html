@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terading &mdash; design system</title>
+<style>:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#08090c;color:#e6e9ef;
+  font-family:-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, sans-serif;font-size:14px;line-height:1.5;
+  padding:24px 20px 72px}
+.wrap{max-width:1120px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-0.02em}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.02em;margin:0}
+h3{font-size:14px;margin:0}
+p.lede{color:#8b93a4;max-width:74ch;margin:4px 0 0}
+.mono{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace}
+.dim{color:#8b93a4}
+.faint{color:#767e90}
+.bad{color:#ff5c72}
+.tiny{font-size:10px}
+a{color:#6f8bff}
+section{background:#101319;border:1px solid #232833;
+  border-radius:10px;margin:20px 0;overflow:hidden}
+header.bar{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:#161a22;border-bottom:1px solid #1a1e27}
+header.bar .n{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;color:#767e90}
+.body{padding:16px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+  color:#767e90;font-weight:600;padding:8px;
+  border-bottom:1px solid #1a1e27}
+td{padding:8px;border-bottom:1px solid #1a1e27;vertical-align:middle}
+.sw{display:inline-block;width:22px;height:22px;border-radius:4px;
+  border:1px solid #232833;vertical-align:middle}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sw-card{border:1px solid #1a1e27;border-radius:6px;
+  padding:8px;background:#0c0f14}
+.sw-big{height:52px;border-radius:4px;margin-bottom:8px;
+  border:1px solid #1a1e27}
+@media(max-width:820px){.split{grid-template-columns:1fr}.lrow{grid-template-columns:1fr}}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+.prov{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;color:#767e90;
+  border:1px solid #1a1e27;border-radius:6px;
+  background:#0c0f14;padding:12px;margin-top:16px}
+.prov b{color:#8b93a4;font-weight:600}
+.tag{display:inline-block;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:10px;
+  border:1px solid #232833;border-radius:4px;
+  padding:0 8px;color:#8b93a4;margin-left:8px}
+.tag.dirty{border-color:rgba(255, 200, 87, 0.28);background:rgba(255, 200, 87, 0.1);color:#ffc857}
+
+.legend{display:grid;gap:12px}
+.lrow{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start;
+  padding:12px;border:1px solid #1a1e27;
+  border-radius:6px;background:#0c0f14}
+.lrow .ln{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;color:#e6e9ef}
+.lrow .ld{font-size:13px;color:#8b93a4}
+.lrow .allow{color:#e6e9ef;font-weight:600;display:block;margin-top:4px}
+.lrow .deny{color:#767e90;display:block;margin-top:2px}
+
+.gal{border:1px solid #1a1e27;border-radius:6px;
+  margin-bottom:20px;overflow:hidden}
+.gal-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding:12px 16px;background:#161a22;
+  border-bottom:1px solid #1a1e27}
+.gal-h .n{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;color:#6f8bff}
+.gal-h .src{margin-left:auto;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:10px;
+  color:#767e90}
+.gal .why{margin:0;padding:12px 16px 0;color:#8b93a4;
+  font-size:11px;max-width:86ch}
+.stage{padding:16px;background:#08090c}
+.stage-note{padding-top:0;background:#08090c}
+
+.cvd-wrap{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:900px){.cvd-wrap{grid-template-columns:1fr}}
+.cvd-col{border:1px solid #1a1e27;border-radius:6px;overflow:hidden}
+.cvd-h{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;padding:8px 12px;
+  background:#161a22;color:#e6e9ef;border-bottom:1px solid #1a1e27}
+.cvd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+.cvd-card{border:1px solid #1a1e27;border-radius:4px;
+  padding:8px;background:#0c0f14}
+.cvd-big{height:40px;border-radius:4px;margin-bottom:4px;
+  border:1px solid #1a1e27}
+td.collide{color:#ff5c72;font-weight:700}
+td.weak{color:#ffc857;font-weight:600}
+td.ok{color:#8b93a4}
+
+/* --- component rules, mirrored from globals.css --- */
+.badge{display:inline-block;padding:1px 8px;border-radius:4px;
+  font-size:11px;font-weight:700;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;letter-spacing:.04em;
+  margin:0 4px 4px 0}
+.badge.yes{background:rgba(61, 220, 151, 0.13);color:#3ddc97;border:1px solid rgba(61, 220, 151, 0.35)}
+.badge.no{background:rgba(255, 92, 114, 0.13);color:#ff5c72;border:1px solid rgba(255, 92, 114, 0.35)}
+.badge.reason{background:rgba(255, 200, 87, 0.1);color:#ffc857;
+  border:1px solid rgba(255, 200, 87, 0.28);font-weight:500}
+.badge.mute{background:#1b1f28;color:#8b93a4;
+  border:1px solid #232833;font-weight:500}
+.badge.up{background:rgba(63, 201, 189, 0.13);color:#3fc9bd;
+  border:1px solid rgba(63, 201, 189, 0.13)}
+.badge.down{background:rgba(232, 131, 79, 0.13);color:#e8834f;
+  border:1px solid rgba(232, 131, 79, 0.13)}
+.badge.side-long{background:#0c0f14;color:#e6e9ef;
+  border:1px solid #1b202a;font-weight:500}
+.badge.side-short{background:#0c0f14;color:#8b93a4;
+  border:1px dashed #1b202a;font-weight:500}
+.state{display:inline-flex;align-items:center;gap:8px;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;
+  font-size:11px;padding:4px 12px;
+  border-radius:999px;border:1px solid #232833;background:#101319;
+  color:#8b93a4;white-space:nowrap;margin:0 4px 4px 0}
+.state .glyph{color:#767e90;font-weight:700}
+.state b{color:#e6e9ef;font-weight:600}
+.state-live{border-color:#3a4356;background:rgba(111, 139, 255, 0.1)}
+.state-live .glyph{color:#6f8bff}
+.state-unarmed{border-style:dashed;border-color:#3a4356}
+.state-unarmed .glyph{color:#8b93a4}
+.state-expired,.state-unowned,.state-none{border-style:dotted;color:#767e90}
+.state-expired .glyph,.state-unowned .glyph,.state-none .glyph{color:#767e90}
+.state-note{color:#767e90;font-size:11px;
+  font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;margin-top:4px}
+.tier-verdict{border-left:3px solid #6f8bff}
+.tier-exposure{border-left:3px solid #232833}
+.tier-reference{border-left:3px solid transparent}
+section.tier-verdict > header.bar{border-bottom-color:#6f8bff}
+.mode-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 0}
+.mode{display:inline-flex;align-items:center;gap:8px;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;
+  font-size:11px;padding:4px 12px;
+  border-radius:999px;border:1px solid #232833;background:#101319;
+  color:#8b93a4}
+.mode b{color:#e6e9ef;font-weight:600}
+.mode .dot{width:6px;height:6px;border-radius:50%;background:#6f8bff}
+.mode.paper .dot{background:#ffc857}
+.mode.paper b{color:#ffc857}
+.market-id{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.market-id .sym{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:26px;font-weight:600;
+  letter-spacing:-0.02em;color:#e6e9ef}
+.market-id .venue{font-size:11px;color:#767e90;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace}
+.price-readout{display:flex;align-items:baseline;gap:12px;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace}
+.price-readout .px{font-size:34px;font-weight:600;letter-spacing:-0.02em;color:#e6e9ef}
+.price-readout .chg{font-size:14px;font-weight:600}
+.price-readout .chg.up{color:#3fc9bd}
+.price-readout .chg.down{color:#e8834f}
+.provenance{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;
+  font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;color:#767e90}
+.provenance .sep{width:1px;height:12px;background:#232833}
+.provenance .fresh{color:#8b93a4}
+.chart-frame{position:relative;background:#0c0f14;border:1px solid #1a1e27;
+  border-radius:6px;overflow:hidden}
+.chart-frame svg{display:block;width:100%;height:auto}
+.chart-grid line{stroke:#1a1e27;stroke-width:1}
+.chart-axis text{fill:#5b6373;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:10px}
+.chart-line{fill:none;stroke:#6f8bff;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.chart-area{fill:#6f8bff;opacity:0.08}
+.chart-candle.up{stroke:#3fc9bd;fill:#3fc9bd}
+.chart-alt{width:100%;border-collapse:collapse;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;
+  font-size:11px;margin-top:12px}
+.chart-alt caption{text-align:left;font-family:-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, sans-serif;font-size:11px;
+  color:#767e90;padding-bottom:8px}
+.chart-alt th,.chart-alt td{padding:4px 8px;
+  border-bottom:1px solid #1a1e27;text-align:right}
+.chart-alt th:first-child,.chart-alt td:first-child{text-align:left}
+.chart-alt .dir{text-align:left;font-weight:600}
+.ticket{background:#101319;border:1px solid #232833;
+  border-radius:10px;overflow:hidden;max-width:420px}
+.ticket > header{display:flex;align-items:center;gap:8px;
+  padding:12px 16px;background:#161a22;
+  border-bottom:1px solid #1a1e27}
+.ticket > header h2{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em;
+  text-transform:uppercase}
+.ticket .body{padding:16px}
+.spacer{flex:1}
+.pill{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px;border:1px solid #232833;
+  border-radius:999px;padding:4px 12px;
+  color:#8b93a4;background:#101319;white-space:nowrap}
+.side-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.side-toggle button{font:inherit;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:13px;
+  font-weight:600;padding:8px;border-radius:6px;
+  border:1px solid #232833;background:#0c0f14;color:#8b93a4;
+  text-transform:uppercase;letter-spacing:.04em}
+.side-toggle button[aria-pressed='true']{background:#6f8bff;border-color:#6f8bff;
+  color:#06070a}
+.quote-lines{border-top:1px solid #1a1e27;margin-top:16px;
+  padding-top:12px}
+.quote-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:4px 0;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:11px}
+.quote-line .k{color:#767e90;text-transform:uppercase;letter-spacing:.05em;
+  font-size:10px}
+.quote-line .v{color:#e6e9ef;text-align:right}
+.quote-line.total{border-top:1px solid #1a1e27;margin-top:4px;
+  padding-top:8px}
+.quote-line.total .v{font-size:16px;font-weight:600}
+.ticket-blocked{display:flex;align-items:flex-start;gap:8px;margin-top:12px;
+  padding:8px 12px;border-radius:6px;
+  border:1px solid rgba(255, 200, 87, 0.28);background:rgba(255, 200, 87, 0.1);color:#ffc857;
+  font-size:11px;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;text-align:left}
+.empty{padding:32px 16px;text-align:center;color:#8b93a4;
+  border:1px solid #1a1e27;border-radius:6px}
+.empty strong{display:block;color:#e6e9ef;margin-bottom:8px;
+  font-size:14px}
+code.cmd,code{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;background:#0c0f14;
+  border:1px solid #232833;border-radius:4px;
+  padding:1px 8px;font-size:11px;color:#e6e9ef}
+code.cmd{display:inline-block;margin-top:8px;user-select:all}
+.claim{border:1px solid #232833;border-left:2px solid #3a4356;
+  border-radius:6px;background:#0c0f14;
+  padding:12px 16px}
+.claim .claim-k{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;font-size:10px;text-transform:uppercase;
+  letter-spacing:.06em;color:#767e90}
+.claim .claim-line{display:flex;align-items:baseline;gap:8px;font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace;
+  font-size:13px;color:#e6e9ef;margin-top:4px}
+.claim .claim-line .mark{color:#767e90;flex:none}
+.claim .claim-line.is-not{color:#767e90;text-decoration:line-through;
+  text-decoration-color:#3a4356}
+.claim .claim-absent{color:#8b93a4;font-size:11px;margin-top:8px}
+.claim .claim-absent b{color:#e6e9ef;font-weight:600}
+.num{font-family:ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, monospace}
+.pos{color:#3fc9bd}.neg{color:#e8834f}</style></head><body><div class="wrap">
+
+<h1>Terading &mdash; design system</h1>
+<p class="lede">Generated from <span class="mono">apps/dashboard/app/globals.css</span> by
+<span class="mono">scripts/render-design-sheet.mjs</span>. Every colour, ratio and simulation below is read out of
+<span class="mono">:root</span> at generation time, so this file cannot drift from the source it describes. The
+colour-vision section runs the same matrices as <span class="mono">pnpm a11y:color</span>, from the same module.</p>
+
+<div class="prov">
+  <b>Provenance.</b> commit <span class="mono">8c6e769</span> &middot; <a href="https://github.com/Therealratoshen/trade-on-my-behalf/commit/8c6e769df1fe5263f3a682fadfe5f7580e2b0c6b">permalink</a>
+  <span class="tag dirty">working tree modified since this commit</span>
+  <br><b>Generated by</b> <span class="mono">node scripts/render-design-sheet.mjs</span> &middot;
+  <b>Verified by</b> <span class="mono">pnpm lint</span> &mdash; token guard R1&ndash;R6 plus the colour-vision simulation.
+  Nothing on this page is hand-written.
+</div>
+
+<section class="tier-reference"><header class="bar"><span class="n">1</span><h2>What each colour family is allowed to claim</h2></header>
+<div class="body">
+<p class="dim" style="margin-top:0">Four families plus a neutral ink. This split <em>is</em> the design system.
+A judge&rsquo;s first question about any coloured pixel is &ldquo;what exactly happened?&rdquo;, and the
+palette&rsquo;s job is to answer it without ambiguity.</p>
+<div class="legend">
+  <div class="lrow"><div><div class="ln">decision</div><div class="tiny dim mono">--ok --no --warn</div></div>
+  <div class="ld"><span class="allow">May claim:</span> a verdict the on-chain kernel reached about one request
+    &mdash; approved, denied, or clamped to a reason code.
+    <span class="deny">Must never appear on:</span> a price, a P&amp;L, a position side, a market direction, a
+    paper-mode label, or the state of your policy.</div></div>
+  <div class="lrow"><div><div class="ln">viz</div><div class="tiny dim mono">--viz-up --viz-down</div></div>
+  <div class="ld"><span class="allow">May claim:</span> that a number moved &mdash; a price rose or fell, a P&amp;L
+    gained or lost.
+    <span class="deny">Must never appear on:</span> anything the kernel decided. Teal and orange exist so a green
+    candle cannot read as an approval.</div></div>
+  <div class="lrow"><div><div class="ln">state</div><div class="tiny dim mono">--state-line --state-wash</div></div>
+  <div class="ld"><span class="allow">May claim:</span> the lifecycle of the policy <em>account</em> &mdash; live,
+    unarmed, expired, read-only, absent.
+    <span class="deny">Must never wear a decision colour.</span> The program never approved or denied anything by
+    holding an account, so &ldquo;live&rdquo; is not a verdict and is not painted like one. Guard rule R6 fails the
+    build if it ever is.</div></div>
+  <div class="lrow"><div><div class="ln">surface</div><div class="tiny dim mono">--bg &hellip; --panel &hellip; --line</div></div>
+  <div class="ld"><span class="allow">May claim:</span> where something sits. Nothing else.
+    <span class="deny">Carries no meaning whatsoever</span> &mdash; a darker panel is not a warning.</div></div>
+  <div class="lrow"><div><div class="ln">ink</div><div class="tiny dim mono">--fg --fg-dim --fg-faint</div></div>
+  <div class="ld"><span class="allow">May claim:</span> how something is read &mdash; emphasis and hierarchy, never
+    meaning. All three meet WCAG AA on <span class="mono">--bg</span>, measured in section 3.</div></div>
+</div>
+<div class="sw-card">
+      <div class="sw-big" style="background:#3ddc97"></div>
+      <div class="mono tiny">--ok</div>
+      <div class="mono tiny dim">#3ddc97</div>
+      <div class="tiny dim">approved</div>
+    </div><div class="sw-card">
+      <div class="sw-big" style="background:#ff5c72"></div>
+      <div class="mono tiny">--no</div>
+      <div class="mono tiny dim">#ff5c72</div>
+      <div class="tiny dim">denied</div>
+    </div><div class="sw-card">
+      <div class="sw-big" style="background:#ffc857"></div>
+      <div class="mono tiny">--warn</div>
+      <div class="mono tiny dim">#ffc857</div>
+      <div class="tiny dim">clamped / PAPER</div>
+    </div><div class="sw-card">
+      <div class="sw-big" style="background:#3fc9bd"></div>
+      <div class="mono tiny">--viz-up</div>
+      <div class="mono tiny dim">#3fc9bd</div>
+      <div class="tiny dim">price rose / P&L up</div>
+    </div><div class="sw-card">
+      <div class="sw-big" style="background:#e8834f"></div>
+      <div class="mono tiny">--viz-down</div>
+      <div class="mono tiny dim">#e8834f</div>
+      <div class="tiny dim">price fell / P&L down</div>
+    </div><div class="sw-card">
+      <div class="sw-big" style="background:#6f8bff"></div>
+      <div class="mono tiny">--accent</div>
+      <div class="mono tiny dim">#6f8bff</div>
+      <div class="tiny dim">interactive, focus, state rail</div>
+    </div>
+</div></section>
+
+<section class="tier-verdict"><header class="bar"><span class="n">2</span><h2>Component gallery &mdash; the real markup</h2></header>
+<div class="body">
+<p class="dim" style="margin-top:0">Not screenshots and not descriptions. These are the class names the dashboard
+actually renders, with the actual token bindings, so the mapping from a component to a colour can be read without
+running anything &mdash; and so a claim like &ldquo;long is deliberately neutral&rdquo; is checkable by grep
+rather than taken on trust. Each entry names the source file it mirrors.</p>
+<div class="gal">
+  <div class="gal-h"><span class="n">2.1</span><h3>Verdict badge &mdash; the kernel&rsquo;s answer</h3><span class="src">components/AuditPanel.tsx</span></div>
+  <p class="why">The only element allowed to wear --ok / --no. Glyph plus word, so the verdict survives achromatopsia, where this pair sits at &Delta;E 19.2 apart.</p>
+  <div class="stage"><span class="badge yes"><span aria-hidden="true">&#9650;</span> APPROVED</span>
+<span class="badge no"><span aria-hidden="true">&#9632;</span> DENIED</span>
+<span class="badge reason">REASON_LEVERAGE_CAP</span>
+<span class="badge mute">MUTED</span></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.2</span><h3>Position side &mdash; intent, not a verdict</h3><span class="src">components/PositionsPanel.tsx</span></div>
+  <p class="why">LONG used to render in approval green, one screen away from APPROVED. Neutral, with a &#9650;/&#9660; arrow. Guard rule R3b fails the build if that ever regresses.</p>
+  <div class="stage"><span class="badge side-long"><span aria-hidden="true">&#9650;</span> LONG</span>
+<span class="badge side-short"><span aria-hidden="true">&#9660;</span> SHORT</span></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.3</span><h3>Market badge &amp; P&amp;L &mdash; teal/orange, never green</h3><span class="src">components/PositionsPanel.tsx, MarketChart.tsx</span></div>
+  <p class="why">A rising candle is not an approval. --viz-up / --viz-down exist so price data never has to borrow the decision palette.</p>
+  <div class="stage"><span class="badge up">&#9650; +12.40%</span>
+<span class="badge down">&#9660; &minus;7.90%</span>
+<span class="num pos">&#9650; +$48.20</span>
+<span class="num neg">&#9660; &minus;$12.05</span></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.4</span><h3>Policy state &mdash; the account, not a decision</h3><span class="src">components/PolicyState.tsx</span></div>
+  <p class="why">New in this pass. &ldquo;LIVE&rdquo; is not a verdict the kernel issued, so it wears no decision colour &mdash; weight and a glyph only. UNARMED exists because a fresh policy has <span class="mono">peak_equity = 0</span>, so its drawdown switch genuinely cannot fire until the first <span class="mono">record_pnl</span>. Without it, a tester reads a working switch as a broken one.</p>
+  <div class="stage"><span class="state state-live"><span class="glyph">&#9679;</span> <b>LIVE</b></span>
+<span class="state state-unarmed"><span class="glyph">&#9675;</span> <b>UNARMED</b></span>
+<span class="state state-expired"><span class="glyph">&#9675;</span> <b>EXPIRED</b></span>
+<span class="state state-unowned"><span class="glyph">&#9675;</span> <b>READ-ONLY</b></span>
+<span class="state state-none"><span class="glyph">&middot;</span> <b>NO POLICY</b></span></div>
+  <div class="stage stage-note"><div class="state-note">peak equity is 0, so the drawdown switch has nothing to compare against. It arms on the first record_pnl.</div></div>
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.5</span><h3>Mode strip &mdash; the honesty strip</h3><span class="src">components/ModeStrip.tsx</span></div>
+  <p class="why">PAPER must never read as a live fill. The state chip sits beside the cluster, so a reader gets &ldquo;which chain, and in what state&rdquo; in one glance without scrolling.</p>
+  <div class="stage"><span class="mode"><span class="dot"></span>Policy <b>devnet</b></span>
+<span class="state state-live"><span class="glyph">&#9679;</span> <b>LIVE</b></span>
+<span class="mode paper"><span class="dot"></span>Positions <b>PAPER</b></span>
+<span class="mode">Fills <b>simulated</b></span></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.6</span><h3>Price readout &amp; provenance strip</h3><span class="src">components/MarketChart.tsx</span></div>
+  <p class="why">Every number a judge reads says where it came from and how old it is, or it is decoration. &ldquo;spot price &middot; not a fill&rdquo; is load-bearing: the chart draws only prices this tab actually fetched, and says so rather than implying a market history.</p>
+  <div class="stage"><div class="market-id"><span class="sym">SOL-PERP</span><span class="venue">Jupiter perps &middot; reference spot</span></div>
+<div class="price-readout"><span class="px">184.27</span>
+<span class="chg up"><span aria-hidden="true">&#9650;</span> +2.14 (+1.17%)</span></div>
+<div class="provenance"><span>source jupiter lite-api v3</span><span class="sep"></span>
+<span>spot price &middot; not a fill</span><span class="sep"></span>
+<span>12 obs this session</span><span class="sep"></span><span class="fresh">as of 4s ago</span></div></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.7</span><h3>Chart frame &amp; the accessible table</h3><span class="src">components/MarketChart.tsx</span></div>
+  <p class="why">The line is --accent, not teal: it is one series with no direction encoded, and the readout beside it carries the direction. Below it, the same numbers as a real table &mdash; a chart you cannot see is still fully readable. The figures are illustrative; the structure is what the component enforces.</p>
+  <div class="stage"><div class="chart-frame"><svg viewBox="0 0 720 220" role="img" aria-label="SOL-PERP reference spot, 12 observations this session">
+<g class="chart-grid"><line x1="10" y1="60" x2="660" y2="60"></line><line x1="10" y1="120" x2="660" y2="120"></line><line x1="10" y1="180" x2="660" y2="180"></line></g>
+<path class="chart-area" d="M10 200 L100 170 L200 186 L300 140 L400 152 L500 96 L600 74 L660 60 L660 198 L10 198 Z"></path>
+<path class="chart-line" d="M10 200 L100 170 L200 186 L300 140 L400 152 L500 96 L600 74 L660 60"></path>
+<g class="chart-axis"><text x="666" y="63" text-anchor="end">184.27</text><text x="666" y="123" text-anchor="end">178.40</text><text x="666" y="183" text-anchor="end">172.60</text></g>
+<circle class="chart-candle up" cx="600" cy="74" r="3"></circle>
+</svg></div>
+<table class="chart-alt"><caption>SOL-PERP &mdash; the same numbers the line above uses, readable without it.</caption>
+<thead><tr><th scope="col">Observed</th><th scope="col">Spot</th><th scope="col">Change</th></tr></thead>
+<tbody>
+<tr><td>10:41:02</td><td>184.27</td><td class="dir" style="color:#3fc9bd">&#9650; +0.71</td></tr>
+<tr><td>10:40:47</td><td>183.56</td><td class="dir" style="color:#e8834f">&#9660; &minus;1.19</td></tr>
+<tr><td>10:40:32</td><td>184.75</td><td class="dir" style="color:#3fc9bd">&#9650; +0.22</td></tr>
+</tbody></table></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.8</span><h3>Trade ticket &mdash; preview only</h3><span class="src">components/TradeTicket.tsx</span></div>
+  <p class="why">Long/short wear --accent, because a side is market intent. A blocked ticket always names its blocker: a disabled control with no explanation reads as a broken app, and a disabled control that names its blocker is a feature.</p>
+  <div class="stage"><section class="ticket">
+<header><h2>Trade ticket</h2><div class="spacer"></div><span class="pill">preview only</span></header>
+<div class="body">
+<div class="side-toggle" role="group" aria-label="Side">
+<button type="button" aria-pressed="true"><span aria-hidden="true">&#9650;</span> Long</button>
+<button type="button" aria-pressed="false"><span aria-hidden="true">&#9660;</span> Short</button>
+</div>
+<div class="quote-lines">
+<div class="quote-line"><span class="k">Modelled notional</span><span class="v">$120.00</span></div>
+<div class="quote-line"><span class="k">Policy cap / trade</span><span class="v">$50.00</span></div>
+<div class="quote-line total"><span class="k">Modelled cost</span><span class="v">$0.12</span></div>
+</div>
+<p class="ticket-blocked" role="status"><span aria-hidden="true">&#9650;</span><span>Over the per-trade cap ($50.00). The runtime clamps to the cap.</span></p>
+</div></section></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.9</span><h3>Empty state &mdash; a dead end is a bug</h3><span class="src">components/ui.tsx</span></div>
+  <p class="why">Every empty panel says what to do next and names the command. &ldquo;No decisions recorded yet&rdquo; tells a tester nothing; &ldquo;run pnpm demo&rdquo; tells them what to do.</p>
+  <div class="stage"><div class="empty"><strong>No decisions recorded yet.</strong>
+Run the demo, or push an intent from the CLI, and every verdict the kernel records for this policy
+lands here within a couple of seconds.
+<code class="cmd">pnpm demo        # or: pnpm --filter @trade-on-my-behalf/agent tomb push-intent</code></div></div>
+  
+</div><div class="gal">
+  <div class="gal-h"><span class="n">2.10</span><h3>The claim boundary &mdash; what this is not</h3><span class="src">components/ClaimBoundary.tsx</span></div>
+  <p class="why">The A3 primitive. Six claims were cut from the pitch after the program source was read. This states the surviving one and the removed one in the same type, so they are read together and neither can be quoted alone. It wears no decision colour, because the kernel never evaluated the product&rsquo;s honesty.</p>
+  <div class="stage"><div class="claim">
+  <div class="claim-k">the claim, and its edge</div>
+  <div class="claim-line"><span class="mark">&#10003;</span><span>Your caps live on chain at
+    <b>[b&quot;policy&quot;, wallet]</b>. Only your key can change them.</span></div>
+  <div class="claim-line is-not"><span class="mark">&#10005;</span><span>Your trades are bound by them.</span></div>
+  <div class="claim-absent"><b>Recorded, not enforced.</b> The program holds no keys and custodies nothing, so
+    it cannot call a venue. Anyone with a key can still trade without ever asking it, and would leave no row in
+    the audit log. What the log proves is that a decision was made and recorded &mdash; not that a trade was
+    prevented. This is also why the state vocabulary in 2.4 is deliberately not green.</div>
+</div></div>
+  
+</div>
+</div></section>
+
+<section class="tier-reference"><header class="bar"><span class="n">3</span><h2>Every colour token vs &mdash;bg (WCAG AA)</h2></header>
+<div class="body"><table><thead><tr><th>Token</th><th>Value</th><th></th><th>Contrast</th><th>Means</th></tr></thead><tbody>
+<tr>
+    <td class="mono">--fg</td>
+    <td class="mono dim">#e6e9ef</td>
+    <td><span class="sw" style="background:#e6e9ef"></span></td>
+    <td class="mono dim">16.37:1 AA</td>
+    <td class="dim">body text</td>
+  </tr>
+<tr>
+    <td class="mono">--fg-dim</td>
+    <td class="mono dim">#8b93a4</td>
+    <td><span class="sw" style="background:#8b93a4"></span></td>
+    <td class="mono dim">6.45:1 AA</td>
+    <td class="dim">secondary</td>
+  </tr>
+<tr>
+    <td class="mono">--fg-faint</td>
+    <td class="mono dim">#767e90</td>
+    <td><span class="sw" style="background:#767e90"></span></td>
+    <td class="mono dim">4.89:1 AA</td>
+    <td class="dim">labels at 11px</td>
+  </tr>
+<tr>
+    <td class="mono">--ok</td>
+    <td class="mono dim">#3ddc97</td>
+    <td><span class="sw" style="background:#3ddc97"></span></td>
+    <td class="mono dim">11.27:1 AA</td>
+    <td class="dim">kernel approved</td>
+  </tr>
+<tr>
+    <td class="mono">--no</td>
+    <td class="mono dim">#ff5c72</td>
+    <td><span class="sw" style="background:#ff5c72"></span></td>
+    <td class="mono dim">6.66:1 AA</td>
+    <td class="dim">kernel denied</td>
+  </tr>
+<tr>
+    <td class="mono">--warn</td>
+    <td class="mono dim">#ffc857</td>
+    <td><span class="sw" style="background:#ffc857"></span></td>
+    <td class="mono dim">12.94:1 AA</td>
+    <td class="dim">clamped / PAPER</td>
+  </tr>
+<tr>
+    <td class="mono">--accent</td>
+    <td class="mono dim">#6f8bff</td>
+    <td><span class="sw" style="background:#6f8bff"></span></td>
+    <td class="mono dim">6.46:1 AA</td>
+    <td class="dim">interactive, focus, state-live rail</td>
+  </tr>
+<tr>
+    <td class="mono">--viz-up</td>
+    <td class="mono dim">#3fc9bd</td>
+    <td><span class="sw" style="background:#3fc9bd"></span></td>
+    <td class="mono dim">9.77:1 AA</td>
+    <td class="dim">price up</td>
+  </tr>
+<tr>
+    <td class="mono">--viz-down</td>
+    <td class="mono dim">#e8834f</td>
+    <td><span class="sw" style="background:#e8834f"></span></td>
+    <td class="mono dim">7.39:1 AA</td>
+    <td class="dim">price down</td>
+  </tr>
+</tbody></table></div></section>
+
+<section class="tier-reference"><header class="bar"><span class="n">4</span><h2>Scales</h2></header><div class="body">
+<table><thead><tr><th>Type</th><th>Tokens</th><th>Spacing</th><th>Radius</th></tr></thead><tbody>
+<tr><td class="mono">10px &middot; 11px &middot; 13px &middot; 14px &middot; 16px &middot; 20px &middot; 26px &middot; 34px</td>
+<td class="mono">4px &middot; 8px &middot; 12px &middot; 16px &middot; 20px &middot; 24px &middot; 32px &middot; 40px &middot; 56px &middot; 72px</td>
+<td class="mono">4px &middot; 6px &middot; 10px &middot; 12px</td></tr>
+</tbody></table>
+<p class="tiny faint" style="margin-bottom:0">4px base. No arbitrary values &mdash;
+<span class="mono">scripts/check-tokens.mjs</span> rule R2 fails the build on an off-scale value.</p>
+</div></section>
+
+<section class="tier-exposure"><header class="bar"><span class="n">5</span><h2>The corrected claim, and its edge</h2></header>
+<div class="body">
+<p class="dim" style="margin-top:0">Six claims were removed from this project&rsquo;s pitch after the program
+source was read. The program holds no keys, custodies nothing and contains no transfer, so it cannot bind a venue
+action. What survives is narrower, and still worth building. The surface has to carry that correction, because
+removing the words from the docs does not remove the impression from the pixels.</p>
+<div class="claim">
+  <div class="claim-k">the claim, and its edge</div>
+  <div class="claim-line"><span class="mark">&#10003;</span><span>Your caps live on chain at
+    <b>[b&quot;policy&quot;, wallet]</b>. Only your key can change them.</span></div>
+  <div class="claim-line is-not"><span class="mark">&#10005;</span><span>Your trades are bound by them.</span></div>
+  <div class="claim-absent"><b>Recorded, not enforced.</b> The program holds no keys and custodies nothing, so
+    it cannot call a venue. Anyone with a key can still trade without ever asking it, and would leave no row in
+    the audit log. What the log proves is that a decision was made and recorded &mdash; not that a trade was
+    prevented. This is also why the state vocabulary in 2.4 is deliberately not green.</div>
+</div>
+</div></section>
+
+<section class="tier-verdict"><header class="bar"><span class="n">6</span><h2>Colour-vision simulation &mdash; rendered, not asserted</h2></header>
+<div class="body">
+<p class="dim" style="margin-top:0">Every palette below is these same tokens pushed through a Machado et al.
+(2009) severity-1.0 matrix &mdash; the model behind Coblis &mdash; using the code in
+<span class="mono">scripts/lib/cvd.mjs</span> that <span class="mono">pnpm a11y:color</span> also runs. Read the
+achromatopsia column first: the verdict green and the price-rising teal become <em>the same colour</em> for a viewer
+with no colour channel at all, and the &#9650;/&#9632; glyphs are the only thing left telling them apart. That is
+why WCAG 1.4.1 forbids colour as a sole cue, and why guard rule R5 fails the build if a glyph is removed.</p>
+<div class="cvd-wrap" style="margin-top:16px">
+<div class="cvd-col">
+    <div class="cvd-h">protanopia (no L-cones)</div>
+    <div class="cvd-grid"><div class="cvd-card">
+      <div class="cvd-big" style="background:#8283a8"></div>
+      <div class="mono tiny">--ok</div>
+      <div class="mono tiny dim">#8283a8</div>
+      <div class="tiny dim">▲ APPROVED — the kernel approved</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#b8b76d"></div>
+      <div class="mono tiny">--no</div>
+      <div class="mono tiny dim">#b8b76d</div>
+      <div class="tiny dim">■ DENIED — the kernel denied</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#e7e772"></div>
+      <div class="mono tiny">--warn</div>
+      <div class="mono tiny dim">#e7e772</div>
+      <div class="tiny dim">REASON_LEVERAGE_CAP — clamped</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#7b7cc0"></div>
+      <div class="mono tiny">--viz-up</div>
+      <div class="mono tiny dim">#7b7cc0</div>
+      <div class="tiny dim">▲ price rose / P&L up</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#bcbb5c"></div>
+      <div class="mono tiny">--viz-down</div>
+      <div class="mono tiny dim">#bcbb5c</div>
+      <div class="tiny dim">▼ price fell / P&L down</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#7b7be3"></div>
+      <div class="mono tiny">--accent</div>
+      <div class="mono tiny dim">#7b7be3</div>
+      <div class="tiny dim">interactive / focus only</div>
+    </div></div>
+  </div><div class="cvd-col">
+    <div class="cvd-h">deuteranopia (no M-cones)</div>
+    <div class="cvd-grid"><div class="cvd-card">
+      <div class="cvd-big" style="background:#796dac"></div>
+      <div class="mono tiny">--ok</div>
+      <div class="mono tiny dim">#796dac</div>
+      <div class="tiny dim">▲ APPROVED — the kernel approved</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#c2ce6b"></div>
+      <div class="mono tiny">--no</div>
+      <div class="mono tiny dim">#c2ce6b</div>
+      <div class="tiny dim">■ DENIED — the kernel denied</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#eaef79"></div>
+      <div class="mono tiny">--warn</div>
+      <div class="mono tiny dim">#eaef79</div>
+      <div class="tiny dim">REASON_LEVERAGE_CAP — clamped</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#7368c1"></div>
+      <div class="mono tiny">--viz-up</div>
+      <div class="mono tiny dim">#7368c1</div>
+      <div class="tiny dim">▲ price rose / P&L up</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#c2ca5f"></div>
+      <div class="mono tiny">--viz-down</div>
+      <div class="mono tiny dim">#c2ca5f</div>
+      <div class="tiny dim">▼ price fell / P&L down</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#7a77dc"></div>
+      <div class="mono tiny">--accent</div>
+      <div class="mono tiny dim">#7a77dc</div>
+      <div class="tiny dim">interactive / focus only</div>
+    </div></div>
+  </div><div class="cvd-col">
+    <div class="cvd-h">tritanopia (no S-cones)</div>
+    <div class="cvd-grid"><div class="cvd-card">
+      <div class="cvd-big" style="background:#45b5b8"></div>
+      <div class="mono tiny">--ok</div>
+      <div class="mono tiny dim">#45b5b8</div>
+      <div class="tiny dim">▲ APPROVED — the kernel approved</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#f76868"></div>
+      <div class="mono tiny">--no</div>
+      <div class="mono tiny dim">#f76868</div>
+      <div class="tiny dim">■ DENIED — the kernel denied</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#fc888d"></div>
+      <div class="mono tiny">--warn</div>
+      <div class="mono tiny dim">#fc888d</div>
+      <div class="tiny dim">REASON_LEVERAGE_CAP — clamped</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#46c2c3"></div>
+      <div class="mono tiny">--viz-up</div>
+      <div class="mono tiny dim">#46c2c3</div>
+      <div class="tiny dim">▲ price rose / P&L up</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#e36668"></div>
+      <div class="mono tiny">--viz-down</div>
+      <div class="mono tiny dim">#e36668</div>
+      <div class="tiny dim">▼ price fell / P&L down</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#70cdc8"></div>
+      <div class="mono tiny">--accent</div>
+      <div class="mono tiny dim">#70cdc8</div>
+      <div class="tiny dim">interactive / focus only</div>
+    </div></div>
+  </div><div class="cvd-col">
+    <div class="cvd-h">achromatopsia (no colour)</div>
+    <div class="cvd-grid"><div class="cvd-card">
+      <div class="cvd-big" style="background:#a5a5a5"></div>
+      <div class="mono tiny">--ok</div>
+      <div class="mono tiny dim">#a5a5a5</div>
+      <div class="tiny dim">▲ APPROVED — the kernel approved</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#8f8f8f"></div>
+      <div class="mono tiny">--no</div>
+      <div class="mono tiny dim">#8f8f8f</div>
+      <div class="tiny dim">■ DENIED — the kernel denied</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#cccccc"></div>
+      <div class="mono tiny">--warn</div>
+      <div class="mono tiny dim">#cccccc</div>
+      <div class="tiny dim">REASON_LEVERAGE_CAP — clamped</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#9e9e9e"></div>
+      <div class="mono tiny">--viz-up</div>
+      <div class="mono tiny dim">#9e9e9e</div>
+      <div class="tiny dim">▲ price rose / P&L up</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#9b9b9b"></div>
+      <div class="mono tiny">--viz-down</div>
+      <div class="mono tiny dim">#9b9b9b</div>
+      <div class="tiny dim">▼ price fell / P&L down</div>
+    </div><div class="cvd-card">
+      <div class="cvd-big" style="background:#909090"></div>
+      <div class="mono tiny">--accent</div>
+      <div class="mono tiny dim">#909090</div>
+      <div class="tiny dim">interactive / focus only</div>
+    </div></div>
+  </div>
+</div>
+<table style="margin-top:16px"><thead><tr>
+  <th>Pair</th><th>Why it must stay distinct</th><th>normal &Delta;E</th>
+  <th>protanopia</th><th>deuteranopia</th><th>tritanopia</th><th>achromatopsia</th>
+</tr></thead><tbody><tr>
+    <td class="mono">--ok <span class="dim">vs</span> --no</td>
+    <td class="dim tiny">approved vs denied — the product's whole claim</td>
+    <td class="mono dim">434.6</td><td class="mono ok">94.4</td><td class="mono ok">117.9</td><td class="mono ok">357.1</td><td class="mono weak">19.2</td>
+  </tr><tr>
+    <td class="mono">--ok <span class="dim">vs</span> --viz-up</td>
+    <td class="dim tiny">a verdict must not look like price movement</td>
+    <td class="mono dim">61.4</td><td class="mono ok">32.5</td><td class="mono ok">27.3</td><td class="mono weak">17.5</td><td class="mono collide">5.7</td>
+  </tr><tr>
+    <td class="mono">--no <span class="dim">vs</span> --viz-down</td>
+    <td class="dim tiny">a denial must not look like a falling price</td>
+    <td class="mono dim">92.0</td><td class="mono weak">18.3</td><td class="mono weak">11.7</td><td class="mono ok">36.1</td><td class="mono weak">10.7</td>
+  </tr><tr>
+    <td class="mono">--viz-up <span class="dim">vs</span> --viz-down</td>
+    <td class="dim tiny">price up vs price down</td>
+    <td class="mono dim">339.5</td><td class="mono ok">144.2</td><td class="mono ok">154.9</td><td class="mono ok">338.2</td><td class="mono collide">2.8</td>
+  </tr><tr>
+    <td class="mono">--warn <span class="dim">vs</span> --viz-up</td>
+    <td class="dim tiny">clamped vs price rise</td>
+    <td class="mono dim">313.9</td><td class="mono ok">153.8</td><td class="mono ok">156.3</td><td class="mono ok">350.9</td><td class="mono ok">42.8</td>
+  </tr></tbody></table>
+<p class="tiny faint" style="margin-bottom:0">&Delta;E below 10 is a collision; below 20 is a weak separation. The
+collisions are a property of the deficiency, not a palette bug: achromatopsia has no colour channel, so any two
+colours in one lightness band collapse regardless of hue. The fix is a redundant cue, not a different hex &mdash;
+and the glyphs in section 2 are that cue. So a colour-vision collision is <b>advisory</b> in CI and never blocks the
+build; WCAG 1.4.11 non-text contrast is the blocking check.</p>
+</div></section>
+
+</div></body></html>

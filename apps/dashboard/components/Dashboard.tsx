@@ -10,9 +10,13 @@ import { AuditFeed, fetchPolicy, makeProgram, samePolicySnapshot, stableKey, typ
 import type { PositionsResponse } from '@/app/api/positions/route';
 
 import { AuditPanel } from './AuditPanel';
+import { ClaimBoundary } from './ClaimBoundary';
 import { ConnectPanel } from './ConnectPanel';
 import { EditPolicyPanel } from './EditPolicyPanel';
+import { MarketWorkspace } from './MarketWorkspace';
+import { ModeStrip } from './ModeStrip';
 import { PolicyPanel } from './PolicyPanel';
+import { PolicyStateChip, derivePolicyState } from './PolicyState';
 import { PositionsPanel } from './PositionsPanel';
 import { Empty, Err } from './ui';
 
@@ -117,24 +121,55 @@ export function Dashboard() {
     connected && publicKey && policy && policy.owner.toBase58() === publicKey.toBase58(),
   );
 
+  /**
+   * Newest block time the audit feed has actually seen. Used for the policy
+   * TTL so the expiry state is judged against chain time, not a local clock
+   * that could be hours off. Null before the first event, in which case
+   * `derivePolicyState` deliberately declines to call the policy expired.
+   */
+  const nowUnix = useMemo(() => {
+    let newest: number | null = null;
+    for (const e of events ?? []) {
+      if (e.blockTime !== null && (newest === null || e.blockTime > newest)) newest = e.blockTime;
+    }
+    return newest;
+  }, [events]);
+
+  const policyState = derivePolicyState({
+    policy,
+    loaded: !policyLoading && !policyError,
+    isOwner,
+    nowUnix,
+  });
+
   const notConnected = (
     <Empty title="Connect a wallet to read this policy.">
       The rules live on chain at{' '}
       <code className="mono">[b&quot;policy&quot;, your_wallet]</code>. This dashboard has no server-side key —
-      it reads the account your wallet owns and shows you what the kernel has already decided.
+      it reads the account your wallet owns and shows you what the kernel has already recorded.
     </Empty>
   );
 
   return (
     <div className="shell">
       <header className="masthead">
-        <h1>Trade On My Behalf — Control Surface</h1>
+        <h1>Terading — Control Surface</h1>
         <p>
-          A viewer and a rule editor. The on-chain kernel decides every trade; this page shows you the rules
-          it is bound by and the receipts it has produced. There is no approve button here, by design.
+          A viewer and a rule editor. The on-chain kernel records every trade decision against the rules it
+          holds, and this page shows you those rules and the receipts. It does not stop a trade — nothing
+          here does. There is no approve button, by design.
         </p>
-        <div className="tagline">“The kernel decides. The webapp shows you what it decided.”</div>
+        <div className="tagline">“The kernel decides what it will record. The webapp shows you what it recorded.”</div>
       </header>
+
+      <ModeStrip policyState={policyState} />
+
+      <div style={{ marginBottom: 'var(--s5)' }}>
+        <ClaimBoundary cluster={CLUSTER} />
+      </div>
+
+      {/* 0 — market workspace: reference price + trade ticket, both preview-only */}
+      <MarketWorkspace policy={policy} walletConnected={connected} />
 
       <ConnectPanel />
 
@@ -165,7 +200,7 @@ export function Dashboard() {
           </header>
           <div className="body">
             <Err>Could not read the policy account: {policyError.message}</Err>
-            <div className="note" style={{ marginTop: 10 }}>
+            <div className="note" style={{ marginTop: 'var(--s3)' }}>
               The treasury program may not be deployed on <span className="mono">{CLUSTER}</span>. Try{' '}
               <code className="mono">pnpm devnet:demo</code>, or point{' '}
               <code className="mono">NEXT_PUBLIC_CLUSTER</code> at a cluster that has it.
@@ -182,7 +217,7 @@ export function Dashboard() {
             title="No policy yet."
             command="pnpm --filter @trade-on-my-behalf/agent tomb init-policy --owner <owner.json> --agent <agent.json> --per-tx 50 --per-day 150 --max-leverage 5 --kill-pct 25"
           >
-            No account exists at the PDA above. The kernel has nothing to enforce until you create one — it
+            No account exists at the PDA above, so the kernel has no caps to check anything against. It
             cannot be created from this page, because creating a policy is the one act that must come from
             your own key.
             <br />
@@ -191,7 +226,7 @@ export function Dashboard() {
           </Empty>
         </section>
       ) : (
-        <PolicyPanel policy={policy} />
+        <PolicyPanel policy={policy} isOwner={isOwner} nowUnix={nowUnix} />
       )}
 
       {/* 3 — audit log */}
@@ -239,10 +274,10 @@ export function Dashboard() {
         </section>
       )}
 
-      <footer className="faint" style={{ fontSize: 11, marginTop: 28 }}>
+      <footer className="faint" style={{ fontSize: 'var(--t-sm)', marginTop: 'var(--s7)' }}>
         Read-mostly by construction: no server-side keys, no custody, no intent-push path. The only write is{' '}
-        <span className="mono">update_policy</span>, signed by the connected wallet and enforced by the
-        Anchor program.
+        <span className="mono">update_policy</span>, signed by the connected wallet and recorded by the
+        program. Nothing on this page can stop a trade you place elsewhere.
       </footer>
     </div>
   );

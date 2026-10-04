@@ -2,6 +2,16 @@
 
 import { useState, type ReactNode } from 'react';
 
+/**
+ * Information tier. Controls a left rail so the page has hierarchy instead
+ * of five equal-weight stacked cards.
+ *
+ *   verdict    the kernel's answers — the only tier allowed a decision colour
+ *   exposure   money at risk right now
+ *   reference  configuration and provenance; recedes
+ */
+export type Tier = 'verdict' | 'exposure' | 'reference';
+
 /** Panel shell. The number in the corner is the panel number from the spec. */
 export function Panel({
   n,
@@ -9,19 +19,21 @@ export function Panel({
   aside,
   children,
   bare,
+  tier = 'reference',
 }: {
   n: number;
   title: string;
   aside?: ReactNode;
   children: ReactNode;
   bare?: boolean;
+  tier?: Tier;
 }) {
   return (
-    <section className="panel" id={`panel-${n}`}>
+    <section className={`panel tier-${tier}`} id={`panel-${n}`}>
       <header>
         <span className="n">{n}</span>
         <h2>{title}</h2>
-        <div style={{ flex: 1 }} />
+        <div className="spacer" />
         {aside}
       </header>
       {bare ? children : <div className="body">{children}</div>}

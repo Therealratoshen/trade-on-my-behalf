@@ -30,6 +30,7 @@ export function PositionsPanel({
     <Panel
       n={4}
       title="Positions (read-only)"
+      tier="exposure"
       aside={<span className="n">jupiter-perps · paper</span>}
     >
       {error ? (
@@ -53,8 +54,8 @@ export function PositionsPanel({
           The kernel approved nothing yet, or the venue has closed everything. Approved trades open here
           automatically — there is no button anywhere in this app to open one.
           {data.statePath ? (
-            <div style={{ marginTop: 10 }}>
-              <span className="faint" style={{ fontSize: 11 }}>
+            <div style={{ marginTop: 'var(--s3)' }}>
+              <span className="faint" style={{ fontSize: 'var(--t-sm)' }}>
                 state: <span className="mono">{data.statePath}</span>
               </span>
             </div>
@@ -63,14 +64,14 @@ export function PositionsPanel({
       ) : (
         <>
           {data.pricesStale ? (
-            <div className="note" style={{ marginBottom: 12 }}>
+            <div className="note" style={{ marginBottom: 'var(--s3)' }}>
               <span className="badge mute">marks stale</span>{' '}
               Live price feed unavailable ({data.priceError}); every position is marked at its entry price, so
               PnL reads $0. On-chain state below is unaffected.
             </div>
           ) : null}
 
-          <div className="grid" style={{ marginBottom: 14 }}>
+          <div className="grid" style={{ marginBottom: 'var(--s4)' }}>
             <Field k="equity" v={fmtUsd(data.equityUsd)} sub="cash + unrealized PnL" />
             <Field k="free cash" v={fmtUsd(data.cashUsd)} />
             <Field k="open positions" v={String(data.positions.length)} />
@@ -95,15 +96,27 @@ export function PositionsPanel({
               {data.positions.map((p) => (
                 <tr key={p.venuePositionId}>
                   <td>{p.market}</td>
-                  <td>
-                    <span className={`badge ${p.side === 'long' ? 'yes' : 'mute'}`}>{p.side.toUpperCase()}</span>
-                  </td>
+                <td>
+                  {/* Side is market intent, never a verdict. It used to reuse
+                      the `yes` badge, which rendered LONG in the same green as
+                      APPROVED in the audit log — two different meanings, one
+                      colour. `.side-long` / `.side-short` are neutral, and the
+                      arrow glyph carries the meaning without colour at all
+                      (WCAG 1.4.1: colour must never be the only cue). */}
+                  <span className={`badge side-${p.side}`}>
+                    <span aria-hidden="true">{p.side === 'long' ? '▲' : '▼'}</span> {p.side.toUpperCase()}
+                  </span>
+                </td>
                   <td className="num">{fmtUsd(p.collateralUsd)}</td>
                   <td className="num">{fmtLeverageBps(p.leverageBps)}</td>
                   <td className="num">{fmtUsd(p.notionalUsd)}</td>
                   <td className="num">{fmtUsd(p.entryPriceUsd, { maxDigits: 4 })}</td>
                   <td className="num">{fmtUsd(p.markPriceUsd, { maxDigits: 4 })}</td>
                   <td className={`num ${p.unrealizedPnlUsd >= 0 ? 'pos' : 'neg'}`}>
+                    {/* Sign + arrow, not colour. --viz-up and --viz-down sit at
+                        dE 2.8 under achromatopsia — indistinguishable without
+                        this glyph. */}
+                    <span aria-hidden="true">{p.unrealizedPnlUsd >= 0 ? '▲' : '▼'}</span>{' '}
                     {fmtUsdSigned(p.unrealizedPnlUsd)}
                   </td>
                   <td>{fmtUnixTime(p.openedAt)}</td>
@@ -112,7 +125,7 @@ export function PositionsPanel({
             </tbody>
           </table>
 
-          <div className="faint" style={{ marginTop: 12, fontSize: 11 }}>
+          <div className="faint" style={{ marginTop: 'var(--s3)', fontSize: 'var(--t-sm)' }}>
             source: <span className="mono">{data.statePath}</span>
             {explorerIsIndexed(CLUSTER) ? (
               <>
