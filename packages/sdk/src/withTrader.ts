@@ -65,6 +65,7 @@ import {
 } from '@solana/web3.js';
 
 import { IDL as TREASURY_IDL } from './treasury.idl.js';
+import { assertDevnetWrite } from './registration.js';
 import {
   AuditEvent,
   AuthorizeSpendInput,
@@ -210,6 +211,16 @@ export interface WithTraderOptions {
   agentSigner?: Keypair;
   /** Commitment level. Default 'confirmed'. */
   commitment?: Commitment;
+  /**
+   * Permit a loopback test validator.
+   *
+   * Off by default. Turning it on allows writes against a validator on
+   * localhost only — a mainnet or testnet node reached through 127.0.0.1
+   * is still refused, because `assertDevnetWrite` matches the public
+   * genesis hashes first. Use it for local regression runs, never to
+   * "fix" a rejected endpoint.
+   */
+  allowLocalValidator?: boolean;
 }
 
 /**
@@ -346,6 +357,8 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
       );
     }
 
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
+
     const signature = await program.methods
       .createPolicy(
         input.vendors,
@@ -369,6 +382,8 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   }
 
   async function authorizeSpend(input: AuthorizeSpendInput) {
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
+
     const signature = await program.methods
       .authorizeSpend(
         input.vendor,
@@ -395,6 +410,8 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   }
 
   async function recordPnl(input: RecordPnlInput) {
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
+
     const signature = await program.methods
       .recordPnl(micro(input.newEquityUsd))
       .accounts({ policy: policyPda, authority: wallet.publicKey })
@@ -403,6 +420,8 @@ export function withTrader(opts: WithTraderOptions): WithTraderHandle {
   }
 
   async function updatePolicy(input: UpdatePolicyInput) {
+    await assertDevnetWrite(connection, opts.allowLocalValidator);
+
     // update_policy takes 5 Option<T> args; null means "do not change".
     const signature = await program.methods
       .updatePolicy(

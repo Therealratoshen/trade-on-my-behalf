@@ -4,19 +4,21 @@ Updated 2026-10-03. Package: `@trade-on-my-behalf/sdk`; Anchor 0.31 and web3.js 
 
 ## Handle identity
 
-`withTrader({ connection, wallet: Keypair, policy: agentPublicKey, commitment? })`.
+`withTrader({ connection, wallet: Keypair, policy: agentPublicKey, commitment?, allowLocalValidator? })`.
 
 `policy` means the **agent key used to derive the PDA**, not the owner wallet or PDA address. The browser has a separate wallet-adapter helper for policy editing; do not pass a user's private key to a web frontend.
+
+`allowLocalValidator` is off by default. It admits writes against a validator on a loopback host whose genesis is not one of the three public clusters; a mainnet or testnet node reached through `127.0.0.1` is still refused. See the cluster-identity section of [security-model.md](security-model.md).
 
 ## Methods
 
 | Method | Current behavior |
 |---|---|
-| `ensurePolicy(input)` | Owner creates policy; returns no-op for existing PDA; does not verify existing fields equal requested rules |
-| `fetchPolicy()` | Decoded policy or null; null account and RPC failure are distinct |
-| `authorizeSpend(input)` | Owner/agent authorization; returns signature and decoded AuditEvent; no venue instruction |
-| `recordPnl(input)` | Owner/agent submits reported equity watermark |
-| `updatePolicy(input)` | Owner-only provided-field changes |
+| `ensurePolicy(input)` | Owner creates policy; returns no-op for existing PDA; throws `ForeignPolicyError` if the existing policy is owned by another key. Cluster-gated. |
+| `fetchPolicy()` | Decoded policy or null; null account and RPC failure are distinct. Not cluster-gated (read). |
+| `authorizeSpend(input)` | Owner/agent authorization; returns signature and decoded AuditEvent; no venue instruction. Cluster-gated. |
+| `recordPnl(input)` | Owner/agent submits reported equity watermark. Cluster-gated. |
+| `updatePolicy(input)` | Owner-only provided-field changes. Cluster-gated. |
 | `subscribeAudit` / `unsubscribeAudit` | Program-event listener scoped to policy |
 | `replaceVendors(input)` | Unsupported by current program; throws |
 
@@ -41,4 +43,4 @@ pnpm --filter @trade-on-my-behalf/sdk test
 
 Run `sync-idl` from the repository root. Deployed program, generated IDL and SDK copy must match; source IDL equality alone does not prove deployment.
 
-Defined offline tests: 11 cases across `derivePolicyPda.test.ts` and `decode.test.ts`, not rerun in this update. [TRD](../TRD.md), [unit plan](unit-testing.md) and [testing status](testing-plan.md) are authoritative.
+Offline tests cover `derivePolicyPda.test.ts`, `decode.test.ts`, `ensurePolicyOwnership.test.ts` and `registration.test.ts` (the cluster-identity guard). The count is not restated here because it changes; run `pnpm --filter @trade-on-my-behalf/sdk test` and report the real number. [TRD](../TRD.md), [unit plan](unit-testing.md) and [testing status](testing-plan.md) are authoritative.

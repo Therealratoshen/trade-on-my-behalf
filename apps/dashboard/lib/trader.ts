@@ -17,6 +17,7 @@
 import { AnchorProvider, BN, Program, type Idl, type Wallet as AnchorKeypairWallet } from '@coral-xyz/anchor';
 import { Connection, PublicKey, type Transaction, type VersionedTransaction } from '@solana/web3.js';
 import {
+  assertDevnetWrite,
   decodePolicy,
   derivePolicyPda,
   micro,
@@ -185,6 +186,14 @@ export async function updatePolicy(
   owner: PublicKey,
   input: UpdatePolicyInput,
 ): Promise<UpdateResult> {
+  // This is the dashboard's only write path, and it deliberately does NOT go
+  // through `withTrader` (see the module header), so the SDK's devnet gate
+  // does not cover it. Without this call a build-time `NEXT_PUBLIC_CLUSTER`
+  // of `mainnet-beta` would put a real `update_policy` in front of a user's
+  // Phantom wallet, on the program address that also exists on mainnet.
+  // Chain identity comes from the node, not from `CLUSTER`.
+  await assertDevnetWrite(program.provider.connection);
+
   const signature: string = await program.methods
     .updatePolicy(
       input.maxLeverageBps ?? null,
