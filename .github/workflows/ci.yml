@@ -12,10 +12,16 @@ concurrency:
 
 env:
   PROGRAM_ID: 4TdJre5rGrGT3Zo5aEfmJmT6wu65BbjFjyLFjrMeJXph
-  # setup-anchor prepends the "v" to solana-cli-version itself, so the value
-  # is the bare version. 2.2.21 matches the toolchain this repo builds with
-  # (cargo build-sbf) and is what the action defaults to.
-  SOLANA_CLI_VERSION: 2.2.21
+  # setup-anchor prepends the "v" to solana-cli-version itself, so the value is
+  # the bare version.
+  #
+  # 2.2.20, not 2.2.21: there is no 2.2.21 release. The highest 2.2.x on Anza's
+  # release server is v2.2.20 (https://release.anza.xyz/v2.2.21/install returns
+  # 404), and v2.2.21 is not a tag on anza-xyz/agave either. Asking for it made
+  # setup-anchor's `sh -c "$(curl -sSfL ...)"` print "curl: (22) ... 404" and
+  # move on, leaving no `solana` binary at all — a second silent failure of the
+  # same shape as the Anchor one, one step earlier.
+  SOLANA_CLI_VERSION: 2.2.20
   ANCHOR_VERSION: 0.31.1
 
 jobs:
@@ -65,14 +71,67 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      # Installs Anchor CLI + Solana CLI + Node in one step. Do NOT also run the
-      # Anza `install` script: two competing installs of the same toolchain
-      # leave an unpredictable one first on PATH.
+      # Installs the Solana CLI (and Node) only. Its Anchor install is
+      # deliberately overridden below — see the note on the cargo step.
+      #
+      # Do NOT also run the Anza `install` script: two competing installs of the
+      # same toolchain leave an unpredictable one first on PATH.
       - uses: metadaoproject/setup-anchor@v3.4
         with:
-          anchor-version: ${{ env.ANCHOR_VERSION }}
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           node-version: 20.11.0
+
+      # setup-anchor pipes the Anza installer through `sh -c "$(curl -sSfL
+      # ...)"; a bad version string therefore fails the download, not the
+      # action, and the missing solana-keygen/solana-test-validator only surfaces
+      # much later as "command not found" in the validator step. Prove the CLI
+      # is really here, at the pinned version, before anything depends on it.
+      - name: Verify the Solana CLI
+        run: |
+          set -x
+          command -v solana solana-keygen solana-test-validator cargo-build-sbf
+          solana --version
+          solana --version | grep -q "v$SOLANA_CLI_VERSION" || {
+            echo "::error::expected solana-cli v$SOLANA_CLI_VERSION"; exit 1; }
+
+      # ---------------------------------------------------------------------
+      # Why Anchor is installed with cargo instead of trusting setup-anchor's
+      # own `npm i -g @coral-xyz/anchor-cli@0.31.1`.
+      #
+      # That npm package is broken. Its tarball ships the prebuilt `anchor`
+      # ELF with mode 0644 — npm says so during install:
+      #
+      #   npm WARN deprecated @coral-xyz/anchor-cli@0.31.1: broken cli build
+      #
+      # The package's `anchor.js` shim then runs
+      # spawnSync("<pkg>/anchor", ["--version"]) to sanity-check the binary,
+      # gets EACCES, falls through to scanning $PATH for a cargo-installed
+      # anchor, finds none, and calls process.exit() — with code 0. So
+      # `anchor build` prints three lines of complaint, exits 0, and the step
+      # goes GREEN having compiled nothing. The failure only surfaces in the
+      # next step as "Cannot find module './target/idl/treasury.json'".
+      #
+      # A cargo install has neither problem: it produces a real executable in
+      # ~/.cargo/bin (on PATH), and --tag pins it to the same ANCHOR_VERSION
+      # the repo already declares. `--locked` keeps anchor's own dependency
+      # resolution reproducible, matching the Cargo.lock that is cached.
+      # ---------------------------------------------------------------------
+      - name: Install the Anchor CLI with cargo
+        run: |
+          cargo install --locked --git https://github.com/coral-xyz/anchor.git \
+            --tag "v$ANCHOR_VERSION" anchor-cli
+
+      # setup-anchor installs into the Node toolchain it provisions itself, and
+      # it runs before actions/setup-node below. So assert the real binary
+      # resolves and reports the expected version, rather than letting a broken
+      # install pass silently again.
+      - name: Verify the Anchor CLI
+        run: |
+          set -x
+          command -v anchor
+          anchor --version
+          anchor --version | grep -qx "anchor-cli $ANCHOR_VERSION" || {
+            echo "::error::expected anchor-cli $ANCHOR_VERSION"; exit 1; }
 
       # No `version:` input — see the note in the workspace job above.
       - uses: pnpm/action-setup@v4
@@ -99,9 +158,21 @@ jobs:
       # devnet or registry call, and it does not need provider.cluster to be
       # localnet. The provider.cluster = "devnet" in Anchor.toml therefore does
       # not affect this step (deploying is what reads it, and we never deploy).
+      #
+      # `anchor build` is NOT trusted to signal failure on its own: the broken
+      # npm install above exits 0 after doing nothing. The explicit artifact
+      # checks are what make a silent no-op build impossible.
       - name: Build program
         working-directory: programs/treasury
-        run: anchor build
+        run: |
+          set -euo pipefail
+          anchor build
+          for artifact in target/idl/treasury.json \
+                          target/types/treasury.ts \
+                          target/deploy/treasury.so; do
+            test -f "$artifact" || {
+              echo "::error::anchor build did not produce $artifact"; exit 1; }
+          done
 
       # The test suite reaches the program through `anchor.workspace`, which
       # reads Anchor.toml, looks up [programs.<provider.cluster>], and finds no
@@ -137,7 +208,10 @@ jobs:
             solana cluster-version --url http://127.0.0.1:8899 >/dev/null 2>&1 && break
             sleep 1
           done
-          solana cluster-version --url http://127.0.0.1:8899
+          # Do not let a validator that never came up look like a passing step:
+          # the test step would then fail with a confusing connection error.
+          solana cluster-version --url http://127.0.0.1:8899 || {
+            echo "::error::local validator never became reachable"; exit 1; }
 
       # Proves the --bpf-program preload actually took, rather than assuming it.
       - name: Verify the program is loaded at PROGRAM_ID
